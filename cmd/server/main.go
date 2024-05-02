@@ -4,11 +4,6 @@ import (
 	"net/http"
 )
 
-const (
-	gauge   = "gauge"
-	counter = "counter"
-)
-
 func main() {
 
 	if err := run(); err != nil {
