@@ -7,26 +7,16 @@ import (
 	"net/http"
 )
 
-type metricsService struct {
-	storage *store.MemStorage
+type MetricsService struct {
+	Storage *store.MemStorage
 }
 type metricsServiceInterface interface {
 	Update(request *domain.UpdateRequest) (*domain.MetricResponse, *domain.ApplicationError)
 }
 
-var (
-	MetricsService metricsServiceInterface
-)
+func (s *MetricsService) Update(request *domain.UpdateRequest) (*domain.MetricResponse, *domain.ApplicationError) {
 
-func init() {
-	MetricsService = &metricsService{
-		store.NewStorage(),
-	}
-}
-
-func (s *metricsService) Update(request *domain.UpdateRequest) (*domain.MetricResponse, *domain.ApplicationError) {
-
-	response, err := s.storage.GetValue(request)
+	response, err := s.Storage.GetValue(request)
 	if err != nil {
 		return nil, &domain.ApplicationError{
 			Code: http.StatusInternalServerError,
@@ -36,13 +26,13 @@ func (s *metricsService) Update(request *domain.UpdateRequest) (*domain.MetricRe
 	if response != nil && request.Type == domain.CounterType {
 		request.Value += response.Value
 	}
-	if err := s.storage.SetValue(request); err != nil {
+	if err := s.Storage.SetValue(request); err != nil {
 		return nil, &domain.ApplicationError{
 			Code: http.StatusInternalServerError,
 			Text: err.Error(),
 		}
 	}
-	response, _ = s.storage.GetValue(request)
+	response, _ = s.Storage.GetValue(request)
 	fmt.Println(response)
 	return nil, nil
 }

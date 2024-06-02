@@ -3,12 +3,17 @@ package handlers
 import (
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/services"
+	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"net/http"
 	"slices"
 	"strconv"
 )
 
-func UpdateMetrics(w http.ResponseWriter, r *http.Request) {
+type MetricsHandler struct {
+	Storage *store.MemStorage
+}
+
+func (h *MetricsHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	// validate
 	request, err := validateRequest(r)
@@ -17,8 +22,9 @@ func UpdateMetrics(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Text))
 		return
 	}
+	metricsService := services.MetricsService{Storage: h.Storage}
 
-	_, err = services.MetricsService.Update(request)
+	_, err = metricsService.Update(request)
 	if err != nil {
 		w.WriteHeader(err.Code)
 		w.Write([]byte(err.Text))
