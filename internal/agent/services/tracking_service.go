@@ -52,10 +52,11 @@ func (s *TrackingService) Send(request *domain.MetricData) (*domain.ServerRespon
 		Timeout: 30 * time.Second,
 	}
 
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: error making http request: %s\n", err)}
 	}
+	resp.Body.Close()
 
 	return &domain.ServerResponse{Status: 200}, nil
 }
