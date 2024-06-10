@@ -44,7 +44,7 @@ func (s *TrackingService) Send(request *domain.MetricData) (*domain.ServerRespon
 
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://localhost:8080/update/%s/%s/%f", request.Type, request.Name, request.Value), nil)
 	if err != nil {
-		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: could not create request: %s\n", err)}
+		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: could not create request: %s\n", err), Code: http.StatusInternalServerError}
 	}
 	req.Header.Set("Content-Type", "text/plain")
 
@@ -54,11 +54,15 @@ func (s *TrackingService) Send(request *domain.MetricData) (*domain.ServerRespon
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: error making http request: %s\n", err)}
+		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: error making http request: %s\n", err), Code: http.StatusInternalServerError}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: responded with error: %s\n", err), Code: resp.StatusCode}
 	}
 	resp.Body.Close()
 
-	return &domain.ServerResponse{Status: 200}, nil
+	return &domain.ServerResponse{Status: http.StatusOK}, nil
 }
 
 func mapMetricValues() domain.Gauge {

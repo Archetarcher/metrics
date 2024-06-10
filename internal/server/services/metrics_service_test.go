@@ -2,38 +2,38 @@ package services
 
 import (
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"reflect"
+	"github.com/Archetarcher/metrics.git/internal/server/repositories"
+	"github.com/Archetarcher/metrics.git/internal/server/store"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestMetricsService_Update(t *testing.T) {
-	type fields struct {
-		MetricRepositoryInterface MetricRepositoryInterface
-	}
+
 	type args struct {
 		request *domain.UpdateRequest
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   *domain.MetricResponse
-		want1  *domain.ApplicationError
+		name string
+		args args
+		res  *domain.MetricResponse
+		err  *domain.ApplicationError
 	}{
-		// TODO: Add test cases.
+		{
+			name: "positive test #1",
+			args: args{request: &domain.UpdateRequest{Type: "gauge", Name: "test", Value: 1}},
+			res:  nil,
+			err:  nil,
+		},
 	}
+	repo := &repositories.MetricRepository{Storage: store.NewStorage()}
+	service := &MetricsService{MetricRepositoryInterface: repo}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &MetricsService{
-				MetricRepositoryInterface: tt.fields.MetricRepositoryInterface,
-			}
-			got, got1 := s.Update(tt.args.request)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Update() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("Update() got1 = %v, want %v", got1, tt.want1)
-			}
+			res, err := service.Update(tt.args.request)
+			assert.Equal(t, tt.res, res)
+			assert.Equal(t, tt.err, err)
+
 		})
 	}
 }

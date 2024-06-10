@@ -2,71 +2,77 @@ package store
 
 import (
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"reflect"
+	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 )
 
 func TestMemStorage_GetValue(t *testing.T) {
-	type fields struct {
-		mux  *sync.Mutex
-		data map[string]float64
-	}
+
 	type args struct {
 		request *domain.UpdateRequest
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
-		want    *domain.MetricResponse
+		res     *domain.MetricResponse
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "positive test #1",
+			args: args{
+				&domain.UpdateRequest{
+					Type:  "counter",
+					Name:  "countervalue",
+					Value: 1,
+				},
+			},
+			wantErr: false,
+			res:     nil,
+		},
 	}
+
+	store := NewStorage()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &MemStorage{
-				mux:  tt.fields.mux,
-				data: tt.fields.data,
-			}
-			got, err := s.GetValue(tt.args.request)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetValue() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetValue() got = %v, want %v", got, tt.want)
-			}
+			res, err := store.GetValue(tt.args.request)
+
+			assert.Equal(t, tt.res, res)
+			assert.Equal(t, tt.wantErr, err != nil)
+
 		})
 	}
 }
 
 func TestMemStorage_SetValue(t *testing.T) {
-	type fields struct {
-		mux  *sync.Mutex
-		data map[string]float64
-	}
 	type args struct {
 		request *domain.UpdateRequest
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "positive test #1",
+			args: args{
+				&domain.UpdateRequest{
+					Type:  "counter",
+					Name:  "countervalue",
+					Value: 1,
+				},
+			},
+			wantErr: false,
+		},
 	}
+
+	store := NewStorage()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &MemStorage{
-				mux:  tt.fields.mux,
-				data: tt.fields.data,
-			}
-			if err := s.SetValue(tt.args.request); (err != nil) != tt.wantErr {
-				t.Errorf("SetValue() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			err := store.SetValue(tt.args.request)
+
+			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}
 }
@@ -76,13 +82,17 @@ func TestNewStorage(t *testing.T) {
 		name string
 		want *MemStorage
 	}{
-		// TODO: Add test cases.
+		{
+			name: "positive test #1",
+			want: &MemStorage{
+				mux:  &sync.Mutex{},
+				data: make(map[string]float64),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewStorage(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewStorage() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, NewStorage())
 		})
 	}
 }
@@ -96,13 +106,20 @@ func Test_getName(t *testing.T) {
 		args args
 		want string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "positive test #1",
+			args: args{request: &domain.UpdateRequest{
+				Type:  "counter",
+				Value: 1,
+				Name:  "counterValue",
+			}},
+			want: "counterValue_counter",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getName(tt.args.request); got != tt.want {
-				t.Errorf("getName() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, getName(tt.args.request))
+
 		})
 	}
 }

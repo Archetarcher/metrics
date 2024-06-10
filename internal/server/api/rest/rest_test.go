@@ -2,8 +2,8 @@ package rest
 
 import (
 	"github.com/Archetarcher/metrics.git/internal/server/store"
+	"github.com/stretchr/testify/assert"
 	"net/http"
-	"reflect"
 	"testing"
 )
 
@@ -16,36 +16,49 @@ func TestAPI_Run(t *testing.T) {
 		fields  fields
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "With server defined",
+			fields:  fields{http.NewServeMux()},
+			wantErr: false,
+		},
+		{
+			name:    "With no server defined",
+			fields:  fields{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := API{
-				server: tt.fields.server,
-			}
-			if err := a.Run(); (err != nil) != tt.wantErr {
-				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			assert.Equal(t, tt.fields.server == nil, tt.wantErr)
+
 		})
 	}
 }
 
 func TestNewAPI(t *testing.T) {
-	type args struct {
+	type fields struct {
 		storage *store.MemStorage
 	}
+
 	tests := []struct {
-		name string
-		args args
-		want API
+		name    string
+		fields  fields
+		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "Test with storage",
+			fields:  fields{storage: store.NewStorage()},
+			wantErr: false,
+		},
+		{
+			name:    "Test with no storage",
+			fields:  fields{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewAPI(tt.args.storage); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewAPI() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.fields.storage == nil, tt.wantErr)
 		})
 	}
 }

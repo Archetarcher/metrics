@@ -45,7 +45,6 @@ func startPoll(fetch fetch, metrics chan<- domain.MetricData, wg *sync.WaitGroup
 		response, err := fetch(counterInterval)
 		if err != nil {
 			fmt.Println(err)
-			return
 		}
 
 		for _, m := range response {
@@ -69,7 +68,11 @@ func startReport(send send, metrics <-chan domain.MetricData, wg *sync.WaitGroup
 		fmt.Println("reading from chan")
 		fmt.Println(metric)
 
-		send(&metric)
+		response, err := send(&metric)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(response)
 
 		time.Sleep(reportInterval)
 	}

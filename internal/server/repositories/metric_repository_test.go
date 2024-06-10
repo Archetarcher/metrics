@@ -3,66 +3,76 @@ package repositories
 import (
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
-	"reflect"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestMetricRepository_Get(t *testing.T) {
-	type fields struct {
-		Storage *store.MemStorage
-	}
+
 	type args struct {
 		request *domain.UpdateRequest
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    *domain.MetricResponse
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "positive test #1",
+			args: args{
+				&domain.UpdateRequest{
+					Type:  "counter",
+					Name:  "countervalue",
+					Value: 1,
+				},
+			},
+			wantErr: false,
+			want:    nil,
+		},
 	}
+	repo := &MetricRepository{Storage: store.NewStorage()}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &MetricRepository{
-				Storage: tt.fields.Storage,
-			}
-			got, err := r.Get(tt.args.request)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Get() got = %v, want %v", got, tt.want)
-			}
+			res, err := repo.Get(tt.args.request)
+
+			assert.Equal(t, tt.want, res)
+			assert.Equal(t, tt.wantErr, err != nil)
+
 		})
 	}
 }
 
 func TestMetricRepository_Set(t *testing.T) {
-	type fields struct {
-		Storage *store.MemStorage
-	}
+
 	type args struct {
 		request *domain.UpdateRequest
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "positive test #1",
+			args: args{
+				&domain.UpdateRequest{
+					Type:  "counter",
+					Name:  "countervalue",
+					Value: 1,
+				},
+			},
+			wantErr: false,
+		},
 	}
+	repo := &MetricRepository{Storage: store.NewStorage()}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &MetricRepository{
-				Storage: tt.fields.Storage,
-			}
-			if err := r.Set(tt.args.request); (err != nil) != tt.wantErr {
-				t.Errorf("Set() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			err := repo.Set(tt.args.request)
+
+			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}
 }
