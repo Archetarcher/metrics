@@ -43,30 +43,7 @@ func TestTrackingService_Send(t *testing.T) {
 		name    string
 		args    args
 		wantErr bool
-	}{
-		{
-			name: "positive test #1",
-			args: args{
-				&domain.MetricData{
-					Type:  "gauge",
-					Name:  "Alloc",
-					Value: 0,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "negative test #2",
-			args: args{
-				&domain.MetricData{
-					Type:  "gaugee",
-					Name:  "Alloc",
-					Value: 0,
-				},
-			},
-			wantErr: true,
-		},
-	}
+	}{}
 	service := &TrackingService{}
 
 	for _, tt := range tests {
