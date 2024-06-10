@@ -27,8 +27,8 @@ func (s *MemStorage) GetValue(request *domain.UpdateRequest) (*domain.MetricResp
 		Name:  getName(request),
 		Value: res,
 	}, nil
-
 }
+
 func (s *MemStorage) SetValue(request *domain.UpdateRequest) error {
 	s.data[getName(request)] = request.Value
 	return nil
