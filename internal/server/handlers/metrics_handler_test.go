@@ -126,9 +126,10 @@ func TestMetricsHandler_UpdateMetrics(t *testing.T) {
 
 			handler.UpdateMetrics(w, r)
 			result := w.Result()
+
 			assert.Equal(t, tt.want.code, w.Code, "Код ответа не совпадает с ожидаемым")
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-
+			result.Body.Close()
 		})
 	}
 }
