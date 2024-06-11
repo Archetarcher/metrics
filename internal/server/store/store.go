@@ -3,7 +3,6 @@ package store
 import (
 	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"math"
 	"strconv"
 	"sync"
 )
@@ -45,8 +44,9 @@ func (s *MemStorage) GetValue(request *domain.MetricRequest) (*domain.MetricResp
 
 func (s *MemStorage) SetValue(request *domain.MetricRequest) error {
 	if request.Type == domain.GaugeType {
-		gaugeValue := math.Round(request.Value)
-		s.data[getName(request)] = strconv.FormatFloat(gaugeValue, 'f', 2, 64)
+		gaugeValue := request.Value
+
+		s.data[getName(request)] = strconv.FormatFloat(gaugeValue, 'e', 3, 64)
 		return nil
 	}
 
