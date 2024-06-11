@@ -42,7 +42,7 @@ const (
 )
 
 var (
-	FlagServerRunAddr string
-	ReportInterval    int
-	PollInterval      int
+	ServerRunAddr  string
+	ReportInterval int
+	PollInterval   int
 )

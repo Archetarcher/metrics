@@ -7,7 +7,7 @@ const (
 )
 
 var (
-	FlagRunAddr string
+	RunAddr string
 )
 var AllowedHeaders = map[string]string{
 	//"Content-Type": "text/plain",

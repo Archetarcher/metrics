@@ -33,5 +33,5 @@ func NewAPI(storage *store.MemStorage) API {
 }
 
 func (a API) Run() error {
-	return http.ListenAndServe(domain.FlagRunAddr, a.router)
+	return http.ListenAndServe(domain.RunAddr, a.router)
 }

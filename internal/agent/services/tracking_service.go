@@ -44,7 +44,7 @@ func (s *TrackingService) Send(request *domain.MetricData) (*domain.ServerRespon
 
 	client := resty.New()
 
-	url := fmt.Sprintf("http://%s/update/%s/%s/%f", domain.FlagServerRunAddr, request.Type, request.Name, request.Value)
+	url := fmt.Sprintf("http://%s/update/%s/%s/%f", domain.ServerRunAddr, request.Type, request.Name, request.Value)
 	res, err := client.R().SetHeader("Content-Type", "text/plain").Post(url)
 	if err != nil {
 		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: could not create request: %s\n", err), Code: http.StatusInternalServerError}
