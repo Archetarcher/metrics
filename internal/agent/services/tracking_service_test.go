@@ -36,6 +36,7 @@ func TestTrackingService_Fetch(t *testing.T) {
 }
 
 func TestTrackingService_Send(t *testing.T) {
+	parseFlags()
 	type args struct {
 		request *domain.MetricData
 	}

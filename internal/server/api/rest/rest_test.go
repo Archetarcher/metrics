@@ -8,6 +8,8 @@ import (
 )
 
 func TestAPI_Run(t *testing.T) {
+	parseFlags()
+
 	type fields struct {
 		server *http.ServeMux
 	}
@@ -30,7 +32,6 @@ func TestAPI_Run(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.fields.server == nil, tt.wantErr)
-
 		})
 	}
 }

@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/services"
@@ -14,6 +15,8 @@ type API struct {
 }
 
 func NewAPI(storage *store.MemStorage) API {
+	parseFlags()
+
 	r := chi.NewRouter()
 
 	//mux := http.NewServeMux()
@@ -30,5 +33,5 @@ func NewAPI(storage *store.MemStorage) API {
 }
 
 func (a API) Run() error {
-	return http.ListenAndServe(`:8080`, a.router)
+	return http.ListenAndServe(domain.FlagRunAddr, a.router)
 }

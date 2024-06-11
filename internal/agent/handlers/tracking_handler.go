@@ -17,6 +17,8 @@ type TrackingServiceInterface interface {
 }
 
 func (h *TrackingHandler) StartTracking() {
+	parseFlags()
+
 	fmt.Println("start tracking")
 
 	var wg sync.WaitGroup

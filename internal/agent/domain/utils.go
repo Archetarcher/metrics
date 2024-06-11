@@ -37,8 +37,12 @@ type Counter struct {
 var CounterMetric = "PollCount"
 
 const (
-	ReportInterval = 10
-	PollInterval   = 2
-	GaugeType      = "gauge"
-	CounterType    = "counter"
+	GaugeType   = "gauge"
+	CounterType = "counter"
+)
+
+var (
+	FlagServerRunAddr string
+	ReportInterval    int
+	PollInterval      int
 )

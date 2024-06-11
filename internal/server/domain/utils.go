@@ -6,6 +6,9 @@ const (
 	CounterType = "counter"
 )
 
+var (
+	FlagRunAddr string
+)
 var AllowedHeaders = map[string]string{
 	//"Content-Type": "text/plain",
 }
