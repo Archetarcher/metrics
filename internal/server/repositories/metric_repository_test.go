@@ -10,7 +10,7 @@ import (
 func TestMetricRepository_Get(t *testing.T) {
 
 	type args struct {
-		request *domain.UpdateRequest
+		request *domain.MetricRequest
 	}
 	tests := []struct {
 		name    string
@@ -21,7 +21,7 @@ func TestMetricRepository_Get(t *testing.T) {
 		{
 			name: "positive test #1",
 			args: args{
-				&domain.UpdateRequest{
+				&domain.MetricRequest{
 					Type:  "counter",
 					Name:  "countervalue",
 					Value: 1,
@@ -47,7 +47,7 @@ func TestMetricRepository_Get(t *testing.T) {
 func TestMetricRepository_Set(t *testing.T) {
 
 	type args struct {
-		request *domain.UpdateRequest
+		request *domain.MetricRequest
 	}
 	tests := []struct {
 		name    string
@@ -57,7 +57,7 @@ func TestMetricRepository_Set(t *testing.T) {
 		{
 			name: "positive test #1",
 			args: args{
-				&domain.UpdateRequest{
+				&domain.MetricRequest{
 					Type:  "counter",
 					Name:  "countervalue",
 					Value: 1,

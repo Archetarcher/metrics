@@ -1,7 +1,7 @@
 package domain
 
-// UpdateRequest is a request struct for services.service.update
-type UpdateRequest struct {
+// MetricRequest is a request struct for services.service.update
+type MetricRequest struct {
 	Type  string  `json:"type"`
 	Name  string  `json:"name"`
 	Value float64 `json:"value"`

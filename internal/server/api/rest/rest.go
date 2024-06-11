@@ -5,27 +5,30 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 )
 
 type API struct {
-	server *http.ServeMux
+	router chi.Router
 }
 
 func NewAPI(storage *store.MemStorage) API {
+	r := chi.NewRouter()
 
-	mux := http.NewServeMux()
+	//mux := http.NewServeMux()
 	repo := &repositories.MetricRepository{Storage: storage}
 	service := &services.MetricsService{MetricRepositoryInterface: repo}
 	handler := handlers.MetricsHandler{MetricsServiceInterface: service}
 
-	mux.HandleFunc(`/update/{type}/{name}/{value}`, handler.UpdateMetrics)
-
+	r.Post("/update/{type}/{name}/{value}", handler.UpdateMetrics)
+	r.Get("/value/{type}/{name}", handler.GetMetrics)
+	r.Get("/", handler.GetMetricsPage)
 	return API{
-		server: mux,
+		router: r,
 	}
 }
 
 func (a API) Run() error {
-	return http.ListenAndServe(`:8080`, a.server)
+	return http.ListenAndServe(`:8080`, a.router)
 }

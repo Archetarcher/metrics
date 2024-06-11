@@ -11,7 +11,7 @@ import (
 func TestMetricsService_Update(t *testing.T) {
 
 	type args struct {
-		request *domain.UpdateRequest
+		request *domain.MetricRequest
 	}
 	tests := []struct {
 		name string
@@ -21,7 +21,7 @@ func TestMetricsService_Update(t *testing.T) {
 	}{
 		{
 			name: "positive test #1",
-			args: args{request: &domain.UpdateRequest{Type: "gauge", Name: "test", Value: 1}},
+			args: args{request: &domain.MetricRequest{Type: "gauge", Name: "test", Value: 1}},
 			res:  nil,
 			err:  nil,
 		},

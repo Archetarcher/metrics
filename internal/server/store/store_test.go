@@ -10,7 +10,7 @@ import (
 func TestMemStorage_GetValue(t *testing.T) {
 
 	type args struct {
-		request *domain.UpdateRequest
+		request *domain.MetricRequest
 	}
 	tests := []struct {
 		name    string
@@ -21,7 +21,7 @@ func TestMemStorage_GetValue(t *testing.T) {
 		{
 			name: "positive test #1",
 			args: args{
-				&domain.UpdateRequest{
+				&domain.MetricRequest{
 					Type:  "counter",
 					Name:  "countervalue",
 					Value: 1,
@@ -46,7 +46,7 @@ func TestMemStorage_GetValue(t *testing.T) {
 
 func TestMemStorage_SetValue(t *testing.T) {
 	type args struct {
-		request *domain.UpdateRequest
+		request *domain.MetricRequest
 	}
 	tests := []struct {
 		name    string
@@ -56,7 +56,7 @@ func TestMemStorage_SetValue(t *testing.T) {
 		{
 			name: "positive test #1",
 			args: args{
-				&domain.UpdateRequest{
+				&domain.MetricRequest{
 					Type:  "counter",
 					Name:  "countervalue",
 					Value: 1,
@@ -99,7 +99,7 @@ func TestNewStorage(t *testing.T) {
 
 func Test_getName(t *testing.T) {
 	type args struct {
-		request *domain.UpdateRequest
+		request *domain.MetricRequest
 	}
 	tests := []struct {
 		name string
@@ -108,7 +108,7 @@ func Test_getName(t *testing.T) {
 	}{
 		{
 			name: "positive test #1",
-			args: args{request: &domain.UpdateRequest{
+			args: args{request: &domain.MetricRequest{
 				Type:  "counter",
 				Value: 1,
 				Name:  "counterValue",

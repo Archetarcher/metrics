@@ -3,11 +3,11 @@ package services
 import (
 	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
+	"github.com/go-resty/resty/v2"
 	"math/rand"
 	"net/http"
 	"reflect"
 	"runtime"
-	"time"
 )
 
 type TrackingService struct {
@@ -42,26 +42,17 @@ func (s *TrackingService) Fetch(counterInterval int) ([]domain.MetricData, *doma
 
 func (s *TrackingService) Send(request *domain.MetricData) (*domain.ServerResponse, *domain.ApplicationError) {
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://localhost:8080/update/%s/%s/%f", request.Type, request.Name, request.Value), nil)
+	client := resty.New()
+
+	url := fmt.Sprintf("http://localhost:8080/update/%s/%s/%f", request.Type, request.Name, request.Value)
+	res, err := client.R().SetHeader("Content-Type", "text/plain").Post(url)
 	if err != nil {
 		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: could not create request: %s\n", err), Code: http.StatusInternalServerError}
 	}
-	req.Header.Set("Content-Type", "text/plain")
 
-	client := http.Client{
-		Timeout: 30 * time.Second,
+	if res.StatusCode() != http.StatusOK {
+		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: responded with error: %s\n", err), Code: res.StatusCode()}
 	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: error making http request: %s\n", err), Code: http.StatusInternalServerError}
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: responded with error: %s\n", err), Code: resp.StatusCode}
-	}
-	resp.Body.Close()
-
 	return &domain.ServerResponse{Status: http.StatusOK}, nil
 }
 

@@ -9,9 +9,12 @@ type MetricRepository struct {
 	Storage *store.MemStorage
 }
 
-func (r *MetricRepository) Get(request *domain.UpdateRequest) (*domain.MetricResponse, error) {
+func (r *MetricRepository) GetAll() ([]domain.MetricResponse, error) {
+	return r.Storage.GetValues()
+}
+func (r *MetricRepository) Get(request *domain.MetricRequest) (*domain.MetricResponse, error) {
 	return r.Storage.GetValue(request)
 }
-func (r *MetricRepository) Set(request *domain.UpdateRequest) error {
+func (r *MetricRepository) Set(request *domain.MetricRequest) error {
 	return r.Storage.SetValue(request)
 }

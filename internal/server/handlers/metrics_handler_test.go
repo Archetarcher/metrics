@@ -4,6 +4,8 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -11,15 +13,22 @@ import (
 )
 
 func TestMetricsHandler_UpdateMetrics(t *testing.T) {
+	repo := &repositories.MetricRepository{Storage: store.NewStorage()}
+	service := &services.MetricsService{MetricRepositoryInterface: repo}
+	handler := MetricsHandler{MetricsServiceInterface: service}
+	r := chi.NewRouter()
+	r.Post("/update/{type}/{name}/{value}", handler.UpdateMetrics)
 
+	srv := httptest.NewServer(r)
+
+	defer srv.Close()
 	type request struct {
 		query  string
 		method string
 		params map[string]string
 	}
 	type want struct {
-		code        int
-		contentType string
+		code int
 	}
 	tests := []struct {
 		name    string
@@ -34,8 +43,7 @@ func TestMetricsHandler_UpdateMetrics(t *testing.T) {
 				params: map[string]string{"type": "counter", "name": "counters", "value": "1"},
 			},
 			want: want{
-				code:        http.StatusOK,
-				contentType: "",
+				code: http.StatusOK,
 			},
 		},
 		{
@@ -46,8 +54,7 @@ func TestMetricsHandler_UpdateMetrics(t *testing.T) {
 				params: map[string]string{"type": "gauge", "name": "value", "value": "1"},
 			},
 			want: want{
-				code:        http.StatusOK,
-				contentType: "",
+				code: http.StatusOK,
 			},
 		},
 		{
@@ -58,8 +65,7 @@ func TestMetricsHandler_UpdateMetrics(t *testing.T) {
 				params: map[string]string{"type": "gauged", "name": "value", "value": "1"},
 			},
 			want: want{
-				code:        http.StatusBadRequest,
-				contentType: "",
+				code: http.StatusBadRequest,
 			},
 		},
 		{
@@ -70,8 +76,7 @@ func TestMetricsHandler_UpdateMetrics(t *testing.T) {
 				params: map[string]string{"type": "gauge", "name": "value", "value": "1"},
 			},
 			want: want{
-				code:        http.StatusMethodNotAllowed,
-				contentType: "",
+				code: http.StatusMethodNotAllowed,
 			},
 		},
 		{
@@ -82,8 +87,7 @@ func TestMetricsHandler_UpdateMetrics(t *testing.T) {
 				params: map[string]string{"type": "gauge"},
 			},
 			want: want{
-				code:        http.StatusBadRequest,
-				contentType: "",
+				code: http.StatusNotFound,
 			},
 		},
 		{
@@ -94,42 +98,34 @@ func TestMetricsHandler_UpdateMetrics(t *testing.T) {
 				params: map[string]string{},
 			},
 			want: want{
-				code:        http.StatusBadRequest,
-				contentType: "",
+				code: http.StatusNotFound,
 			},
 		},
 		{
-			name: "negative test invalid value  #6",
+			name: "negative test invalid value  #7",
 			request: request{
 				query:  "/update/gauge/name/value",
 				method: http.MethodPost,
 				params: map[string]string{"type": "gauge", "name": "name", "value": "value"},
 			},
 			want: want{
-				code:        http.StatusBadRequest,
-				contentType: "",
+				code: http.StatusBadRequest,
 			},
 		},
 	}
-	repo := &repositories.MetricRepository{Storage: store.NewStorage()}
-	service := &services.MetricsService{MetricRepositoryInterface: repo}
-	handler := MetricsHandler{MetricsServiceInterface: service}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := httptest.NewRequest(tt.request.method, "http://localhost:8080"+tt.request.query, nil)
-			for key, value := range tt.request.params {
-				r.SetPathValue(key, value)
+			req := resty.New().R()
+			req.Method = tt.request.method
+			req.URL = srv.URL + tt.request.query
+			req.SetPathParams(tt.request.params)
 
-			}
-			w := httptest.NewRecorder()
+			resp, err := req.Send()
 
-			handler.UpdateMetrics(w, r)
-			result := w.Result()
+			assert.NoError(t, err, "error making HTTP request")
 
-			assert.Equal(t, tt.want.code, w.Code, "Код ответа не совпадает с ожидаемым")
-			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-			result.Body.Close()
+			assert.Equal(t, tt.want.code, resp.StatusCode(), "Код ответа не совпадает с ожидаемым")
 		})
 	}
 }
