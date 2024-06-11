@@ -78,5 +78,4 @@ func startReport(send send, metrics <-chan domain.MetricData, wg *sync.WaitGroup
 
 		time.Sleep(reportInterval)
 	}
-
 }
