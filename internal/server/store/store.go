@@ -3,18 +3,20 @@ package store
 import (
 	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"math"
+	"strconv"
 	"sync"
 )
 
 type MemStorage struct {
 	mux  *sync.Mutex
-	data map[string]float64
+	data map[string]string
 }
 
 func NewStorage() *MemStorage {
 	return &MemStorage{
 		mux:  &sync.Mutex{},
-		data: make(map[string]float64),
+		data: make(map[string]string),
 	}
 }
 
@@ -34,6 +36,7 @@ func (s *MemStorage) GetValue(request *domain.MetricRequest) (*domain.MetricResp
 	if !ok {
 		return nil, nil
 	}
+
 	return &domain.MetricResponse{
 		Name:  getName(request),
 		Value: res,
@@ -41,7 +44,14 @@ func (s *MemStorage) GetValue(request *domain.MetricRequest) (*domain.MetricResp
 }
 
 func (s *MemStorage) SetValue(request *domain.MetricRequest) error {
-	s.data[getName(request)] = request.Value
+	if request.Type == domain.GaugeType {
+		gaugeValue := math.Round(request.Value)
+		s.data[getName(request)] = strconv.FormatFloat(gaugeValue, 'f', 2, 64)
+		return nil
+	}
+
+	counterValue := int64(request.Value)
+	s.data[getName(request)] = strconv.FormatInt(counterValue, 10)
 	return nil
 }
 

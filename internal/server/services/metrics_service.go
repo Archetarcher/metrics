@@ -26,7 +26,14 @@ func (s *MetricsService) Update(request *domain.MetricRequest) (*domain.MetricRe
 		}
 	}
 	if response != nil && request.Type == domain.CounterType {
-		request.Value += response.Value
+		i, err := strconv.ParseFloat(response.Value, 64)
+		if err != nil {
+			return nil, &domain.ApplicationError{
+				Code: http.StatusInternalServerError,
+				Text: err.Error(),
+			}
+		}
+		request.Value += i
 	}
 	if err := s.Set(request); err != nil {
 		return nil, &domain.ApplicationError{
@@ -78,7 +85,7 @@ func (s *MetricsService) GetAllValues() (string, *domain.ApplicationError) {
 	page := "<table><tr><th>Name</th><th>Value</th></tr>"
 
 	for _, val := range response {
-		page += "<tr><td>" + val.Name + "</td>" + "<td>" + strconv.FormatFloat(val.Value, 'f', 2, 64) + "</td></tr>"
+		page += "<tr><td>" + val.Name + "</td>" + "<td>" + val.Value + "</td></tr>"
 	}
 
 	page += "</table>"

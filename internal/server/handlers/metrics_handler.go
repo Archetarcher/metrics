@@ -56,7 +56,7 @@ func (h *MetricsHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(strconv.FormatFloat(result.Value, 'f', 2, 64)))
+	w.Write([]byte(result.Value))
 
 }
 func (h *MetricsHandler) GetMetricsPage(w http.ResponseWriter, r *http.Request) {

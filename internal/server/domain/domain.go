@@ -15,6 +15,6 @@ type UpdateResponse struct {
 
 // MetricResponse is a response struct
 type MetricResponse struct {
-	Name  string  `json:"name"`
-	Value float64 `json:"value"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
