@@ -17,7 +17,7 @@ func TestMetricsService_Update(t *testing.T) {
 		name string
 		args args
 		res  *domain.MetricResponse
-		err  *domain.ApplicationError
+		err  *domain.MetricError
 	}{
 		{
 			name: "positive test #1",

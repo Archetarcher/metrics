@@ -13,9 +13,9 @@ type MetricsHandler struct {
 }
 
 type MetricsService interface {
-	Update(request *domain.MetricRequest) (*domain.MetricResponse, *domain.ApplicationError)
-	GetValue(request *domain.MetricRequest) (*domain.MetricResponse, *domain.ApplicationError)
-	GetAllValues() (string, *domain.ApplicationError)
+	Update(request *domain.MetricRequest) (*domain.MetricResponse, *domain.MetricError)
+	GetValue(request *domain.MetricRequest) (*domain.MetricResponse, *domain.MetricError)
+	GetAllValues() (string, *domain.MetricError)
 }
 
 func (h *MetricsHandler) UpdateMetrics(w http.ResponseWriter, r *http.Request) {
@@ -74,11 +74,11 @@ func (h *MetricsHandler) GetMetricsPage(w http.ResponseWriter, r *http.Request) 
 
 }
 
-func validateGetRequest(r *http.Request) (*domain.MetricRequest, *domain.ApplicationError) {
+func validateGetRequest(r *http.Request) (*domain.MetricRequest, *domain.MetricError) {
 	// validate method
 	if r.Method != http.MethodGet {
 
-		return nil, &domain.ApplicationError{
+		return nil, &domain.MetricError{
 			Text: "method not allowed",
 			Code: http.StatusMethodNotAllowed,
 		}
@@ -87,7 +87,7 @@ func validateGetRequest(r *http.Request) (*domain.MetricRequest, *domain.Applica
 	// validate headers
 	for k, v := range domain.AllowedHeaders {
 		if h := r.Header.Get(k); h != v {
-			return nil, &domain.ApplicationError{
+			return nil, &domain.MetricError{
 				Text: "header not allowed",
 				Code: http.StatusBadRequest,
 			}
@@ -99,14 +99,14 @@ func validateGetRequest(r *http.Request) (*domain.MetricRequest, *domain.Applica
 	t := chi.URLParam(r, "type")
 
 	if n == domain.EmptyParam || t == domain.EmptyParam {
-		return nil, &domain.ApplicationError{
+		return nil, &domain.MetricError{
 			Text: "empty param",
 			Code: http.StatusBadRequest,
 		}
 	}
 
 	if !slices.Contains([]string{domain.GaugeType, domain.CounterType}, t) {
-		return nil, &domain.ApplicationError{
+		return nil, &domain.MetricError{
 			Text: "incorrect type",
 			Code: http.StatusBadRequest,
 		}
@@ -117,11 +117,11 @@ func validateGetRequest(r *http.Request) (*domain.MetricRequest, *domain.Applica
 		Type: t,
 	}, nil
 }
-func validateRequest(r *http.Request) (*domain.MetricRequest, *domain.ApplicationError) {
+func validateRequest(r *http.Request) (*domain.MetricRequest, *domain.MetricError) {
 	// validate method
 	if r.Method != http.MethodPost {
 
-		return nil, &domain.ApplicationError{
+		return nil, &domain.MetricError{
 			Text: "method not allowed",
 			Code: http.StatusMethodNotAllowed,
 		}
@@ -130,7 +130,7 @@ func validateRequest(r *http.Request) (*domain.MetricRequest, *domain.Applicatio
 	// validate headers
 	for k, v := range domain.AllowedHeaders {
 		if h := r.Header.Get(k); h != v {
-			return nil, &domain.ApplicationError{
+			return nil, &domain.MetricError{
 				Text: "header not allowed",
 				Code: http.StatusBadRequest,
 			}
@@ -143,21 +143,21 @@ func validateRequest(r *http.Request) (*domain.MetricRequest, *domain.Applicatio
 	v := chi.URLParam(r, "value")
 
 	if n == domain.EmptyParam || t == domain.EmptyParam || v == domain.EmptyParam {
-		return nil, &domain.ApplicationError{
+		return nil, &domain.MetricError{
 			Text: "empty param",
 			Code: http.StatusBadRequest,
 		}
 	}
 
 	if !slices.Contains([]string{domain.GaugeType, domain.CounterType}, t) {
-		return nil, &domain.ApplicationError{
+		return nil, &domain.MetricError{
 			Text: "incorrect type",
 			Code: http.StatusBadRequest,
 		}
 	}
 	value, err := strconv.ParseFloat(v, 64)
 	if err != nil {
-		return nil, &domain.ApplicationError{
+		return nil, &domain.MetricError{
 			Text: "",
 			Code: http.StatusBadRequest,
 		}

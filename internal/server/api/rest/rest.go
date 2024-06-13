@@ -15,7 +15,7 @@ type MetricAPI struct {
 	router chi.Router
 }
 
-func NewAPI(storage *store.MemStorage) MetricAPI {
+func NewMetricAPI(storage *store.MemStorage) MetricAPI {
 	config.ParseConfig()
 
 	r := chi.NewRouter()

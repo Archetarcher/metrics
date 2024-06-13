@@ -13,8 +13,8 @@ type TrackingHandler struct {
 }
 
 type TrackingService interface {
-	Fetch(counterInterval int) ([]domain.MetricData, *domain.ApplicationError)
-	Send(request *domain.MetricData) (*domain.SendResponse, *domain.ApplicationError)
+	Fetch(counterInterval int) ([]domain.MetricData, *domain.TrackingError)
+	Send(request *domain.MetricData) (*domain.SendResponse, *domain.TrackingError)
 }
 
 func (h *TrackingHandler) TrackMetrics() {
@@ -34,8 +34,8 @@ func (h *TrackingHandler) TrackMetrics() {
 	fmt.Println("Done!")
 }
 
-type fetch func(counterInterval int) ([]domain.MetricData, *domain.ApplicationError)
-type send func(request *domain.MetricData) (*domain.SendResponse, *domain.ApplicationError)
+type fetch func(counterInterval int) ([]domain.MetricData, *domain.TrackingError)
+type send func(request *domain.MetricData) (*domain.SendResponse, *domain.TrackingError)
 
 func startPoll(fetch fetch, metrics chan<- domain.MetricData, wg *sync.WaitGroup) {
 	defer wg.Done()

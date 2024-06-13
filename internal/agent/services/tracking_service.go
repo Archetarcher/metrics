@@ -14,7 +14,7 @@ type TrackingService struct {
 	Client *resty.Client
 }
 
-func (s *TrackingService) Fetch(counterInterval int) ([]domain.MetricData, *domain.ApplicationError) {
+func (s *TrackingService) Fetch(counterInterval int) ([]domain.MetricData, *domain.TrackingError) {
 
 	var metrics = make([]domain.MetricData, 0)
 
@@ -41,16 +41,16 @@ func (s *TrackingService) Fetch(counterInterval int) ([]domain.MetricData, *doma
 	return metrics, nil
 }
 
-func (s *TrackingService) Send(request *domain.MetricData) (*domain.SendResponse, *domain.ApplicationError) {
+func (s *TrackingService) Send(request *domain.MetricData) (*domain.SendResponse, *domain.TrackingError) {
 
 	url := fmt.Sprintf("http://%s/update/%s/%s/%f", domain.ServerRunAddr, request.Type, request.Name, request.Value)
 	res, err := s.Client.R().SetHeader("Content-Type", "text/plain").Post(url)
 	if err != nil {
-		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: could not create request: %s\n", err), Code: http.StatusInternalServerError}
+		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err), Code: http.StatusInternalServerError}
 	}
 
 	if res.StatusCode() != http.StatusOK {
-		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: responded with error: %s\n", err), Code: res.StatusCode()}
+		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: responded with error: %s\n", err), Code: res.StatusCode()}
 	}
 	return &domain.SendResponse{Status: http.StatusOK}, nil
 }

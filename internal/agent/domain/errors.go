@@ -1,6 +1,6 @@
 package domain
 
-type ApplicationError struct {
+type TrackingError struct {
 	Text string
 	Code int
 }

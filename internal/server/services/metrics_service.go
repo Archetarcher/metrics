@@ -16,11 +16,11 @@ type MetricRepository interface {
 	Set(request *domain.MetricRequest) error
 }
 
-func (s *MetricsService) Update(request *domain.MetricRequest) (*domain.MetricResponse, *domain.ApplicationError) {
+func (s *MetricsService) Update(request *domain.MetricRequest) (*domain.MetricResponse, *domain.MetricError) {
 
 	response, err := s.Get(request)
 	if err != nil {
-		return nil, &domain.ApplicationError{
+		return nil, &domain.MetricError{
 			Code: http.StatusInternalServerError,
 			Text: err.Error(),
 		}
@@ -28,7 +28,7 @@ func (s *MetricsService) Update(request *domain.MetricRequest) (*domain.MetricRe
 	if response != nil && request.Type == domain.CounterType {
 		i, err := strconv.ParseFloat(response.Value, 64)
 		if err != nil {
-			return nil, &domain.ApplicationError{
+			return nil, &domain.MetricError{
 				Code: http.StatusInternalServerError,
 				Text: err.Error(),
 			}
@@ -36,7 +36,7 @@ func (s *MetricsService) Update(request *domain.MetricRequest) (*domain.MetricRe
 		request.Value += i
 	}
 	if err := s.Set(request); err != nil {
-		return nil, &domain.ApplicationError{
+		return nil, &domain.MetricError{
 			Code: http.StatusInternalServerError,
 			Text: err.Error(),
 		}
@@ -45,17 +45,17 @@ func (s *MetricsService) Update(request *domain.MetricRequest) (*domain.MetricRe
 	fmt.Println(response)
 	return nil, nil
 }
-func (s *MetricsService) GetValue(request *domain.MetricRequest) (*domain.MetricResponse, *domain.ApplicationError) {
+func (s *MetricsService) GetValue(request *domain.MetricRequest) (*domain.MetricResponse, *domain.MetricError) {
 
 	response, err := s.Get(request)
 	if err != nil {
-		return nil, &domain.ApplicationError{
+		return nil, &domain.MetricError{
 			Code: http.StatusInternalServerError,
 			Text: err.Error(),
 		}
 	}
 	if response == nil {
-		return nil, &domain.ApplicationError{
+		return nil, &domain.MetricError{
 			Code: http.StatusNotFound,
 			Text: "value not found",
 		}
@@ -66,18 +66,18 @@ func (s *MetricsService) GetValue(request *domain.MetricRequest) (*domain.Metric
 		Value: response.Value,
 	}, nil
 }
-func (s *MetricsService) GetAllValues() (string, *domain.ApplicationError) {
+func (s *MetricsService) GetAllValues() (string, *domain.MetricError) {
 
 	response, err := s.GetAll()
 
 	if err != nil {
-		return "", &domain.ApplicationError{
+		return "", &domain.MetricError{
 			Code: http.StatusInternalServerError,
 			Text: err.Error(),
 		}
 	}
 	if response == nil {
-		return "", &domain.ApplicationError{
+		return "", &domain.MetricError{
 			Code: http.StatusNotFound,
 			Text: "value not found",
 		}
