@@ -29,8 +29,6 @@ func (h *TrackingHandler) TrackMetrics() {
 	go startPoll(h.Fetch, metrics, &wg)
 	go startReport(h.Send, metrics, &wg)
 
-	//close(metrics)
-
 	fmt.Println("Waiting for goroutines to finish...")
 	wg.Wait()
 	fmt.Println("Done!")
@@ -47,7 +45,8 @@ func startPoll(fetch fetch, metrics chan<- domain.MetricData, wg *sync.WaitGroup
 	for {
 		response, err := fetch(counterInterval)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Errorf(err.Text)
+			return
 		}
 
 		for _, m := range response {
@@ -73,7 +72,8 @@ func startReport(send send, metrics <-chan domain.MetricData, wg *sync.WaitGroup
 
 		response, err := send(&metric)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Errorf(err.Text)
+			return
 		}
 		fmt.Println(response)
 

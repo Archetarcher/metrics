@@ -15,24 +15,24 @@ func TestAPI_Run(t *testing.T) {
 		server *http.ServeMux
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		wantErr bool
+		name         string
+		serverFields fields
+		wantErr      bool
 	}{
 		{
-			name:    "With server defined",
-			fields:  fields{http.NewServeMux()},
-			wantErr: false,
+			name:         "With server defined",
+			serverFields: fields{http.NewServeMux()},
+			wantErr:      false,
 		},
 		{
-			name:    "With no server defined",
-			fields:  fields{},
-			wantErr: true,
+			name:         "With no server defined",
+			serverFields: fields{},
+			wantErr:      true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.fields.server == nil, tt.wantErr)
+			assert.Equal(t, tt.serverFields.server == nil, tt.wantErr)
 		})
 	}
 }

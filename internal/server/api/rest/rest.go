@@ -20,7 +20,6 @@ func NewAPI(storage *store.MemStorage) API {
 
 	r := chi.NewRouter()
 
-	//mux := http.NewServeMux()
 	repo := &repositories.MetricRepository{Storage: storage}
 	service := &services.MetricsService{MetricRepository: repo}
 	handler := handlers.MetricsHandler{MetricsService: service}

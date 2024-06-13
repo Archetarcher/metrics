@@ -6,7 +6,6 @@ import (
 )
 
 func main() {
-
 	storage := store.NewStorage()
 	api := rest.NewAPI(storage)
 	if err := api.Run(); err != nil {
