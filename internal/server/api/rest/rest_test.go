@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -8,7 +9,7 @@ import (
 )
 
 func TestAPI_Run(t *testing.T) {
-	parseFlags()
+	config.ParseConfig()
 
 	type fields struct {
 		server *http.ServeMux

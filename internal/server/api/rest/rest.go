@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
@@ -15,14 +16,14 @@ type API struct {
 }
 
 func NewAPI(storage *store.MemStorage) API {
-	parseFlags()
+	config.ParseConfig()
 
 	r := chi.NewRouter()
 
 	//mux := http.NewServeMux()
 	repo := &repositories.MetricRepository{Storage: storage}
-	service := &services.MetricsService{MetricRepositoryInterface: repo}
-	handler := handlers.MetricsHandler{MetricsServiceInterface: service}
+	service := &services.MetricsService{MetricRepository: repo}
+	handler := handlers.MetricsHandler{MetricsService: service}
 
 	r.Post("/update/{type}/{name}/{value}", handler.UpdateMetrics)
 	r.Get("/value/{type}/{name}", handler.GetMetrics)

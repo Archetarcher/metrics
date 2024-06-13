@@ -11,6 +11,7 @@ import (
 )
 
 type TrackingService struct {
+	Client *resty.Client
 }
 
 func (s *TrackingService) Fetch(counterInterval int) ([]domain.MetricData, *domain.ApplicationError) {
@@ -40,12 +41,10 @@ func (s *TrackingService) Fetch(counterInterval int) ([]domain.MetricData, *doma
 	return metrics, nil
 }
 
-func (s *TrackingService) Send(request *domain.MetricData) (*domain.ServerResponse, *domain.ApplicationError) {
-
-	client := resty.New()
+func (s *TrackingService) Send(request *domain.MetricData) (*domain.SendResponse, *domain.ApplicationError) {
 
 	url := fmt.Sprintf("http://%s/update/%s/%s/%f", domain.ServerRunAddr, request.Type, request.Name, request.Value)
-	res, err := client.R().SetHeader("Content-Type", "text/plain").Post(url)
+	res, err := s.Client.R().SetHeader("Content-Type", "text/plain").Post(url)
 	if err != nil {
 		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: could not create request: %s\n", err), Code: http.StatusInternalServerError}
 	}
@@ -53,7 +52,7 @@ func (s *TrackingService) Send(request *domain.MetricData) (*domain.ServerRespon
 	if res.StatusCode() != http.StatusOK {
 		return nil, &domain.ApplicationError{Text: fmt.Sprintf("client: responded with error: %s\n", err), Code: res.StatusCode()}
 	}
-	return &domain.ServerResponse{Status: http.StatusOK}, nil
+	return &domain.SendResponse{Status: http.StatusOK}, nil
 }
 
 func mapMetricValues() domain.Gauge {

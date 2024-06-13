@@ -8,13 +8,13 @@ import (
 )
 
 type MemStorage struct {
-	mux  *sync.Mutex
+	mux  sync.Mutex
 	data map[string]string
 }
 
 func NewStorage() *MemStorage {
 	return &MemStorage{
-		mux:  &sync.Mutex{},
+		mux:  sync.Mutex{},
 		data: make(map[string]string),
 	}
 }

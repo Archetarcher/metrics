@@ -1,13 +1,13 @@
 package domain
 
-// MetricData is a request struct for services.service.update
+// MetricData is a data struct for metrics
 type MetricData struct {
 	Type  string  `json:"type"`
 	Name  string  `json:"name"`
 	Value float64 `json:"value"`
 }
 
-// ServerResponse is a response struct
-type ServerResponse struct {
+// SendResponse is a response struct for send response
+type SendResponse struct {
 	Status int `json:"status"`
 }

@@ -3,14 +3,11 @@ package main
 import (
 	"github.com/Archetarcher/metrics.git/internal/agent/handlers"
 	"github.com/Archetarcher/metrics.git/internal/agent/services"
+	"github.com/go-resty/resty/v2"
 )
 
 func main() {
-	run()
-}
-
-func run() {
-	service := &services.TrackingService{}
-	handler := handlers.TrackingHandler{TrackingServiceInterface: service}
-	handler.StartTracking()
+	service := &services.TrackingService{Client: resty.New()}
+	handler := handlers.TrackingHandler{TrackingService: service}
+	handler.TrackMetrics()
 }

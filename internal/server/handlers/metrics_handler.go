@@ -9,10 +9,10 @@ import (
 )
 
 type MetricsHandler struct {
-	MetricsServiceInterface
+	MetricsService
 }
 
-type MetricsServiceInterface interface {
+type MetricsService interface {
 	Update(request *domain.MetricRequest) (*domain.MetricResponse, *domain.ApplicationError)
 	GetValue(request *domain.MetricRequest) (*domain.MetricResponse, *domain.ApplicationError)
 	GetAllValues() (string, *domain.ApplicationError)

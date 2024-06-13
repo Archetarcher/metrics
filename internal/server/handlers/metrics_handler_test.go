@@ -14,8 +14,8 @@ import (
 
 func TestMetricsHandler_UpdateMetrics(t *testing.T) {
 	repo := &repositories.MetricRepository{Storage: store.NewStorage()}
-	service := &services.MetricsService{MetricRepositoryInterface: repo}
-	handler := MetricsHandler{MetricsServiceInterface: service}
+	service := &services.MetricsService{MetricRepository: repo}
+	handler := MetricsHandler{MetricsService: service}
 	r := chi.NewRouter()
 	r.Post("/update/{type}/{name}/{value}", handler.UpdateMetrics)
 

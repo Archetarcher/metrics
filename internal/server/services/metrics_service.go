@@ -8,9 +8,9 @@ import (
 )
 
 type MetricsService struct {
-	MetricRepositoryInterface
+	MetricRepository
 }
-type MetricRepositoryInterface interface {
+type MetricRepository interface {
 	GetAll() ([]domain.MetricResponse, error)
 	Get(request *domain.MetricRequest) (*domain.MetricResponse, error)
 	Set(request *domain.MetricRequest) error

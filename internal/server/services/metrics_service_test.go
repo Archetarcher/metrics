@@ -27,7 +27,7 @@ func TestMetricsService_Update(t *testing.T) {
 		},
 	}
 	repo := &repositories.MetricRepository{Storage: store.NewStorage()}
-	service := &MetricsService{MetricRepositoryInterface: repo}
+	service := &MetricsService{MetricRepository: repo}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := service.Update(tt.args.request)

@@ -2,22 +2,23 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"sync"
 	"time"
 )
 
 type TrackingHandler struct {
-	TrackingServiceInterface
+	TrackingService
 }
 
-type TrackingServiceInterface interface {
+type TrackingService interface {
 	Fetch(counterInterval int) ([]domain.MetricData, *domain.ApplicationError)
-	Send(request *domain.MetricData) (*domain.ServerResponse, *domain.ApplicationError)
+	Send(request *domain.MetricData) (*domain.SendResponse, *domain.ApplicationError)
 }
 
-func (h *TrackingHandler) StartTracking() {
-	parseFlags()
+func (h *TrackingHandler) TrackMetrics() {
+	config.ParseConfig()
 
 	fmt.Println("start tracking")
 
@@ -36,7 +37,7 @@ func (h *TrackingHandler) StartTracking() {
 }
 
 type fetch func(counterInterval int) ([]domain.MetricData, *domain.ApplicationError)
-type send func(request *domain.MetricData) (*domain.ServerResponse, *domain.ApplicationError)
+type send func(request *domain.MetricData) (*domain.SendResponse, *domain.ApplicationError)
 
 func startPoll(fetch fetch, metrics chan<- domain.MetricData, wg *sync.WaitGroup) {
 	defer wg.Done()

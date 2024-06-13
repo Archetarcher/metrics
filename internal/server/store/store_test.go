@@ -85,7 +85,7 @@ func TestNewStorage(t *testing.T) {
 		{
 			name: "positive test #1",
 			want: &MemStorage{
-				mux:  &sync.Mutex{},
+				mux:  sync.Mutex{},
 				data: make(map[string]string),
 			},
 		},
