@@ -11,11 +11,11 @@ import (
 	"net/http"
 )
 
-type API struct {
+type MetricAPI struct {
 	router chi.Router
 }
 
-func NewAPI(storage *store.MemStorage) API {
+func NewAPI(storage *store.MemStorage) MetricAPI {
 	config.ParseConfig()
 
 	r := chi.NewRouter()
@@ -27,11 +27,11 @@ func NewAPI(storage *store.MemStorage) API {
 	r.Post("/update/{type}/{name}/{value}", handler.UpdateMetrics)
 	r.Get("/value/{type}/{name}", handler.GetMetrics)
 	r.Get("/", handler.GetMetricsPage)
-	return API{
+	return MetricAPI{
 		router: r,
 	}
 }
 
-func (a API) Run() error {
+func (a MetricAPI) Run() error {
 	return http.ListenAndServe(domain.RunAddr, a.router)
 }
