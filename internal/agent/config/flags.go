@@ -16,5 +16,4 @@ func parseFlags() {
 	flag.IntVar(&domain.ReportInterval, flagReportIntervalName, 10, "interval in seconds for report to server")
 	flag.IntVar(&domain.PollInterval, flagPollIntervalName, 2, "interval in seconds for poll ")
 	flag.Parse()
-
 }

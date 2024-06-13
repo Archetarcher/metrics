@@ -10,9 +10,7 @@ const (
 )
 
 func parseEnv() {
-
 	if envRunAddr := os.Getenv(envRunAddrName); envRunAddr != "" {
 		domain.RunAddr = envRunAddr
 	}
-
 }
