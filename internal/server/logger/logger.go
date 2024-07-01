@@ -2,8 +2,20 @@ package logger
 
 import (
 	"net/http"
+	"time"
 
 	"go.uber.org/zap"
+)
+
+type (
+	responseData struct {
+		status int
+		size   int
+	}
+	loggerResponseWriter struct {
+		http.ResponseWriter
+		responseData *responseData
+	}
 )
 
 // Log будет доступен всему коду как синглтон.
@@ -27,12 +39,39 @@ func Initialize(level string) error {
 }
 
 // RequestLogger — middleware-логер для входящих HTTP-запросов.
-func RequestLogger(h http.HandlerFunc) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		Log.Debug("got incoming HTTP request",
+func RequestLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		responseData := &responseData{
+			status: 0,
+			size:   0,
+		}
+		lw := loggerResponseWriter{
+			ResponseWriter: rw,
+			responseData:   responseData,
+		}
+		next.ServeHTTP(&lw, r.WithContext(r.Context()))
+
+		duration := time.Since(start)
+
+		Log.Info("got incoming HTTP request",
+			zap.String("uri", r.RequestURI),
 			zap.String("method", r.Method),
-			zap.String("path", r.URL.Path),
+			zap.Int("status", responseData.status),
+			zap.Duration("duration", duration),
+			zap.Int("size", responseData.size),
 		)
-		h(w, r)
 	})
+}
+
+func (r *loggerResponseWriter) Write(b []byte) (int, error) {
+	size, err := r.ResponseWriter.Write(b)
+	r.responseData.size += size // захватываем размер
+	return size, err
+}
+
+func (r *loggerResponseWriter) WriteHeader(statusCode int) {
+	r.ResponseWriter.WriteHeader(statusCode)
+	r.responseData.status = statusCode // захватываем код статуса
 }
