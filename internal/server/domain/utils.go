@@ -7,7 +7,8 @@ const (
 )
 
 var (
-	RunAddr string
+	RunAddr  string
+	LogLevel string
 )
 var AllowedHeaders = map[string]string{
 	//"Content-Type": "text/plain",

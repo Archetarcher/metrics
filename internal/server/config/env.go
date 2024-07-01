@@ -6,11 +6,15 @@ import (
 )
 
 const (
-	envRunAddrName = "ADDRESS"
+	envRunAddrName  = "ADDRESS"
+	envLogLevelName = "LOG_LEVEL"
 )
 
 func parseEnv() {
 	if envRunAddr := os.Getenv(envRunAddrName); envRunAddr != "" {
 		domain.RunAddr = envRunAddr
+	}
+	if envLogLevel := os.Getenv(envLogLevelName); envLogLevel != "" {
+		domain.LogLevel = envLogLevel
 	}
 }
