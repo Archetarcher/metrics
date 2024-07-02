@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/models"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"github.com/stretchr/testify/assert"
@@ -11,18 +11,19 @@ import (
 func TestMetricsService_Update(t *testing.T) {
 
 	type args struct {
-		request *domain.MetricRequest
+		request *models.Metrics
 	}
+	i := float64(1)
 	tests := []struct {
 		name string
 		args args
-		res  *domain.MetricResponse
-		err  *domain.MetricError
+		res  *models.Metrics
+		err  *models.MetricError
 	}{
 		{
 			name: "positive test #1",
-			args: args{request: &domain.MetricRequest{Type: "gauge", Name: "test", Value: 1}},
-			res:  nil,
+			args: args{request: &models.Metrics{MType: "gauge", ID: "test", Value: &i}},
+			res:  &models.Metrics{MType: "gauge", ID: "test", Value: &i},
 			err:  nil,
 		},
 	}

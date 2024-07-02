@@ -1,6 +1,8 @@
 package logger
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -74,4 +76,17 @@ func (r *loggerResponseWriter) Write(b []byte) (int, error) {
 func (r *loggerResponseWriter) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
 	r.responseData.status = statusCode // захватываем код статуса
+}
+
+func LogData(message string, data interface{}) {
+	var buf bytes.Buffer
+
+	jsonEncoder := json.NewEncoder(&buf)
+	if err := jsonEncoder.Encode(data); err != nil {
+		Log.Debug("error encoding response", zap.Error(err))
+		return
+	}
+
+	Log.Info(message, zap.Any("data", json.RawMessage(buf.Bytes())))
+
 }

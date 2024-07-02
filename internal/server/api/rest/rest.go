@@ -2,9 +2,9 @@ package rest
 
 import (
 	"github.com/Archetarcher/metrics.git/internal/server/config"
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
+	"github.com/Archetarcher/metrics.git/internal/server/models"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
@@ -22,7 +22,7 @@ func NewMetricAPI(storage *store.MemStorage) (*MetricAPI, error) {
 
 	r := chi.NewRouter()
 
-	if err := logger.Initialize(domain.LogLevel); err != nil {
+	if err := logger.Initialize(models.LogLevel); err != nil {
 		return nil, err
 	}
 	r.Use(logger.RequestLogger)
@@ -34,6 +34,9 @@ func NewMetricAPI(storage *store.MemStorage) (*MetricAPI, error) {
 	r.Post("/update/{type}/{name}/{value}", handler.UpdateMetrics)
 	r.Get("/value/{type}/{name}", handler.GetMetrics)
 	r.Get("/", handler.GetMetricsPage)
+
+	r.Post("/update/", handler.UpdateMetricsJSON)
+	r.Post("/value/", handler.GetMetricsJSON)
 	return &MetricAPI{
 		router: r,
 	}, nil
@@ -41,6 +44,6 @@ func NewMetricAPI(storage *store.MemStorage) (*MetricAPI, error) {
 
 func (a MetricAPI) Run() error {
 
-	logger.Log.Info("Running server ", zap.String("address", domain.RunAddr))
-	return http.ListenAndServe(domain.RunAddr, a.router)
+	logger.Log.Info("Running server ", zap.String("address", models.RunAddr))
+	return http.ListenAndServe(models.RunAddr, a.router)
 }

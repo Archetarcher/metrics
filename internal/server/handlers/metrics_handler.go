@@ -1,9 +1,13 @@
 package handlers
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"encoding/json"
+	"github.com/Archetarcher/metrics.git/internal/server/logger"
+	"github.com/Archetarcher/metrics.git/internal/server/models"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 	"net/http"
+	"reflect"
 	"slices"
 	"strconv"
 )
@@ -13,13 +17,12 @@ type MetricsHandler struct {
 }
 
 type MetricsService interface {
-	Update(request *domain.MetricRequest) (*domain.MetricResponse, *domain.MetricError)
-	GetValue(request *domain.MetricRequest) (*domain.MetricResponse, *domain.MetricError)
-	GetAllValues() (string, *domain.MetricError)
+	Update(request *models.Metrics) (*models.Metrics, *models.MetricError)
+	GetValue(request *models.Metrics) (*models.Metrics, *models.MetricError)
+	GetAllValues() (string, *models.MetricError)
 }
 
 func (h *MetricsHandler) UpdateMetrics(w http.ResponseWriter, r *http.Request) {
-
 	// validate
 	request, err := validateRequest(r)
 	if err != nil {
@@ -36,7 +39,6 @@ func (h *MetricsHandler) UpdateMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-
 }
 func (h *MetricsHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 
@@ -54,9 +56,62 @@ func (h *MetricsHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Text))
 		return
 	}
+	value := models.GetStringValue(result)
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(result.Value))
+	w.Write([]byte(value))
+
+}
+
+func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Request) {
+	// validate
+	request, err := validateRequest(r)
+	logger.LogData("update request data received", request)
+
+	enc := json.NewEncoder(w)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err != nil {
+		w.WriteHeader(err.Code)
+		sendJson(enc, err)
+		return
+	}
+
+	response, err := h.Update(request)
+
+	if err != nil {
+		w.WriteHeader(err.Code)
+		sendJson(enc, err)
+		return
+	}
+
+	sendJson(enc, response)
+	w.WriteHeader(http.StatusOK)
+}
+func (h *MetricsHandler) GetMetricsJSON(w http.ResponseWriter, r *http.Request) {
+
+	// validate
+	request, err := validateGetRequest(r)
+
+	enc := json.NewEncoder(w)
+	w.Header().Set("Content-Type", "application/json")
+
+	if err != nil {
+		w.WriteHeader(err.Code)
+		sendJson(enc, err)
+		return
+	}
+
+	response, err := h.GetValue(request)
+	if err != nil {
+		w.WriteHeader(err.Code)
+		sendJson(enc, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	sendJson(enc, response)
 
 }
 func (h *MetricsHandler) GetMetricsPage(w http.ResponseWriter, r *http.Request) {
@@ -74,20 +129,12 @@ func (h *MetricsHandler) GetMetricsPage(w http.ResponseWriter, r *http.Request) 
 
 }
 
-func validateGetRequest(r *http.Request) (*domain.MetricRequest, *domain.MetricError) {
-	// validate method
-	if r.Method != http.MethodGet {
-
-		return nil, &domain.MetricError{
-			Text: "method not allowed",
-			Code: http.StatusMethodNotAllowed,
-		}
-	}
+func validateGetRequest(r *http.Request) (*models.Metrics, *models.MetricError) {
 
 	// validate headers
-	for k, v := range domain.AllowedHeaders {
+	for k, v := range models.AllowedHeaders {
 		if h := r.Header.Get(k); h != v {
-			return nil, &domain.MetricError{
+			return nil, &models.MetricError{
 				Text: "header not allowed",
 				Code: http.StatusBadRequest,
 			}
@@ -95,77 +142,123 @@ func validateGetRequest(r *http.Request) (*domain.MetricRequest, *domain.MetricE
 	}
 
 	// validate params
+	var metrics models.Metrics
+
 	n := chi.URLParam(r, "name")
 	t := chi.URLParam(r, "type")
 
-	if n == domain.EmptyParam || t == domain.EmptyParam {
-		return nil, &domain.MetricError{
+	metrics.ID = n
+	metrics.MType = t
+
+	if reflect.DeepEqual(metrics, models.Metrics{}) {
+		dec := json.NewDecoder(r.Body)
+		if err := dec.Decode(&metrics); err != nil {
+			logger.Log.Info("cannot decode request JSON body", zap.Error(err))
+			return nil, &models.MetricError{
+				Text: "cannot decode request JSON body",
+				Code: http.StatusInternalServerError,
+			}
+		}
+	}
+
+	if metrics.ID == models.EmptyParam || metrics.MType == models.EmptyParam {
+		return nil, &models.MetricError{
 			Text: "empty param",
 			Code: http.StatusBadRequest,
 		}
 	}
 
-	if !slices.Contains([]string{domain.GaugeType, domain.CounterType}, t) {
-		return nil, &domain.MetricError{
+	if !slices.Contains([]string{models.GaugeType, models.CounterType}, metrics.MType) {
+		return nil, &models.MetricError{
 			Text: "incorrect type",
 			Code: http.StatusBadRequest,
 		}
 	}
 
-	return &domain.MetricRequest{
-		Name: n,
-		Type: t,
-	}, nil
+	return &metrics, nil
 }
-func validateRequest(r *http.Request) (*domain.MetricRequest, *domain.MetricError) {
+func validateRequest(r *http.Request) (*models.Metrics, *models.MetricError) {
 	// validate method
 	if r.Method != http.MethodPost {
 
-		return nil, &domain.MetricError{
+		return nil, &models.MetricError{
 			Text: "method not allowed",
 			Code: http.StatusMethodNotAllowed,
 		}
 	}
 
 	// validate headers
-	for k, v := range domain.AllowedHeaders {
+	for k, v := range models.AllowedHeaders {
 		if h := r.Header.Get(k); h != v {
-			return nil, &domain.MetricError{
+			return nil, &models.MetricError{
 				Text: "header not allowed",
 				Code: http.StatusBadRequest,
 			}
 		}
 	}
-
 	// validate params
+	var metrics models.Metrics
+
 	n := chi.URLParam(r, "name")
 	t := chi.URLParam(r, "type")
 	v := chi.URLParam(r, "value")
 
-	if n == domain.EmptyParam || t == domain.EmptyParam || v == domain.EmptyParam {
-		return nil, &domain.MetricError{
+	metrics.ID = n
+	metrics.MType = t
+
+	if t == models.GaugeType {
+		value, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return nil, &models.MetricError{
+				Text: "",
+				Code: http.StatusBadRequest,
+			}
+		}
+		metrics.Value = &value
+	}
+
+	if t == models.CounterType {
+		value, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, &models.MetricError{
+				Text: "",
+				Code: http.StatusBadRequest,
+			}
+		}
+		metrics.Delta = &value
+	}
+
+	if reflect.DeepEqual(metrics, models.Metrics{}) {
+		dec := json.NewDecoder(r.Body)
+		if err := dec.Decode(&metrics); err != nil {
+			logger.Log.Info("cannot decode request JSON body", zap.Error(err))
+			return nil, &models.MetricError{
+				Text: "cannot decode request JSON body",
+				Code: http.StatusInternalServerError,
+			}
+		}
+	}
+
+	if metrics.ID == models.EmptyParam || metrics.MType == models.EmptyParam || ((metrics.MType == models.GaugeType && metrics.Value == nil) || (metrics.MType == models.CounterType && metrics.Delta == nil)) {
+		return nil, &models.MetricError{
 			Text: "empty param",
 			Code: http.StatusBadRequest,
 		}
 	}
 
-	if !slices.Contains([]string{domain.GaugeType, domain.CounterType}, t) {
-		return nil, &domain.MetricError{
+	if !slices.Contains([]string{models.GaugeType, models.CounterType}, metrics.MType) {
+		return nil, &models.MetricError{
 			Text: "incorrect type",
 			Code: http.StatusBadRequest,
 		}
 	}
-	value, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return nil, &domain.MetricError{
-			Text: "",
-			Code: http.StatusBadRequest,
-		}
-	}
 
-	return &domain.MetricRequest{
-		Name:  n,
-		Type:  t,
-		Value: value,
-	}, nil
+	return &metrics, nil
+}
+
+func sendJson(enc *json.Encoder, data interface{}) {
+	if err := enc.Encode(data); err != nil {
+		logger.Log.Debug("error encoding response", zap.Error(err))
+		return
+	}
 }

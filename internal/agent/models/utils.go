@@ -1,4 +1,4 @@
-package domain
+package models
 
 type Gauge struct {
 	Alloc,
@@ -45,4 +45,5 @@ var (
 	ServerRunAddr  string
 	ReportInterval int
 	PollInterval   int
+	LogLevel       string
 )

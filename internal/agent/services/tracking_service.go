@@ -2,7 +2,8 @@ package services
 
 import (
 	"fmt"
-	"github.com/Archetarcher/metrics.git/internal/agent/domain"
+	"github.com/Archetarcher/metrics.git/internal/agent/logger"
+	"github.com/Archetarcher/metrics.git/internal/agent/models"
 	"github.com/go-resty/resty/v2"
 	"math/rand"
 	"net/http"
@@ -14,50 +15,52 @@ type TrackingService struct {
 	Client *resty.Client
 }
 
-func (s *TrackingService) Fetch(counterInterval int) ([]domain.MetricData, *domain.TrackingError) {
+func (s *TrackingService) Fetch(counterInterval int64) ([]models.Metrics, *models.TrackingError) {
 
-	var metrics = make([]domain.MetricData, 0)
+	var metrics = make([]models.Metrics, 0)
 
 	var gauge = mapMetricValues()
 
+	metrics = append(metrics, models.Metrics{
+		ID:    models.CounterMetric,
+		MType: models.CounterType,
+		Delta: &counterInterval,
+	})
 	values := reflect.ValueOf(gauge)
 	types := values.Type()
 	for i := 0; i < values.NumField(); i++ {
 		name := types.Field(i).Name
-		field := values.FieldByName(name)
+		field := values.FieldByName(name).Float()
 
-		metrics = append(metrics, domain.MetricData{
-			Name:  name,
-			Type:  domain.GaugeType,
-			Value: field.Float(),
+		metrics = append(metrics, models.Metrics{
+			ID:    name,
+			MType: models.GaugeType,
+			Value: &field,
 		})
 	}
 
-	metrics = append(metrics, domain.MetricData{
-		Name:  domain.CounterMetric,
-		Type:  domain.CounterType,
-		Value: float64(counterInterval),
-	})
 	return metrics, nil
 }
 
-func (s *TrackingService) Send(request *domain.MetricData) (*domain.SendResponse, *domain.TrackingError) {
+func (s *TrackingService) Send(request *models.Metrics) (*models.SendResponse, *models.TrackingError) {
 
-	url := fmt.Sprintf("http://%s/update/%s/%s/%f", domain.ServerRunAddr, request.Type, request.Name, request.Value)
-	res, err := s.Client.R().SetHeader("Content-Type", "text/plain").Post(url)
+	url := fmt.Sprintf("http://%s/update/", models.ServerRunAddr)
+	logger.LogData("send update request ", request)
+
+	res, err := s.Client.R().SetHeader("Content-Type", "Content-Type: application/json").SetBody(request).Post(url)
 	if err != nil {
-		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err), Code: http.StatusInternalServerError}
+		return nil, &models.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err), Code: http.StatusInternalServerError}
 	}
 
 	if res.StatusCode() != http.StatusOK {
-		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: responded with error: %s\n", err), Code: res.StatusCode()}
+		return nil, &models.TrackingError{Text: fmt.Sprintf("client: responded with error: %s\n", err), Code: res.StatusCode()}
 	}
-	return &domain.SendResponse{Status: http.StatusOK}, nil
+	return &models.SendResponse{Status: http.StatusOK}, nil
 }
 
-func mapMetricValues() domain.Gauge {
+func mapMetricValues() models.Gauge {
 	var rtm runtime.MemStats
-	var gauge domain.Gauge
+	var gauge models.Gauge
 
 	runtime.ReadMemStats(&rtm)
 	gauge.Alloc = float64(rtm.Alloc)
