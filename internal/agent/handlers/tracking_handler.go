@@ -68,7 +68,6 @@ func startPoll(fetch fetch, metrics chan<- models.Metrics, wg *sync.WaitGroup) {
 func startReport(send send, metrics <-chan models.Metrics, wg *sync.WaitGroup) {
 	defer wg.Done()
 	fmt.Println("starting report")
-
 	var reportInterval = time.Duration(models.ReportInterval) * time.Second
 
 	for metric := range metrics {
