@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
-	"github.com/Archetarcher/metrics.git/internal/agent/domain"
+	"github.com/Archetarcher/metrics.git/internal/agent/logger"
+	"github.com/Archetarcher/metrics.git/internal/agent/models"
+	"reflect"
 	"sync"
 	"time"
 )
@@ -13,68 +14,72 @@ type TrackingHandler struct {
 }
 
 type TrackingService interface {
-	Fetch(counterInterval int) ([]domain.MetricData, *domain.TrackingError)
-	Send(request *domain.MetricData) (*domain.SendResponse, *domain.TrackingError)
+	Fetch(counterInterval int64, metrics *models.MetricsData) *models.TrackingError
+	Send(request *models.Metrics) (*models.SendResponse, *models.TrackingError)
 }
 
-func (h *TrackingHandler) TrackMetrics() {
+func (h *TrackingHandler) TrackMetrics() error {
 	config.ParseConfig()
 
-	fmt.Println("start tracking")
+	if err := logger.Initialize(models.LogLevel); err != nil {
+		return err
+	}
+	logger.Log.Info("start tracking")
 
 	var wg sync.WaitGroup
-	metrics := make(chan domain.MetricData)
+	metrics := models.MetricsData{}
 	wg.Add(2)
 
-	go startPoll(h.Fetch, metrics, &wg)
-	go startReport(h.Send, metrics, &wg)
+	go startPoll(h.Fetch, &metrics, &wg)
+	go startReport(h.Send, &metrics, &wg)
 
-	fmt.Println("Waiting for goroutines to finish...")
+	logger.Log.Info("Waiting for goroutines to finish...")
+
 	wg.Wait()
-	fmt.Println("Done!")
+	logger.Log.Info("Done!")
+	return nil
 }
 
-type fetch func(counterInterval int) ([]domain.MetricData, *domain.TrackingError)
-type send func(request *domain.MetricData) (*domain.SendResponse, *domain.TrackingError)
+type fetch func(counterInterval int64, metrics *models.MetricsData) *models.TrackingError
+type send func(request *models.Metrics) (*models.SendResponse, *models.TrackingError)
 
-func startPoll(fetch fetch, metrics chan<- domain.MetricData, wg *sync.WaitGroup) {
+func startPoll(fetch fetch, metrics *models.MetricsData, wg *sync.WaitGroup) {
 	defer wg.Done()
-	var pollInterval = time.Duration(domain.PollInterval) * time.Second
-	counterInterval := 1
-	fmt.Println("starting poll")
+	var pollInterval = time.Duration(models.PollInterval) * time.Second
+	counterInterval := int64(1)
+	logger.Log.Info("starting poll")
 	for {
-		response, err := fetch(counterInterval)
+		err := fetch(counterInterval, metrics)
 		if err != nil {
-			fmt.Println(err)
+			logger.Log.Error(err.Text)
 		}
 
-		for _, m := range response {
-			fmt.Println("write to chan")
-			fmt.Println(m)
-			metrics <- m
-		}
 		counterInterval++
 
 		time.Sleep(pollInterval)
 	}
 }
 
-func startReport(send send, metrics <-chan domain.MetricData, wg *sync.WaitGroup) {
+func startReport(send send, metrics *models.MetricsData, wg *sync.WaitGroup) {
 	defer wg.Done()
-	fmt.Println("starting report")
 
-	var reportInterval = time.Duration(domain.ReportInterval) * time.Second
+	logger.Log.Info("starting report")
 
-	for metric := range metrics {
-		fmt.Println("reading from chan")
-		fmt.Println(metric)
+	var reportInterval = time.Duration(models.ReportInterval) * time.Second
+	for {
 
-		response, err := send(&metric)
-		if err != nil {
-			fmt.Println(err)
+		values := reflect.ValueOf(metrics).Elem()
+		for i := 0; i < values.NumField(); i++ {
+			field := values.Field(i)
+
+			request := field.Interface().(models.Metrics)
+			_, err := send(&request)
+			if err != nil {
+				logger.Log.Error(err.Text)
+			}
 		}
-		fmt.Println(response)
-
 		time.Sleep(reportInterval)
+
 	}
+
 }

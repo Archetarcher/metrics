@@ -1,16 +1,20 @@
 package config
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/models"
 	"os"
 )
 
 const (
-	envRunAddrName = "ADDRESS"
+	envRunAddrName  = "ADDRESS"
+	envLogLevelName = "LOG_LEVEL"
 )
 
 func parseEnv() {
 	if envRunAddr := os.Getenv(envRunAddrName); envRunAddr != "" {
-		domain.RunAddr = envRunAddr
+		models.RunAddr = envRunAddr
+	}
+	if envLogLevel := os.Getenv(envLogLevelName); envLogLevel != "" {
+		models.LogLevel = envLogLevel
 	}
 }

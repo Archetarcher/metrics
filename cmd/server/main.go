@@ -7,7 +7,12 @@ import (
 
 func main() {
 	storage := store.NewStorage()
-	api := rest.NewMetricAPI(storage)
+	api, err := rest.NewMetricAPI(storage)
+
+	if err != nil {
+		panic(err)
+	}
+
 	if err := api.Run(); err != nil {
 		panic(err)
 	}
