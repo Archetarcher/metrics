@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"github.com/Archetarcher/metrics.git/internal/server/compression"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
@@ -25,7 +26,8 @@ func NewMetricAPI(storage *store.MemStorage) (*MetricAPI, error) {
 	if err := logger.Initialize(models.LogLevel); err != nil {
 		return nil, err
 	}
-	r.Use(logger.RequestLogger)
+	r.Use(compression.GzipMiddleware)
+	r.Use(logger.RequestLoggerMiddleware)
 
 	repo := &repositories.MetricRepository{Storage: storage}
 	service := &services.MetricsService{MetricRepository: repo}

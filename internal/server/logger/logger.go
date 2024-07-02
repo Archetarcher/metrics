@@ -38,8 +38,8 @@ func Initialize(level string) error {
 	return nil
 }
 
-// RequestLogger — middleware-логер для входящих HTTP-запросов.
-func RequestLogger(next http.Handler) http.Handler {
+// RequestLoggerMiddleware — middleware-логер для входящих HTTP-запросов.
+func RequestLoggerMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 

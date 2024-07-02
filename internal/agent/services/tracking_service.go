@@ -1,6 +1,9 @@
 package services
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/agent/models"
 	"github.com/go-resty/resty/v2"
@@ -20,11 +23,23 @@ func (s *TrackingService) Fetch(counterInterval int64, metrics *models.MetricsDa
 
 func (s *TrackingService) Send(request *models.Metrics) (*models.SendResponse, *models.TrackingError) {
 
+	buf := bytes.NewBuffer(nil)
+	zb := gzip.NewWriter(buf)
+	js, err := json.Marshal(request)
+	if err != nil {
+		return nil, &models.TrackingError{Text: fmt.Sprintf("error marshal json: %s\n", err), Code: http.StatusInternalServerError}
+	}
+	_, err = zb.Write(js)
+	err = zb.Close()
+	if err != nil {
+		return nil, &models.TrackingError{Text: fmt.Sprintf("error compression: %s\n", err), Code: http.StatusInternalServerError}
+	}
+
 	url := fmt.Sprintf("http://%s/update/", models.ServerRunAddr)
 
-	res, err := s.Client.R().SetHeader("Content-Type", "Content-Type: application/json").SetBody(request).Post(url)
+	res, err := s.Client.R().SetHeaders(models.ClientHeaders).SetBody(buf).Post(url)
 	if err != nil {
-		return nil, &models.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err), Code: http.StatusInternalServerError}
+		return nil, &models.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err.Error()), Code: http.StatusInternalServerError}
 	}
 
 	if res.StatusCode() != http.StatusOK {

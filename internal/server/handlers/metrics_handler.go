@@ -74,7 +74,6 @@ func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Reques
 	request, err := validateRequest(r)
 
 	enc := json.NewEncoder(w)
-
 	w.Header().Set("Content-Type", "application/json")
 
 	if err != nil {
@@ -84,7 +83,6 @@ func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Reques
 	}
 
 	response, err := h.Update(request)
-
 	if err != nil {
 		w.WriteHeader(err.Code)
 		sendResponse(enc, err)
@@ -95,7 +93,6 @@ func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 }
 func (h *MetricsHandler) GetMetricsJSON(w http.ResponseWriter, r *http.Request) {
-
 	// validate
 	request, err := validateGetRequest(r)
 
@@ -115,8 +112,8 @@ func (h *MetricsHandler) GetMetricsJSON(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	sendResponse(enc, response)
+	w.WriteHeader(http.StatusOK)
 
 }
 func (h *MetricsHandler) GetMetricsPage(w http.ResponseWriter, r *http.Request) {

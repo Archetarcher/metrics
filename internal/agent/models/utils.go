@@ -103,3 +103,8 @@ var (
 	PollInterval   int
 	LogLevel       string
 )
+
+var ClientHeaders = map[string]string{
+	"Content-Type":     "Content-Type: application/json",
+	"Content-Encoding": "gzip",
+}

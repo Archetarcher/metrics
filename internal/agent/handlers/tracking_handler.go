@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/logger"
 	"github.com/Archetarcher/metrics.git/internal/agent/models"
@@ -73,6 +74,8 @@ func startReport(send send, metrics *models.MetricsData, wg *sync.WaitGroup) {
 			field := values.Field(i)
 
 			request := field.Interface().(models.Metrics)
+			fmt.Println("request")
+			fmt.Println(request)
 			_, err := send(&request)
 			if err != nil {
 				logger.Log.Error(err.Text)
