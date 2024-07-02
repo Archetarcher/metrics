@@ -133,16 +133,6 @@ func (h *MetricsHandler) GetMetricsPage(w http.ResponseWriter, r *http.Request) 
 
 func validateGetRequest(r *http.Request) (*models.Metrics, *models.MetricError) {
 
-	// validate headers
-	for k, v := range models.AllowedHeaders {
-		if h := r.Header.Get(k); h != v {
-			return nil, &models.MetricError{
-				Text: "header not allowed",
-				Code: http.StatusBadRequest,
-			}
-		}
-	}
-
 	// validate params
 	var metrics models.Metrics
 
@@ -189,15 +179,6 @@ func validateRequest(r *http.Request) (*models.Metrics, *models.MetricError) {
 		}
 	}
 
-	// validate headers
-	for k, v := range models.AllowedHeaders {
-		if h := r.Header.Get(k); h != v {
-			return nil, &models.MetricError{
-				Text: "header not allowed",
-				Code: http.StatusBadRequest,
-			}
-		}
-	}
 	// validate params
 	var metrics models.Metrics
 

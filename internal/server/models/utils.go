@@ -9,12 +9,12 @@ const (
 )
 
 var (
-	RunAddr  string
-	LogLevel string
+	RunAddr         string
+	LogLevel        string
+	FileStoragePath string
+	StoreInterval   int
+	Restore         bool
 )
-var AllowedHeaders = map[string]string{
-	//"Content-Type": "text/plain",
-}
 
 func GetStringValue(result *Metrics) string {
 	value := ""

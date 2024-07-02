@@ -2,7 +2,6 @@ package rest
 
 import (
 	"github.com/Archetarcher/metrics.git/internal/server/compression"
-	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/models"
@@ -19,8 +18,6 @@ type MetricAPI struct {
 }
 
 func NewMetricAPI(storage *store.MemStorage) (*MetricAPI, error) {
-	config.ParseConfig()
-
 	r := chi.NewRouter()
 
 	if err := logger.Initialize(models.LogLevel); err != nil {
