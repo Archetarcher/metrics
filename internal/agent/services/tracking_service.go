@@ -23,21 +23,14 @@ func (s *TrackingService) Fetch(counterInterval int64, metrics *models.MetricsDa
 
 func (s *TrackingService) Send(request *models.Metrics) (*models.SendResponse, *models.TrackingError) {
 
-	buf := bytes.NewBuffer(nil)
-	zb := gzip.NewWriter(buf)
-	js, err := json.Marshal(request)
-	if err != nil {
-		return nil, &models.TrackingError{Text: fmt.Sprintf("error marshal json: %s\n", err), Code: http.StatusInternalServerError}
-	}
-	_, err = zb.Write(js)
-	err = zb.Close()
-	if err != nil {
-		return nil, &models.TrackingError{Text: fmt.Sprintf("error compression: %s\n", err), Code: http.StatusInternalServerError}
-	}
-
 	url := fmt.Sprintf("http://%s/update/", models.ServerRunAddr)
 
-	res, err := s.Client.R().SetHeaders(models.ClientHeaders).SetBody(buf).Post(url)
+	body, er := compress(request)
+	if er != nil {
+		return nil, er
+	}
+
+	res, err := s.Client.R().SetHeaders(models.ClientHeaders).SetBody(body).Post(url)
 	if err != nil {
 		return nil, &models.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err.Error()), Code: http.StatusInternalServerError}
 	}
@@ -130,4 +123,23 @@ func gatherGaugeValues() models.Gauge {
 	gauge.TotalAlloc = float64(rtm.TotalAlloc)
 	gauge.RandomValue = rand.ExpFloat64()
 	return gauge
+}
+
+func compress(request *models.Metrics) (*bytes.Buffer, *models.TrackingError) {
+	buf := bytes.NewBuffer(nil)
+	zb := gzip.NewWriter(buf)
+	js, err := json.Marshal(request)
+	if err != nil {
+		return nil, &models.TrackingError{Text: fmt.Sprintf("error marshal json: %s\n", err), Code: http.StatusInternalServerError}
+	}
+	_, err = zb.Write(js)
+
+	if err != nil {
+		return nil, &models.TrackingError{Text: fmt.Sprintf("error compression: %s\n", err), Code: http.StatusInternalServerError}
+	}
+	err = zb.Close()
+	if err != nil {
+		return nil, &models.TrackingError{Text: fmt.Sprintf("error compression: %s\n", err), Code: http.StatusInternalServerError}
+	}
+	return buf, nil
 }
