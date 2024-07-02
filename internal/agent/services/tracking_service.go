@@ -1,12 +1,14 @@
 package services
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
-	"github.com/Archetarcher/metrics.git/internal/agent/domain"
+	"github.com/Archetarcher/metrics.git/internal/agent/models"
 	"github.com/go-resty/resty/v2"
 	"math/rand"
 	"net/http"
-	"reflect"
 	"runtime"
 )
 
@@ -14,52 +16,84 @@ type TrackingService struct {
 	Client *resty.Client
 }
 
-func (s *TrackingService) Fetch(counterInterval int) ([]domain.MetricData, *domain.TrackingError) {
-
-	var metrics = make([]domain.MetricData, 0)
-
-	var gauge = mapMetricValues()
-
-	values := reflect.ValueOf(gauge)
-	types := values.Type()
-	for i := 0; i < values.NumField(); i++ {
-		name := types.Field(i).Name
-		field := values.FieldByName(name)
-
-		metrics = append(metrics, domain.MetricData{
-			Name:  name,
-			Type:  domain.GaugeType,
-			Value: field.Float(),
-		})
-	}
-
-	metrics = append(metrics, domain.MetricData{
-		Name:  domain.CounterMetric,
-		Type:  domain.CounterType,
-		Value: float64(counterInterval),
-	})
-	return metrics, nil
+func (s *TrackingService) Fetch(counterInterval int64, metrics *models.MetricsData) *models.TrackingError {
+	mapMetricsValues(counterInterval, metrics)
+	return nil
 }
 
-func (s *TrackingService) Send(request *domain.MetricData) (*domain.SendResponse, *domain.TrackingError) {
+func (s *TrackingService) Send(request *models.Metrics) (*models.SendResponse, *models.TrackingError) {
 
-	url := fmt.Sprintf("http://%s/update/%s/%s/%f", domain.ServerRunAddr, request.Type, request.Name, request.Value)
-	res, err := s.Client.R().SetHeader("Content-Type", "text/plain").Post(url)
+	url := fmt.Sprintf("http://%s/update/", models.ServerRunAddr)
+
+	body, er := compress(request)
+	if er != nil {
+		return nil, er
+	}
+
+	res, err := s.Client.R().SetHeaders(models.ClientHeaders).SetBody(body).Post(url)
 	if err != nil {
-		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err), Code: http.StatusInternalServerError}
+		return nil, &models.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err.Error()), Code: http.StatusInternalServerError}
 	}
 
 	if res.StatusCode() != http.StatusOK {
-		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: responded with error: %s\n", err), Code: res.StatusCode()}
+		return nil, &models.TrackingError{Text: fmt.Sprintf("client: responded with error: %s\n", err), Code: res.StatusCode()}
 	}
-	return &domain.SendResponse{Status: http.StatusOK}, nil
+	return &models.SendResponse{Status: http.StatusOK}, nil
 }
 
-func mapMetricValues() domain.Gauge {
-	var rtm runtime.MemStats
-	var gauge domain.Gauge
+func metricsValue(name string, mtype string, delta *int64, value *float64) models.Metrics {
+	return models.Metrics{
+		ID:    name,
+		MType: mtype,
+		Delta: delta,
+		Value: value,
+	}
+}
 
+func mapMetricsValues(counterInterval int64, metrics *models.MetricsData) {
+	randomValue := rand.ExpFloat64()
+	gauge := gatherGaugeValues()
+
+	metrics.PollCount = metricsValue(models.PollCount, models.CounterType, &counterInterval, nil)
+	metrics.RandomValue = metricsValue(models.RandomValue, models.GaugeType, nil, &randomValue)
+	metrics.Alloc = metricsValue(models.Alloc, models.GaugeType, nil, &gauge.Alloc)
+	metrics.BuckHashSys = metricsValue(models.BuckHashSys, models.GaugeType, nil, &gauge.BuckHashSys)
+	metrics.Frees = metricsValue(models.Frees, models.GaugeType, nil, &gauge.Frees)
+	metrics.GCCPUFraction = metricsValue(models.GCCPUFraction, models.GaugeType, nil, &gauge.GCCPUFraction)
+	metrics.GCSys = metricsValue(models.GCSys, models.GaugeType, nil, &gauge.GCSys)
+	metrics.HeapAlloc = metricsValue(models.HeapAlloc, models.GaugeType, nil, &gauge.HeapAlloc)
+	metrics.HeapIdle = metricsValue(models.HeapIdle, models.GaugeType, nil, &gauge.HeapIdle)
+	metrics.HeapInuse = metricsValue(models.HeapInuse, models.GaugeType, nil, &gauge.HeapInuse)
+	metrics.HeapObjects = metricsValue(models.HeapObjects, models.GaugeType, nil, &gauge.HeapObjects)
+	metrics.HeapReleased = metricsValue(models.HeapReleased, models.GaugeType, nil, &gauge.HeapReleased)
+	metrics.HeapSys = metricsValue(models.HeapSys, models.GaugeType, nil, &gauge.HeapSys)
+	metrics.LastGC = metricsValue(models.LastGC, models.GaugeType, nil, &gauge.LastGC)
+	metrics.Lookups = metricsValue(models.Lookups, models.GaugeType, nil, &gauge.Lookups)
+	metrics.MCacheInuse = metricsValue(models.MCacheInuse, models.GaugeType, nil, &gauge.MCacheInuse)
+	metrics.MCacheSys = metricsValue(models.MCacheSys, models.GaugeType, nil, &gauge.MCacheSys)
+	metrics.LastGC = metricsValue(models.LastGC, models.GaugeType, nil, &gauge.LastGC)
+	metrics.Lookups = metricsValue(models.Lookups, models.GaugeType, nil, &gauge.Lookups)
+	metrics.MCacheInuse = metricsValue(models.MCacheInuse, models.GaugeType, nil, &gauge.MCacheInuse)
+	metrics.MCacheSys = metricsValue(models.MCacheSys, models.GaugeType, nil, &gauge.MCacheSys)
+	metrics.MSpanInuse = metricsValue(models.MSpanInuse, models.GaugeType, nil, &gauge.MSpanInuse)
+	metrics.MSpanSys = metricsValue(models.MSpanSys, models.GaugeType, nil, &gauge.MSpanSys)
+	metrics.Mallocs = metricsValue(models.Mallocs, models.GaugeType, nil, &gauge.Mallocs)
+	metrics.NextGC = metricsValue(models.NextGC, models.GaugeType, nil, &gauge.NextGC)
+	metrics.NumForcedGC = metricsValue(models.NumForcedGC, models.GaugeType, nil, &gauge.NumForcedGC)
+	metrics.NumGC = metricsValue(models.NumGC, models.GaugeType, nil, &gauge.NumGC)
+	metrics.OtherSys = metricsValue(models.OtherSys, models.GaugeType, nil, &gauge.OtherSys)
+	metrics.PauseTotalNs = metricsValue(models.PauseTotalNs, models.GaugeType, nil, &gauge.PauseTotalNs)
+	metrics.StackInuse = metricsValue(models.StackInuse, models.GaugeType, nil, &gauge.StackInuse)
+	metrics.StackSys = metricsValue(models.StackSys, models.GaugeType, nil, &gauge.StackSys)
+	metrics.Sys = metricsValue(models.Sys, models.GaugeType, nil, &gauge.Sys)
+	metrics.TotalAlloc = metricsValue(models.TotalAlloc, models.GaugeType, nil, &gauge.TotalAlloc)
+}
+func gatherGaugeValues() models.Gauge {
+	var gauge = models.Gauge{}
+
+	var rtm runtime.MemStats
 	runtime.ReadMemStats(&rtm)
+
 	gauge.Alloc = float64(rtm.Alloc)
 	gauge.BuckHashSys = float64(rtm.BuckHashSys)
 	gauge.Frees = float64(rtm.Frees)
@@ -89,4 +123,23 @@ func mapMetricValues() domain.Gauge {
 	gauge.TotalAlloc = float64(rtm.TotalAlloc)
 	gauge.RandomValue = rand.ExpFloat64()
 	return gauge
+}
+
+func compress(request *models.Metrics) (*bytes.Buffer, *models.TrackingError) {
+	buf := bytes.NewBuffer(nil)
+	zb := gzip.NewWriter(buf)
+	js, err := json.Marshal(request)
+	if err != nil {
+		return nil, &models.TrackingError{Text: fmt.Sprintf("error marshal json: %s\n", err), Code: http.StatusInternalServerError}
+	}
+	_, err = zb.Write(js)
+
+	if err != nil {
+		return nil, &models.TrackingError{Text: fmt.Sprintf("error compression: %s\n", err), Code: http.StatusInternalServerError}
+	}
+	err = zb.Close()
+	if err != nil {
+		return nil, &models.TrackingError{Text: fmt.Sprintf("error compression: %s\n", err), Code: http.StatusInternalServerError}
+	}
+	return buf, nil
 }

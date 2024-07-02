@@ -1,4 +1,4 @@
-package domain
+package models
 
 type MetricError struct {
 	Text string

@@ -1,7 +1,7 @@
 package store
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/models"
 	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
@@ -10,21 +10,22 @@ import (
 func TestMemStorage_GetValue(t *testing.T) {
 
 	type args struct {
-		request *domain.MetricRequest
+		request *models.Metrics
 	}
+	i := int64(1)
 	tests := []struct {
 		name    string
 		args    args
-		res     *domain.MetricResponse
+		res     *models.Metrics
 		wantErr bool
 	}{
 		{
 			name: "positive test #1",
 			args: args{
-				&domain.MetricRequest{
-					Type:  "counter",
-					Name:  "countervalue",
-					Value: 1,
+				&models.Metrics{
+					MType: "counter",
+					ID:    "countervalue",
+					Delta: &i,
 				},
 			},
 			wantErr: false,
@@ -46,8 +47,10 @@ func TestMemStorage_GetValue(t *testing.T) {
 
 func TestMemStorage_SetValue(t *testing.T) {
 	type args struct {
-		request *domain.MetricRequest
+		request *models.Metrics
 	}
+	i := int64(1)
+
 	tests := []struct {
 		name    string
 		args    args
@@ -56,10 +59,10 @@ func TestMemStorage_SetValue(t *testing.T) {
 		{
 			name: "positive test #1",
 			args: args{
-				&domain.MetricRequest{
-					Type:  "counter",
-					Name:  "countervalue",
-					Value: 1,
+				&models.Metrics{
+					MType: "counter",
+					ID:    "countervalue",
+					Delta: &i,
 				},
 			},
 			wantErr: false,
@@ -86,7 +89,7 @@ func TestNewStorage(t *testing.T) {
 			name: "positive test #1",
 			want: &MemStorage{
 				mux:  sync.Mutex{},
-				data: make(map[string]string),
+				data: make(map[string]models.Metrics),
 			},
 		},
 	}
@@ -99,8 +102,10 @@ func TestNewStorage(t *testing.T) {
 
 func Test_getName(t *testing.T) {
 	type args struct {
-		request *domain.MetricRequest
+		request *models.Metrics
 	}
+	i := int64(1)
+
 	tests := []struct {
 		name string
 		args args
@@ -108,10 +113,10 @@ func Test_getName(t *testing.T) {
 	}{
 		{
 			name: "positive test #1",
-			args: args{request: &domain.MetricRequest{
-				Type:  "counter",
-				Value: 1,
-				Name:  "counterValue",
+			args: args{request: &models.Metrics{
+				MType: "counter",
+				ID:    "counterValue",
+				Delta: &i,
 			}},
 			want: "counterValue_counter",
 		},

@@ -9,5 +9,8 @@ import (
 func main() {
 	service := &services.TrackingService{Client: resty.New()}
 	handler := handlers.TrackingHandler{TrackingService: service}
-	handler.TrackMetrics()
+	err := handler.TrackMetrics()
+	if err != nil {
+		panic(err)
+	}
 }
