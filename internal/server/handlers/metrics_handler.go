@@ -56,17 +56,22 @@ func (h *MetricsHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Text))
 		return
 	}
-	value := models.GetStringValue(result)
 
+	enc := json.NewEncoder(w)
+
+	if result.MType == models.GaugeType {
+		sendResponse(enc, result.Value)
+		return
+	}
+
+	sendResponse(enc, result.Delta)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(value))
 
 }
 
 func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Request) {
 	// validate
 	request, err := validateRequest(r)
-	logger.LogData("update request data received", request)
 
 	enc := json.NewEncoder(w)
 
@@ -74,7 +79,7 @@ func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Reques
 
 	if err != nil {
 		w.WriteHeader(err.Code)
-		sendJson(enc, err)
+		sendResponse(enc, err)
 		return
 	}
 
@@ -82,11 +87,11 @@ func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Reques
 
 	if err != nil {
 		w.WriteHeader(err.Code)
-		sendJson(enc, err)
+		sendResponse(enc, err)
 		return
 	}
 
-	sendJson(enc, response)
+	sendResponse(enc, response)
 	w.WriteHeader(http.StatusOK)
 }
 func (h *MetricsHandler) GetMetricsJSON(w http.ResponseWriter, r *http.Request) {
@@ -99,19 +104,19 @@ func (h *MetricsHandler) GetMetricsJSON(w http.ResponseWriter, r *http.Request) 
 
 	if err != nil {
 		w.WriteHeader(err.Code)
-		sendJson(enc, err)
+		sendResponse(enc, err)
 		return
 	}
 
 	response, err := h.GetValue(request)
 	if err != nil {
 		w.WriteHeader(err.Code)
-		sendJson(enc, err)
+		sendResponse(enc, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	sendJson(enc, response)
+	sendResponse(enc, response)
 
 }
 func (h *MetricsHandler) GetMetricsPage(w http.ResponseWriter, r *http.Request) {
@@ -256,7 +261,7 @@ func validateRequest(r *http.Request) (*models.Metrics, *models.MetricError) {
 	return &metrics, nil
 }
 
-func sendJson(enc *json.Encoder, data interface{}) {
+func sendResponse(enc *json.Encoder, data interface{}) {
 	if err := enc.Encode(data); err != nil {
 		logger.Log.Debug("error encoding response", zap.Error(err))
 		return

@@ -10,6 +10,7 @@ import (
 func TestTrackingService_Fetch(t *testing.T) {
 	type args struct {
 		counterInterval int64
+		metrics         models.MetricsData
 	}
 	tests := []struct {
 		name    string
@@ -20,6 +21,7 @@ func TestTrackingService_Fetch(t *testing.T) {
 			name: "positive test #1",
 			args: args{
 				counterInterval: int64(1),
+				metrics:         models.MetricsData{},
 			},
 			wantErr: false,
 		},
@@ -28,10 +30,8 @@ func TestTrackingService_Fetch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := service.Fetch(tt.args.counterInterval)
-
+			err := service.Fetch(tt.args.counterInterval, &tt.args.metrics)
 			assert.Equal(t, tt.wantErr, err != nil)
-			assert.NotNil(t, res)
 		})
 	}
 }

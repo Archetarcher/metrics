@@ -30,15 +30,71 @@ type Gauge struct {
 	TotalAlloc,
 	RandomValue float64
 }
-type Counter struct {
-	PollCount int64
+
+type MetricsData struct {
+	PollCount,
+	RandomValue,
+	Alloc,
+	BuckHashSys,
+	Frees,
+	GCCPUFraction,
+	GCSys,
+	HeapAlloc,
+	HeapIdle,
+	HeapInuse,
+	HeapObjects,
+	HeapReleased,
+	HeapSys,
+	LastGC,
+	Lookups,
+	MCacheInuse,
+	MCacheSys,
+	MSpanInuse,
+	MSpanSys,
+	Mallocs,
+	NextGC,
+	NumForcedGC,
+	NumGC,
+	OtherSys,
+	PauseTotalNs,
+	StackInuse,
+	StackSys,
+	Sys,
+	TotalAlloc Metrics
 }
 
-var CounterMetric = "PollCount"
-
 const (
-	GaugeType   = "gauge"
-	CounterType = "counter"
+	GaugeType     = "gauge"
+	CounterType   = "counter"
+	PollCount     = "PollCount"
+	RandomValue   = "RandomValue"
+	Alloc         = "Alloc"
+	BuckHashSys   = "BuckHashSys"
+	Frees         = "Frees"
+	GCCPUFraction = "GCCPUFraction"
+	GCSys         = "GCSys"
+	HeapAlloc     = "HeapAlloc"
+	HeapIdle      = "HeapIdle"
+	HeapInuse     = "HeapInuse"
+	HeapObjects   = "HeapObjects"
+	HeapReleased  = "HeapReleased"
+	HeapSys       = "HeapSys"
+	LastGC        = "LastGC"
+	Lookups       = "Lookups"
+	MCacheInuse   = "MCacheInuse"
+	MCacheSys     = "MCacheSys"
+	MSpanInuse    = "MSpanInuse"
+	MSpanSys      = "MSpanSys"
+	Mallocs       = "Mallocs"
+	NextGC        = "NextGC"
+	NumForcedGC   = "NumForcedGC"
+	NumGC         = "NumGC"
+	OtherSys      = "OtherSys"
+	PauseTotalNs  = "PauseTotalNs"
+	StackInuse    = "StackInuse"
+	StackSys      = "StackSys"
+	Sys           = "Sys"
+	TotalAlloc    = "TotalAlloc"
 )
 
 var (

@@ -2,12 +2,10 @@ package services
 
 import (
 	"fmt"
-	"github.com/Archetarcher/metrics.git/internal/agent/logger"
 	"github.com/Archetarcher/metrics.git/internal/agent/models"
 	"github.com/go-resty/resty/v2"
 	"math/rand"
 	"net/http"
-	"reflect"
 	"runtime"
 )
 
@@ -15,37 +13,14 @@ type TrackingService struct {
 	Client *resty.Client
 }
 
-func (s *TrackingService) Fetch(counterInterval int64) ([]models.Metrics, *models.TrackingError) {
-
-	var metrics = make([]models.Metrics, 0)
-
-	var gauge = mapMetricValues()
-
-	metrics = append(metrics, models.Metrics{
-		ID:    models.CounterMetric,
-		MType: models.CounterType,
-		Delta: &counterInterval,
-	})
-	values := reflect.ValueOf(gauge)
-	types := values.Type()
-	for i := 0; i < values.NumField(); i++ {
-		name := types.Field(i).Name
-		field := values.FieldByName(name).Float()
-
-		metrics = append(metrics, models.Metrics{
-			ID:    name,
-			MType: models.GaugeType,
-			Value: &field,
-		})
-	}
-
-	return metrics, nil
+func (s *TrackingService) Fetch(counterInterval int64, metrics *models.MetricsData) *models.TrackingError {
+	mapMetricsValues(counterInterval, metrics)
+	return nil
 }
 
 func (s *TrackingService) Send(request *models.Metrics) (*models.SendResponse, *models.TrackingError) {
 
 	url := fmt.Sprintf("http://%s/update/", models.ServerRunAddr)
-	logger.LogData("send update request ", request)
 
 	res, err := s.Client.R().SetHeader("Content-Type", "Content-Type: application/json").SetBody(request).Post(url)
 	if err != nil {
@@ -58,11 +33,59 @@ func (s *TrackingService) Send(request *models.Metrics) (*models.SendResponse, *
 	return &models.SendResponse{Status: http.StatusOK}, nil
 }
 
-func mapMetricValues() models.Gauge {
-	var rtm runtime.MemStats
-	var gauge models.Gauge
+func metricsValue(name string, mtype string, delta *int64, value *float64) models.Metrics {
+	return models.Metrics{
+		ID:    name,
+		MType: mtype,
+		Delta: delta,
+		Value: value,
+	}
+}
 
+func mapMetricsValues(counterInterval int64, metrics *models.MetricsData) {
+	randomValue := rand.ExpFloat64()
+	gauge := gatherGaugeValues()
+
+	metrics.PollCount = metricsValue(models.PollCount, models.CounterType, &counterInterval, nil)
+	metrics.RandomValue = metricsValue(models.RandomValue, models.GaugeType, nil, &randomValue)
+	metrics.Alloc = metricsValue(models.Alloc, models.GaugeType, nil, &gauge.Alloc)
+	metrics.BuckHashSys = metricsValue(models.BuckHashSys, models.GaugeType, nil, &gauge.BuckHashSys)
+	metrics.Frees = metricsValue(models.Frees, models.GaugeType, nil, &gauge.Frees)
+	metrics.GCCPUFraction = metricsValue(models.GCCPUFraction, models.GaugeType, nil, &gauge.GCCPUFraction)
+	metrics.GCSys = metricsValue(models.GCSys, models.GaugeType, nil, &gauge.GCSys)
+	metrics.HeapAlloc = metricsValue(models.HeapAlloc, models.GaugeType, nil, &gauge.HeapAlloc)
+	metrics.HeapIdle = metricsValue(models.HeapIdle, models.GaugeType, nil, &gauge.HeapIdle)
+	metrics.HeapInuse = metricsValue(models.HeapInuse, models.GaugeType, nil, &gauge.HeapInuse)
+	metrics.HeapObjects = metricsValue(models.HeapObjects, models.GaugeType, nil, &gauge.HeapObjects)
+	metrics.HeapReleased = metricsValue(models.HeapReleased, models.GaugeType, nil, &gauge.HeapReleased)
+	metrics.HeapSys = metricsValue(models.HeapSys, models.GaugeType, nil, &gauge.HeapSys)
+	metrics.LastGC = metricsValue(models.LastGC, models.GaugeType, nil, &gauge.LastGC)
+	metrics.Lookups = metricsValue(models.Lookups, models.GaugeType, nil, &gauge.Lookups)
+	metrics.MCacheInuse = metricsValue(models.MCacheInuse, models.GaugeType, nil, &gauge.MCacheInuse)
+	metrics.MCacheSys = metricsValue(models.MCacheSys, models.GaugeType, nil, &gauge.MCacheSys)
+	metrics.LastGC = metricsValue(models.LastGC, models.GaugeType, nil, &gauge.LastGC)
+	metrics.Lookups = metricsValue(models.Lookups, models.GaugeType, nil, &gauge.Lookups)
+	metrics.MCacheInuse = metricsValue(models.MCacheInuse, models.GaugeType, nil, &gauge.MCacheInuse)
+	metrics.MCacheSys = metricsValue(models.MCacheSys, models.GaugeType, nil, &gauge.MCacheSys)
+	metrics.MSpanInuse = metricsValue(models.MSpanInuse, models.GaugeType, nil, &gauge.MSpanInuse)
+	metrics.MSpanSys = metricsValue(models.MSpanSys, models.GaugeType, nil, &gauge.MSpanSys)
+	metrics.Mallocs = metricsValue(models.Mallocs, models.GaugeType, nil, &gauge.Mallocs)
+	metrics.NextGC = metricsValue(models.NextGC, models.GaugeType, nil, &gauge.NextGC)
+	metrics.NumForcedGC = metricsValue(models.NumForcedGC, models.GaugeType, nil, &gauge.NumForcedGC)
+	metrics.NumGC = metricsValue(models.NumGC, models.GaugeType, nil, &gauge.NumGC)
+	metrics.OtherSys = metricsValue(models.OtherSys, models.GaugeType, nil, &gauge.OtherSys)
+	metrics.PauseTotalNs = metricsValue(models.PauseTotalNs, models.GaugeType, nil, &gauge.PauseTotalNs)
+	metrics.StackInuse = metricsValue(models.StackInuse, models.GaugeType, nil, &gauge.StackInuse)
+	metrics.StackSys = metricsValue(models.StackSys, models.GaugeType, nil, &gauge.StackSys)
+	metrics.Sys = metricsValue(models.Sys, models.GaugeType, nil, &gauge.Sys)
+	metrics.TotalAlloc = metricsValue(models.TotalAlloc, models.GaugeType, nil, &gauge.TotalAlloc)
+}
+func gatherGaugeValues() models.Gauge {
+	var gauge = models.Gauge{}
+
+	var rtm runtime.MemStats
 	runtime.ReadMemStats(&rtm)
+
 	gauge.Alloc = float64(rtm.Alloc)
 	gauge.BuckHashSys = float64(rtm.BuckHashSys)
 	gauge.Frees = float64(rtm.Frees)

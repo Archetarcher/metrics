@@ -1,8 +1,6 @@
 package logger
 
 import (
-	"bytes"
-	"encoding/json"
 	"go.uber.org/zap"
 	"net/http"
 )
@@ -36,17 +34,4 @@ func Initialize(level string) error {
 	}
 	Log = zl
 	return nil
-}
-
-func LogData(message string, data interface{}) {
-	var buf bytes.Buffer
-
-	jsonEncoder := json.NewEncoder(&buf)
-	if err := jsonEncoder.Encode(data); err != nil {
-		Log.Debug("error encoding response", zap.Error(err))
-		return
-	}
-
-	Log.Info(message, zap.Any("data", json.RawMessage(buf.Bytes())))
-
 }
