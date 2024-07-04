@@ -2,7 +2,7 @@ package services
 
 import (
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
-	"github.com/Archetarcher/metrics.git/internal/agent/models"
+	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -10,7 +10,7 @@ import (
 func TestTrackingService_Fetch(t *testing.T) {
 	type args struct {
 		counterInterval int64
-		metrics         models.MetricsData
+		metrics         domain.MetricsData
 	}
 	tests := []struct {
 		name    string
@@ -21,7 +21,7 @@ func TestTrackingService_Fetch(t *testing.T) {
 			name: "positive test #1",
 			args: args{
 				counterInterval: int64(1),
-				metrics:         models.MetricsData{},
+				metrics:         domain.MetricsData{},
 			},
 			wantErr: false,
 		},
@@ -39,7 +39,7 @@ func TestTrackingService_Fetch(t *testing.T) {
 func TestTrackingService_Send(t *testing.T) {
 	config.ParseConfig()
 	type args struct {
-		request *models.Metrics
+		request *domain.Metrics
 	}
 	tests := []struct {
 		name    string

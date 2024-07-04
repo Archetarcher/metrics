@@ -2,22 +2,16 @@ package logger
 
 import (
 	"go.uber.org/zap"
-	"net/http"
-)
-
-type (
-	responseData struct {
-		status int
-		size   int
-	}
-	loggerResponseWriter struct {
-		http.ResponseWriter
-		responseData *responseData
-	}
 )
 
 // Log будет доступен всему коду как синглтон.
-var Log *zap.Logger = zap.NewNop()
+var Log *zap.Logger
+
+func init() {
+	Log = zap.NewNop()
+
+	defer Log.Sync()
+}
 
 // Initialize инициализирует синглтон логера с необходимым уровнем логирования.
 func Initialize(level string) error {

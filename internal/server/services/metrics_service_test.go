@@ -1,29 +1,36 @@
 package services
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/models"
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
+func setup() (*domain.Metrics, *domain.Metrics) {
+	i := float64(1)
+
+	req := &domain.Metrics{MType: "gauge", ID: "test", Value: &i}
+	res := &domain.Metrics{MType: "gauge", ID: "test", Value: &i}
+	return req, res
+}
 func TestMetricsService_Update(t *testing.T) {
 
 	type args struct {
-		request *models.Metrics
+		request *domain.Metrics
 	}
-	i := float64(1)
+	req, res := setup()
 	tests := []struct {
 		name string
 		args args
-		res  *models.Metrics
-		err  *models.MetricError
+		res  *domain.Metrics
+		err  *domain.MetricsError
 	}{
 		{
 			name: "positive test #1",
-			args: args{request: &models.Metrics{MType: "gauge", ID: "test", Value: &i}},
-			res:  &models.Metrics{MType: "gauge", ID: "test", Value: &i},
+			args: args{request: req},
+			res:  res,
 			err:  nil,
 		},
 	}

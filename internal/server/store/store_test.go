@@ -1,33 +1,38 @@
 package store
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/models"
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 )
 
+func setup() *domain.Metrics {
+	i := int64(1)
+
+	req := &domain.Metrics{
+		MType: "counter",
+		ID:    "counterValue",
+		Delta: &i,
+	}
+	return req
+}
 func TestMemStorage_GetValue(t *testing.T) {
 
 	type args struct {
-		request *models.Metrics
+		request *domain.Metrics
 	}
-	i := int64(1)
+
+	req := setup()
 	tests := []struct {
 		name    string
 		args    args
-		res     *models.Metrics
+		res     *domain.Metrics
 		wantErr bool
 	}{
 		{
-			name: "positive test #1",
-			args: args{
-				&models.Metrics{
-					MType: "counter",
-					ID:    "countervalue",
-					Delta: &i,
-				},
-			},
+			name:    "positive test #1",
+			args:    args{request: req},
 			wantErr: false,
 			res:     nil,
 		},
@@ -47,9 +52,9 @@ func TestMemStorage_GetValue(t *testing.T) {
 
 func TestMemStorage_SetValue(t *testing.T) {
 	type args struct {
-		request *models.Metrics
+		request *domain.Metrics
 	}
-	i := int64(1)
+	req := setup()
 
 	tests := []struct {
 		name    string
@@ -57,14 +62,8 @@ func TestMemStorage_SetValue(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "positive test #1",
-			args: args{
-				&models.Metrics{
-					MType: "counter",
-					ID:    "countervalue",
-					Delta: &i,
-				},
-			},
+			name:    "positive test #1",
+			args:    args{request: req},
 			wantErr: false,
 		},
 	}
@@ -89,7 +88,7 @@ func TestNewStorage(t *testing.T) {
 			name: "positive test #1",
 			want: &MemStorage{
 				mux:  sync.Mutex{},
-				data: make(map[string]models.Metrics),
+				data: make(map[string]domain.Metrics),
 			},
 		},
 	}
@@ -102,9 +101,9 @@ func TestNewStorage(t *testing.T) {
 
 func Test_getName(t *testing.T) {
 	type args struct {
-		request *models.Metrics
+		request *domain.Metrics
 	}
-	i := int64(1)
+	req := setup()
 
 	tests := []struct {
 		name string
@@ -113,11 +112,7 @@ func Test_getName(t *testing.T) {
 	}{
 		{
 			name: "positive test #1",
-			args: args{request: &models.Metrics{
-				MType: "counter",
-				ID:    "counterValue",
-				Delta: &i,
-			}},
+			args: args{request: req},
 			want: "counterValue_counter",
 		},
 	}

@@ -1,9 +1,4 @@
-package models
-
-// SendResponse is a response struct for send response
-type SendResponse struct {
-	Status int `json:"status"`
-}
+package domain
 
 // Metrics struct
 type Metrics struct {

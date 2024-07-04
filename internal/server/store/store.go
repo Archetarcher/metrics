@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
-	"github.com/Archetarcher/metrics.git/internal/server/models"
 	"go.uber.org/zap"
 	"os"
 	"sync"
@@ -14,19 +14,19 @@ import (
 
 type MemStorage struct {
 	mux  sync.Mutex
-	data map[string]models.Metrics
+	data map[string]domain.Metrics
 }
 
 func NewStorage() *MemStorage {
 	storage := &MemStorage{
 		mux:  sync.Mutex{},
-		data: make(map[string]models.Metrics),
+		data: make(map[string]domain.Metrics),
 	}
 
-	if models.Restore {
+	if domain.Restore {
 		err := storage.Load()
 		if err != nil {
-			panic(err)
+			logger.Log.Info("failed to load metrics from file", zap.Error(err))
 		}
 	}
 
@@ -35,7 +35,7 @@ func NewStorage() *MemStorage {
 
 	go func() {
 		defer wg.Done()
-		var storeInterval = time.Duration(models.StoreInterval) * time.Second
+		var storeInterval = time.Duration(domain.StoreInterval) * time.Second
 
 		for {
 			err := storage.Save()
@@ -49,18 +49,18 @@ func NewStorage() *MemStorage {
 	return storage
 }
 
-func (s *MemStorage) GetValues() ([]models.Metrics, error) {
+func (s *MemStorage) GetValues() ([]domain.Metrics, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
-	var res []models.Metrics
+	var res []domain.Metrics
 
 	for _, value := range s.data {
 		res = append(res, value)
 	}
 	return res, nil
 }
-func (s *MemStorage) GetValue(request *models.Metrics) (*models.Metrics, *models.MetricError) {
+func (s *MemStorage) GetValue(request *domain.Metrics) (*domain.Metrics, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
@@ -70,18 +70,18 @@ func (s *MemStorage) GetValue(request *models.Metrics) (*models.Metrics, *models
 	}
 	return &res, nil
 }
-func (s *MemStorage) SetValue(request *models.Metrics) error {
+func (s *MemStorage) SetValue(request *domain.Metrics) error {
 	s.data[getName(request)] = *request
 	return nil
 }
 
-func getName(request *models.Metrics) string {
+func getName(request *domain.Metrics) string {
 	return fmt.Sprintf("%s_%s", request.ID, request.MType)
 }
 
 func (s *MemStorage) Save() error {
 
-	if models.FileStoragePath == models.EmptyParam {
+	if domain.FileStoragePath == domain.EmptyParam {
 		return nil
 	}
 
@@ -89,14 +89,14 @@ func (s *MemStorage) Save() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(models.FileStoragePath, data, 0666)
+	return os.WriteFile(domain.FileStoragePath, data, 0666)
 }
 func (s *MemStorage) Load() error {
-	if models.FileStoragePath == models.EmptyParam {
+	if domain.FileStoragePath == domain.EmptyParam {
 		return nil
 	}
 
-	data, err := os.ReadFile(models.FileStoragePath)
+	data, err := os.ReadFile(domain.FileStoragePath)
 
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -106,7 +106,7 @@ func (s *MemStorage) Load() error {
 		return err
 	}
 
-	var metrics map[string]models.Metrics
+	var metrics map[string]domain.Metrics
 	if err := json.Unmarshal(data, &metrics); err != nil {
 		return err
 	}

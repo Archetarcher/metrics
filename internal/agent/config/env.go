@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/agent/models"
+	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"os"
 	"strconv"
 )
@@ -13,26 +13,29 @@ const (
 	envLogLevelName       = "LOG_LEVEL"
 )
 
-func parseEnv() {
-	if envRunAddr := os.Getenv(envServerRunAddrName); envRunAddr != "" {
-		models.ServerRunAddr = envRunAddr
+func getEnvOrDefault(env string, def string) string {
+	val := os.Getenv(env)
+	if val == "" {
+		return def
 	}
+	return val
+}
+
+func parseEnv() {
+	domain.ServerRunAddr = getEnvOrDefault(envServerRunAddrName, domain.ServerRunAddr)
+	domain.LogLevel = getEnvOrDefault(envLogLevelName, domain.LogLevel)
 
 	if envReportInt := os.Getenv(envReportIntervalName); envReportInt != "" {
-
 		if i, err := strconv.Atoi(envReportInt); err == nil {
-			models.ReportInterval = i
+			domain.ReportInterval = i
 
 		}
 	}
 	if envPollInt := os.Getenv(envPollIntervalName); envPollInt != "" {
-
 		if i, err := strconv.Atoi(envPollInt); err == nil {
-			models.PollInterval = i
+			domain.PollInterval = i
 
 		}
 	}
-	if envLogLevel := os.Getenv(envLogLevelName); envLogLevel != "" {
-		models.LogLevel = envLogLevel
-	}
+
 }

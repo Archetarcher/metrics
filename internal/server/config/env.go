@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/models"
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"os"
 	"strconv"
 )
@@ -14,26 +14,28 @@ const (
 	envRestoreName         = "RESTORE"
 )
 
+func getEnvOrDefault(env string, def string) string {
+	val := os.Getenv(env)
+	if val == "" {
+		return def
+	}
+	return val
+}
+
 func parseEnv() {
-	if envRunAddr := os.Getenv(envRunAddrName); envRunAddr != "" {
-		models.RunAddr = envRunAddr
-	}
-	if envLogLevel := os.Getenv(envLogLevelName); envLogLevel != "" {
-		models.LogLevel = envLogLevel
-	}
-	if envFileStoragePath := os.Getenv(envFileStoragePathName); envFileStoragePath != "" {
-		models.FileStoragePath = envFileStoragePath
-	}
+	domain.RunAddr = getEnvOrDefault(envRunAddrName, domain.RunAddr)
+	domain.LogLevel = getEnvOrDefault(envLogLevelName, domain.LogLevel)
+	domain.FileStoragePath = getEnvOrDefault(envFileStoragePathName, domain.FileStoragePath)
+
 	if envStoreInterval := os.Getenv(envStoreIntervalName); envStoreInterval != "" {
 		if i, err := strconv.Atoi(envStoreInterval); err == nil {
-			models.StoreInterval = i
+			domain.StoreInterval = i
 
 		}
 	}
 	if envRestore := os.Getenv(envRestoreName); envRestore != "" {
 		if i, err := strconv.ParseBool(envRestore); err == nil {
-			models.Restore = i
+			domain.Restore = i
 		}
-
 	}
 }

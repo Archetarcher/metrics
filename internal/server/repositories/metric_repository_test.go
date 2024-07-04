@@ -1,33 +1,33 @@
 package repositories
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/models"
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
+func setup() *domain.Metrics {
+	i := int64(1)
+	req := &domain.Metrics{MType: "counter", ID: "countervalue", Delta: &i}
+	return req
+}
 func TestMetricRepository_Get(t *testing.T) {
 
 	type args struct {
-		request *models.Metrics
+		request *domain.Metrics
 	}
-	i := int64(1)
+
+	req := setup()
 	tests := []struct {
 		name    string
 		args    args
-		want    *models.Metrics
+		want    *domain.Metrics
 		wantErr bool
 	}{
 		{
-			name: "positive test #1",
-			args: args{
-				&models.Metrics{
-					MType: "counter",
-					ID:    "countervalue",
-					Delta: &i,
-				},
-			},
+			name:    "positive test #1",
+			args:    args{request: req},
 			wantErr: false,
 			want:    nil,
 		},
@@ -48,23 +48,18 @@ func TestMetricRepository_Get(t *testing.T) {
 func TestMetricRepository_Set(t *testing.T) {
 
 	type args struct {
-		request *models.Metrics
+		request *domain.Metrics
 	}
-	i := int64(1)
+	req := setup()
+
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
 		{
-			name: "positive test #1",
-			args: args{
-				&models.Metrics{
-					MType: "counter",
-					ID:    "countervalue",
-					Delta: &i,
-				},
-			},
+			name:    "positive test #1",
+			args:    args{request: req},
 			wantErr: false,
 		},
 	}

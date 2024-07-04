@@ -19,10 +19,17 @@ type (
 )
 
 // Log будет доступен всему коду как синглтон.
-var Log *zap.Logger = zap.NewNop()
+var Log *zap.Logger
+
+func init() {
+	Log = zap.NewNop()
+
+	defer Log.Sync()
+}
 
 // Initialize инициализирует синглтон логера с необходимым уровнем логирования.
 func Initialize(level string) error {
+
 	lvl, err := zap.ParseAtomicLevel(level)
 	if err != nil {
 		return err
@@ -31,10 +38,12 @@ func Initialize(level string) error {
 	cfg.Level = lvl
 
 	zl, err := cfg.Build()
+
 	if err != nil {
 		return err
 	}
 	Log = zl
+
 	return nil
 }
 

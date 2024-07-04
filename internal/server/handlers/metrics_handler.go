@@ -2,12 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
-	"github.com/Archetarcher/metrics.git/internal/server/models"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"net/http"
-	"reflect"
 	"slices"
 	"strconv"
 )
@@ -17,56 +16,55 @@ type MetricsHandler struct {
 }
 
 type MetricsService interface {
-	Update(request *models.Metrics) (*models.Metrics, *models.MetricError)
-	GetValue(request *models.Metrics) (*models.Metrics, *models.MetricError)
-	GetAllValues() (string, *models.MetricError)
+	Update(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
+	GetValue(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
+	GetAllValues() (string, *domain.MetricsError)
 }
 
 func (h *MetricsHandler) UpdateMetrics(w http.ResponseWriter, r *http.Request) {
 	// validate
 	request, err := validateRequest(r)
+
+	enc := json.NewEncoder(w)
+
 	if err != nil {
-		w.WriteHeader(err.Code)
-		w.Write([]byte(err.Text))
+		sendResponse(enc, err.Text, err.Code, w)
 		return
 	}
 
 	_, err = h.Update(request)
 	if err != nil {
-		w.WriteHeader(err.Code)
-		w.Write([]byte(err.Text))
+		sendResponse(enc, err.Text, err.Code, w)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
+	sendResponse(enc, "", http.StatusOK, w)
 }
 func (h *MetricsHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
-
 	// validate
 	request, err := validateGetRequest(r)
+
+	enc := json.NewEncoder(w)
+
 	if err != nil {
-		w.WriteHeader(err.Code)
-		w.Write([]byte(err.Text))
+		sendResponse(enc, err.Text, err.Code, w)
 		return
 	}
 
 	result, err := h.GetValue(request)
 	if err != nil {
-		w.WriteHeader(err.Code)
-		w.Write([]byte(err.Text))
+		sendResponse(enc, err.Text, err.Code, w)
 		return
 	}
 
-	enc := json.NewEncoder(w)
+	var resp any
 
-	if result.MType == models.GaugeType {
-		sendResponse(enc, result.Value)
-		return
+	if result.MType == domain.CounterType {
+		resp = result.Delta
 	}
-
-	sendResponse(enc, result.Delta)
-	w.WriteHeader(http.StatusOK)
-
+	if result.MType == domain.GaugeType {
+		resp = result.Value
+	}
+	sendResponse(enc, resp, http.StatusOK, w)
 }
 
 func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Request) {
@@ -77,20 +75,17 @@ func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Type", "application/json")
 
 	if err != nil {
-		w.WriteHeader(err.Code)
-		sendResponse(enc, err)
+		sendResponse(enc, err.Text, err.Code, w)
 		return
 	}
 
 	response, err := h.Update(request)
 	if err != nil {
-		w.WriteHeader(err.Code)
-		sendResponse(enc, err)
+		sendResponse(enc, err.Text, err.Code, w)
 		return
 	}
 
-	sendResponse(enc, response)
-	w.WriteHeader(http.StatusOK)
+	sendResponse(enc, response, http.StatusOK, w)
 }
 func (h *MetricsHandler) GetMetricsJSON(w http.ResponseWriter, r *http.Request) {
 	// validate
@@ -100,41 +95,37 @@ func (h *MetricsHandler) GetMetricsJSON(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 
 	if err != nil {
-		w.WriteHeader(err.Code)
-		sendResponse(enc, err)
+		sendResponse(enc, err.Text, err.Code, w)
 		return
 	}
 
 	response, err := h.GetValue(request)
 	if err != nil {
-		w.WriteHeader(err.Code)
-		sendResponse(enc, err)
+		sendResponse(enc, err.Text, err.Code, w)
 		return
 	}
 
-	sendResponse(enc, response)
-	w.WriteHeader(http.StatusOK)
+	sendResponse(enc, response, http.StatusOK, w)
 
 }
 func (h *MetricsHandler) GetMetricsPage(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.GetAllValues()
+	enc := json.NewEncoder(w)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
 	if err != nil {
-		w.WriteHeader(err.Code)
-		w.Write([]byte(err.Text))
+		sendResponse(enc, err.Text, err.Code, w)
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(result))
-
+	sendResponse(enc, result, http.StatusOK, w)
 }
 
-func validateGetRequest(r *http.Request) (*models.Metrics, *models.MetricError) {
+func validateGetRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
 
 	// validate params
-	var metrics models.Metrics
+	var metrics domain.Metrics
 
 	n := chi.URLParam(r, "name")
 	t := chi.URLParam(r, "type")
@@ -142,26 +133,25 @@ func validateGetRequest(r *http.Request) (*models.Metrics, *models.MetricError) 
 	metrics.ID = n
 	metrics.MType = t
 
-	if reflect.DeepEqual(metrics, models.Metrics{}) {
+	if metrics.ID == domain.EmptyParam && metrics.MType == domain.EmptyParam {
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&metrics); err != nil {
-			logger.Log.Info("cannot decode request JSON body", zap.Error(err))
-			return nil, &models.MetricError{
+			return nil, &domain.MetricsError{
 				Text: "cannot decode request JSON body",
 				Code: http.StatusInternalServerError,
 			}
 		}
 	}
 
-	if metrics.ID == models.EmptyParam || metrics.MType == models.EmptyParam {
-		return nil, &models.MetricError{
+	if metrics.ID == domain.EmptyParam || metrics.MType == domain.EmptyParam {
+		return nil, &domain.MetricsError{
 			Text: "empty param",
 			Code: http.StatusBadRequest,
 		}
 	}
 
-	if !slices.Contains([]string{models.GaugeType, models.CounterType}, metrics.MType) {
-		return nil, &models.MetricError{
+	if !slices.Contains([]string{domain.GaugeType, domain.CounterType}, metrics.MType) {
+		return nil, &domain.MetricsError{
 			Text: "incorrect type",
 			Code: http.StatusBadRequest,
 		}
@@ -169,18 +159,18 @@ func validateGetRequest(r *http.Request) (*models.Metrics, *models.MetricError) 
 
 	return &metrics, nil
 }
-func validateRequest(r *http.Request) (*models.Metrics, *models.MetricError) {
+func validateRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
 	// validate method
 	if r.Method != http.MethodPost {
 
-		return nil, &models.MetricError{
+		return nil, &domain.MetricsError{
 			Text: "method not allowed",
 			Code: http.StatusMethodNotAllowed,
 		}
 	}
 
 	// validate params
-	var metrics models.Metrics
+	var metrics domain.Metrics
 
 	n := chi.URLParam(r, "name")
 	t := chi.URLParam(r, "type")
@@ -189,10 +179,10 @@ func validateRequest(r *http.Request) (*models.Metrics, *models.MetricError) {
 	metrics.ID = n
 	metrics.MType = t
 
-	if t == models.GaugeType {
+	if t == domain.GaugeType {
 		value, err := strconv.ParseFloat(v, 64)
 		if err != nil {
-			return nil, &models.MetricError{
+			return nil, &domain.MetricsError{
 				Text: "",
 				Code: http.StatusBadRequest,
 			}
@@ -200,10 +190,10 @@ func validateRequest(r *http.Request) (*models.Metrics, *models.MetricError) {
 		metrics.Value = &value
 	}
 
-	if t == models.CounterType {
+	if t == domain.CounterType {
 		value, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
-			return nil, &models.MetricError{
+			return nil, &domain.MetricsError{
 				Text: "",
 				Code: http.StatusBadRequest,
 			}
@@ -211,26 +201,25 @@ func validateRequest(r *http.Request) (*models.Metrics, *models.MetricError) {
 		metrics.Delta = &value
 	}
 
-	if reflect.DeepEqual(metrics, models.Metrics{}) {
+	if metrics.ID == domain.EmptyParam && metrics.MType == domain.EmptyParam && metrics.Delta == nil && metrics.Value == nil {
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&metrics); err != nil {
-			logger.Log.Info("cannot decode request JSON body", zap.Error(err))
-			return nil, &models.MetricError{
+			return nil, &domain.MetricsError{
 				Text: "cannot decode request JSON body",
 				Code: http.StatusInternalServerError,
 			}
 		}
 	}
 
-	if metrics.ID == models.EmptyParam || metrics.MType == models.EmptyParam || ((metrics.MType == models.GaugeType && metrics.Value == nil) || (metrics.MType == models.CounterType && metrics.Delta == nil)) {
-		return nil, &models.MetricError{
+	if metrics.ID == domain.EmptyParam || metrics.MType == domain.EmptyParam || ((metrics.MType == domain.GaugeType && metrics.Value == nil) || (metrics.MType == domain.CounterType && metrics.Delta == nil)) {
+		return nil, &domain.MetricsError{
 			Text: "empty param",
 			Code: http.StatusBadRequest,
 		}
 	}
 
-	if !slices.Contains([]string{models.GaugeType, models.CounterType}, metrics.MType) {
-		return nil, &models.MetricError{
+	if !slices.Contains([]string{domain.GaugeType, domain.CounterType}, metrics.MType) {
+		return nil, &domain.MetricsError{
 			Text: "incorrect type",
 			Code: http.StatusBadRequest,
 		}
@@ -239,9 +228,14 @@ func validateRequest(r *http.Request) (*models.Metrics, *models.MetricError) {
 	return &metrics, nil
 }
 
-func sendResponse(enc *json.Encoder, data interface{}) {
+func sendResponse(enc *json.Encoder, data interface{}, code int, w http.ResponseWriter) {
+	w.WriteHeader(code)
+
+	if code > http.StatusOK {
+		logger.Log.Error("failed with error", zap.Any("error", data), zap.Int("code", code))
+	}
 	if err := enc.Encode(data); err != nil {
 		logger.Log.Debug("error encoding response", zap.Error(err))
-		return
 	}
+
 }

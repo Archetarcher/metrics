@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestMetricAPI_Run(t *testing.T) {
+func TestMetricsAPI_Run(t *testing.T) {
 	config.ParseConfig()
 
 	type fields struct {
@@ -37,7 +37,7 @@ func TestMetricAPI_Run(t *testing.T) {
 	}
 }
 
-func TestNewMetricAPI(t *testing.T) {
+func TestNewMetricsAPI(t *testing.T) {
 	type fields struct {
 		storage *store.MemStorage
 	}
