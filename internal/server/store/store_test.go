@@ -86,6 +86,7 @@ func TestMemStorage_SetValue(t *testing.T) {
 }
 func TestNewStorage(t *testing.T) {
 	c.ParseConfig()
+	c.Restore = false
 
 	tests := []struct {
 		name string
