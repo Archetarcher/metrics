@@ -1,21 +1,15 @@
 package services
 
 import (
-	"bytes"
-	"compress/gzip"
-	"encoding/json"
 	"fmt"
+	"github.com/Archetarcher/metrics.git/internal/agent/compression"
+	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/go-resty/resty/v2"
 	"math/rand"
 	"net/http"
 	"runtime"
 )
-
-var clientHeaders = map[string]string{
-	"Content-Type":     "Content-Type: application/json",
-	"Content-Encoding": "gzip",
-}
 
 const (
 	gaugeType     = "gauge"
@@ -53,25 +47,21 @@ const (
 
 type TrackingService struct {
 	Client *resty.Client
+	Config *config.AppConfig
 }
 
 func (s *TrackingService) Fetch(counterInterval int64, metrics *domain.MetricsData) *domain.TrackingError {
 	var m domain.MetricsData
 	mapMetricsValues(counterInterval, &m)
-	metrics = &m
+	*metrics = m
 	return nil
 }
 
 func (s *TrackingService) Send(request *domain.Metrics) (*domain.SendResponse, *domain.TrackingError) {
 
-	url := fmt.Sprintf("http://%s/update/", domain.ServerRunAddr)
+	url := fmt.Sprintf("http://%s/update/", s.Config.ServerRunAddr)
 
-	body, cErr := compress(request)
-	if cErr != nil {
-		return nil, cErr
-	}
-
-	res, err := s.Client.R().SetHeaders(clientHeaders).SetBody(body).Post(url)
+	res, err := s.Client.OnBeforeRequest(compression.GzipMiddleware).R().SetBody(request).Post(url)
 	if err != nil {
 		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err.Error()), Code: http.StatusInternalServerError}
 	}
@@ -164,23 +154,4 @@ func gatherGaugeValues() domain.Gauge {
 	gauge.TotalAlloc = float64(rtm.TotalAlloc)
 	gauge.RandomValue = rand.ExpFloat64()
 	return gauge
-}
-
-func compress(request *domain.Metrics) (*bytes.Buffer, *domain.TrackingError) {
-	buf := bytes.NewBuffer(nil)
-	zb := gzip.NewWriter(buf)
-	js, err := json.Marshal(request)
-	if err != nil {
-		return nil, &domain.TrackingError{Text: fmt.Sprintf("error marshal json: %s\n", err), Code: http.StatusInternalServerError}
-	}
-	_, err = zb.Write(js)
-
-	if err != nil {
-		return nil, &domain.TrackingError{Text: fmt.Sprintf("error compression: %s\n", err), Code: http.StatusInternalServerError}
-	}
-	err = zb.Close()
-	if err != nil {
-		return nil, &domain.TrackingError{Text: fmt.Sprintf("error compression: %s\n", err), Code: http.StatusInternalServerError}
-	}
-	return buf, nil
 }

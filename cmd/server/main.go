@@ -9,11 +9,12 @@ import (
 )
 
 func main() {
-	config.ParseConfig()
+	c := config.NewConfig()
+	c.ParseConfig()
 
-	storage := store.NewStorage()
+	storage := store.NewStorage(c)
 
-	api, err := rest.NewMetricsAPI(storage)
+	api, err := rest.NewMetricsAPI(storage, c)
 
 	if err != nil {
 		logger.Log.Error("failed with error", zap.String("error", err.Text), zap.Int("code", err.Code))

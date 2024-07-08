@@ -1,12 +1,15 @@
 package services
 
 import (
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
+
+var c = config.NewConfig()
 
 func setup() (*domain.Metrics, *domain.Metrics) {
 	i := float64(1)
@@ -16,6 +19,7 @@ func setup() (*domain.Metrics, *domain.Metrics) {
 	return req, res
 }
 func TestMetricsService_Update(t *testing.T) {
+	c.ParseConfig()
 
 	type args struct {
 		request *domain.Metrics
@@ -34,7 +38,7 @@ func TestMetricsService_Update(t *testing.T) {
 			err:  nil,
 		},
 	}
-	repo := &repositories.MetricRepository{Storage: store.NewStorage()}
+	repo := &repositories.MetricRepository{Storage: store.NewStorage(c)}
 	service := &MetricsService{MetricRepository: repo}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

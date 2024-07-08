@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/go-chi/chi/v5"
@@ -210,6 +211,9 @@ func validateRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
 			}
 		}
 	}
+	fmt.Println("r.Body")
+	fmt.Println(r.Body)
+	fmt.Println(metrics)
 
 	if metrics.ID == domain.EmptyParam || metrics.MType == domain.EmptyParam || ((metrics.MType == domain.GaugeType && metrics.Value == nil) || (metrics.MType == domain.CounterType && metrics.Delta == nil)) {
 		return nil, &domain.MetricsError{
@@ -232,7 +236,7 @@ func sendResponse(enc *json.Encoder, data interface{}, code int, w http.Response
 	w.WriteHeader(code)
 
 	if code > http.StatusOK {
-		logger.Log.Error("failed with error", zap.Any("error", data), zap.Int("code", code))
+		logger.Log.Info("failed with error", zap.Any("error", data), zap.Int("code", code))
 	}
 	if err := enc.Encode(data); err != nil {
 		logger.Log.Debug("error encoding response", zap.Error(err))

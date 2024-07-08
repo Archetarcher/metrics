@@ -2,6 +2,7 @@ package rest
 
 import (
 	"github.com/Archetarcher/metrics.git/internal/server/compression"
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
@@ -15,12 +16,13 @@ import (
 
 type MetricsAPI struct {
 	router chi.Router
+	config *config.AppConfig
 }
 
-func NewMetricsAPI(storage *store.MemStorage) (*MetricsAPI, *domain.MetricsError) {
+func NewMetricsAPI(storage *store.MemStorage, config *config.AppConfig) (*MetricsAPI, *domain.MetricsError) {
 	r := chi.NewRouter()
 
-	if err := logger.Initialize(domain.LogLevel); err != nil {
+	if err := logger.Initialize(config.LogLevel); err != nil {
 		return nil, &domain.MetricsError{
 			Text: err.Error(),
 			Code: http.StatusInternalServerError,
@@ -41,13 +43,14 @@ func NewMetricsAPI(storage *store.MemStorage) (*MetricsAPI, *domain.MetricsError
 	r.Post("/value/", handler.GetMetricsJSON)
 	return &MetricsAPI{
 		router: r,
+		config: config,
 	}, nil
 }
 
 func (a MetricsAPI) Run() *domain.MetricsError {
 
-	logger.Log.Info("Running server ", zap.String("address", domain.RunAddr))
-	err := http.ListenAndServe(domain.RunAddr, a.router)
+	logger.Log.Info("Running server ", zap.String("address", a.config.RunAddr))
+	err := http.ListenAndServe(a.config.RunAddr, a.router)
 	if err != nil {
 		return &domain.MetricsError{
 			Text: err.Error(),

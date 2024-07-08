@@ -1,11 +1,14 @@
 package repositories
 
 import (
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
+
+var c = config.NewConfig()
 
 func setup() *domain.Metrics {
 	i := int64(1)
@@ -14,6 +17,7 @@ func setup() *domain.Metrics {
 }
 func TestMetricRepository_Get(t *testing.T) {
 
+	c.ParseConfig()
 	type args struct {
 		request *domain.Metrics
 	}
@@ -32,7 +36,7 @@ func TestMetricRepository_Get(t *testing.T) {
 			want:    nil,
 		},
 	}
-	repo := &MetricRepository{Storage: store.NewStorage()}
+	repo := &MetricRepository{Storage: store.NewStorage(c)}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -46,6 +50,7 @@ func TestMetricRepository_Get(t *testing.T) {
 }
 
 func TestMetricRepository_Set(t *testing.T) {
+	c.ParseConfig()
 
 	type args struct {
 		request *domain.Metrics
@@ -63,7 +68,7 @@ func TestMetricRepository_Set(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	repo := &MetricRepository{Storage: store.NewStorage()}
+	repo := &MetricRepository{Storage: store.NewStorage(c)}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

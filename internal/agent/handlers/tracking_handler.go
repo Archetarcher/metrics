@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/Archetarcher/metrics.git/internal/agent/logger"
@@ -13,6 +12,7 @@ import (
 
 type TrackingHandler struct {
 	TrackingService
+	Config *config.AppConfig
 }
 
 type TrackingService interface {
@@ -21,9 +21,8 @@ type TrackingService interface {
 }
 
 func (h *TrackingHandler) TrackMetrics() *domain.TrackingError {
-	config.ParseConfig()
 
-	if err := logger.Initialize(domain.LogLevel); err != nil {
+	if err := logger.Initialize(h.Config.LogLevel); err != nil {
 		return &domain.TrackingError{
 			Text: err.Error(),
 			Code: http.StatusInternalServerError,
@@ -35,8 +34,8 @@ func (h *TrackingHandler) TrackMetrics() *domain.TrackingError {
 	metrics := domain.MetricsData{}
 	wg.Add(2)
 
-	go startPoll(h.Fetch, &metrics, &wg)
-	go startReport(h.Send, &metrics, &wg)
+	go startPoll(h.Fetch, &metrics, &wg, h.Config.PollInterval)
+	go startReport(h.Send, &metrics, &wg, h.Config.ReportInterval)
 
 	logger.Log.Info("Waiting for goroutines to finish...")
 
@@ -48,15 +47,15 @@ func (h *TrackingHandler) TrackMetrics() *domain.TrackingError {
 type fetch func(counterInterval int64, metrics *domain.MetricsData) *domain.TrackingError
 type send func(request *domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
 
-func startPoll(fetch fetch, metrics *domain.MetricsData, wg *sync.WaitGroup) {
+func startPoll(fetch fetch, metrics *domain.MetricsData, wg *sync.WaitGroup, interval int) {
 	defer wg.Done()
-	var pollInterval = time.Duration(domain.PollInterval) * time.Second
+	var pollInterval = time.Duration(interval) * time.Second
 	counterInterval := int64(1)
 	logger.Log.Info("starting poll")
 	for {
 		err := fetch(counterInterval, metrics)
 		if err != nil {
-			logger.Log.Error(err.Text)
+			logger.Log.Info(err.Text)
 		}
 
 		counterInterval++
@@ -65,12 +64,12 @@ func startPoll(fetch fetch, metrics *domain.MetricsData, wg *sync.WaitGroup) {
 	}
 }
 
-func startReport(send send, metrics *domain.MetricsData, wg *sync.WaitGroup) {
+func startReport(send send, metrics *domain.MetricsData, wg *sync.WaitGroup, interval int) {
 	defer wg.Done()
 
 	logger.Log.Info("starting report")
 
-	var reportInterval = time.Duration(domain.ReportInterval) * time.Second
+	var reportInterval = time.Duration(interval) * time.Second
 	for {
 
 		values := reflect.ValueOf(metrics).Elem()
@@ -78,12 +77,12 @@ func startReport(send send, metrics *domain.MetricsData, wg *sync.WaitGroup) {
 			field := values.Field(i)
 
 			request := field.Interface().(domain.Metrics)
-			fmt.Println("request")
-			fmt.Println(request)
+
 			_, err := send(&request)
 			if err != nil {
-				logger.Log.Error(err.Text)
+				logger.Log.Info(err.Text)
 			}
+
 		}
 		time.Sleep(reportInterval)
 

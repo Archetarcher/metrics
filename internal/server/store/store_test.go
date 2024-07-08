@@ -1,11 +1,14 @@
 package store
 
 import (
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 )
+
+var c = config.NewConfig()
 
 func setup() *domain.Metrics {
 	i := int64(1)
@@ -18,6 +21,7 @@ func setup() *domain.Metrics {
 	return req
 }
 func TestMemStorage_GetValue(t *testing.T) {
+	c.ParseConfig()
 
 	type args struct {
 		request *domain.Metrics
@@ -38,7 +42,7 @@ func TestMemStorage_GetValue(t *testing.T) {
 		},
 	}
 
-	store := NewStorage()
+	store := NewStorage(c)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := store.GetValue(tt.args.request)
@@ -51,6 +55,8 @@ func TestMemStorage_GetValue(t *testing.T) {
 }
 
 func TestMemStorage_SetValue(t *testing.T) {
+	c.ParseConfig()
+
 	type args struct {
 		request *domain.Metrics
 	}
@@ -68,7 +74,7 @@ func TestMemStorage_SetValue(t *testing.T) {
 		},
 	}
 
-	store := NewStorage()
+	store := NewStorage(c)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -80,6 +86,8 @@ func TestMemStorage_SetValue(t *testing.T) {
 }
 
 func TestNewStorage(t *testing.T) {
+	c.ParseConfig()
+
 	tests := []struct {
 		name string
 		want *MemStorage
@@ -87,14 +95,15 @@ func TestNewStorage(t *testing.T) {
 		{
 			name: "positive test #1",
 			want: &MemStorage{
-				mux:  sync.Mutex{},
-				data: make(map[string]domain.Metrics),
+				mux:    sync.Mutex{},
+				data:   make(map[string]domain.Metrics),
+				Config: c,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, NewStorage())
+			assert.Equal(t, tt.want, NewStorage(c))
 		})
 	}
 }

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"os"
 	"strconv"
 )
@@ -13,29 +12,34 @@ const (
 	envLogLevelName       = "LOG_LEVEL"
 )
 
-func getEnvOrDefault(env string, def string) string {
+func getEnvOrDefault(env string, def any, t int) any {
 	val := os.Getenv(env)
 	if val == "" {
 		return def
 	}
-	return val
+
+	switch t {
+	case 1:
+		return val
+	case 2:
+		if i, err := strconv.Atoi(val); err == nil {
+			return i
+
+		}
+		return def
+	case 3:
+		if i, err := strconv.ParseBool(val); err == nil {
+			return i
+		}
+		return def
+	default:
+		return def
+	}
 }
 
-func parseEnv() {
-	domain.ServerRunAddr = getEnvOrDefault(envServerRunAddrName, domain.ServerRunAddr)
-	domain.LogLevel = getEnvOrDefault(envLogLevelName, domain.LogLevel)
-
-	if envReportInt := os.Getenv(envReportIntervalName); envReportInt != "" {
-		if i, err := strconv.Atoi(envReportInt); err == nil {
-			domain.ReportInterval = i
-
-		}
-	}
-	if envPollInt := os.Getenv(envPollIntervalName); envPollInt != "" {
-		if i, err := strconv.Atoi(envPollInt); err == nil {
-			domain.PollInterval = i
-
-		}
-	}
-
+func (c *AppConfig) parseEnv() {
+	c.ServerRunAddr = getEnvOrDefault(envServerRunAddrName, c.ServerRunAddr, 1).(string)
+	c.LogLevel = getEnvOrDefault(envLogLevelName, c.LogLevel, 1).(string)
+	c.ReportInterval = getEnvOrDefault(envReportIntervalName, c.ReportInterval, 2).(int)
+	c.PollInterval = getEnvOrDefault(envPollIntervalName, c.PollInterval, 2).(int)
 }

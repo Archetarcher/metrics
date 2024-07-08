@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"go.uber.org/zap"
@@ -13,17 +14,19 @@ import (
 )
 
 type MemStorage struct {
-	mux  sync.Mutex
-	data map[string]domain.Metrics
+	mux    sync.Mutex
+	data   map[string]domain.Metrics
+	Config *config.AppConfig
 }
 
-func NewStorage() *MemStorage {
+func NewStorage(config *config.AppConfig) *MemStorage {
 	storage := &MemStorage{
-		mux:  sync.Mutex{},
-		data: make(map[string]domain.Metrics),
+		mux:    sync.Mutex{},
+		data:   make(map[string]domain.Metrics),
+		Config: config,
 	}
 
-	if domain.Restore {
+	if config.Restore {
 		err := storage.Load()
 		if err != nil {
 			logger.Log.Info("failed to load metrics from file", zap.Error(err))
@@ -35,7 +38,7 @@ func NewStorage() *MemStorage {
 
 	go func() {
 		defer wg.Done()
-		var storeInterval = time.Duration(domain.StoreInterval) * time.Second
+		var storeInterval = time.Duration(config.StoreInterval) * time.Second
 
 		for {
 			err := storage.Save()
@@ -81,7 +84,7 @@ func getName(request *domain.Metrics) string {
 
 func (s *MemStorage) Save() error {
 
-	if domain.FileStoragePath == domain.EmptyParam {
+	if s.Config.FileStoragePath == domain.EmptyParam {
 		return nil
 	}
 
@@ -89,14 +92,14 @@ func (s *MemStorage) Save() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(domain.FileStoragePath, data, 0666)
+	return os.WriteFile(s.Config.FileStoragePath, data, 0666)
 }
 func (s *MemStorage) Load() error {
-	if domain.FileStoragePath == domain.EmptyParam {
+	if s.Config.FileStoragePath == domain.EmptyParam {
 		return nil
 	}
 
-	data, err := os.ReadFile(domain.FileStoragePath)
+	data, err := os.ReadFile(s.Config.FileStoragePath)
 
 	if errors.Is(err, os.ErrNotExist) {
 		return nil

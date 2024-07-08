@@ -1,7 +1,6 @@
 package config
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"os"
 	"strconv"
 )
@@ -14,28 +13,34 @@ const (
 	envRestoreName         = "RESTORE"
 )
 
-func getEnvOrDefault(env string, def string) string {
+func getEnvOrDefault(env string, def any, t int) any {
 	val := os.Getenv(env)
 	if val == "" {
 		return def
 	}
-	return val
+
+	switch t {
+	case 1:
+		return val
+	case 2:
+		if i, err := strconv.Atoi(val); err == nil {
+			return i
+
+		}
+		return def
+	case 3:
+		if i, err := strconv.ParseBool(val); err == nil {
+			return i
+		}
+		return def
+	default:
+		return def
+	}
 }
-
-func parseEnv() {
-	domain.RunAddr = getEnvOrDefault(envRunAddrName, domain.RunAddr)
-	domain.LogLevel = getEnvOrDefault(envLogLevelName, domain.LogLevel)
-	domain.FileStoragePath = getEnvOrDefault(envFileStoragePathName, domain.FileStoragePath)
-
-	if envStoreInterval := os.Getenv(envStoreIntervalName); envStoreInterval != "" {
-		if i, err := strconv.Atoi(envStoreInterval); err == nil {
-			domain.StoreInterval = i
-
-		}
-	}
-	if envRestore := os.Getenv(envRestoreName); envRestore != "" {
-		if i, err := strconv.ParseBool(envRestore); err == nil {
-			domain.Restore = i
-		}
-	}
+func (c *AppConfig) parseEnv() {
+	c.RunAddr = getEnvOrDefault(envRunAddrName, c.RunAddr, 1).(string)
+	c.LogLevel = getEnvOrDefault(envLogLevelName, c.LogLevel, 1).(string)
+	c.FileStoragePath = getEnvOrDefault(envFileStoragePathName, c.FileStoragePath, 1).(string)
+	c.StoreInterval = getEnvOrDefault(envStoreIntervalName, c.StoreInterval, 2).(int)
+	c.Restore = getEnvOrDefault(envRestoreName, c.Restore, 3).(bool)
 }

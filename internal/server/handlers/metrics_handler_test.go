@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
@@ -12,8 +14,13 @@ import (
 	"testing"
 )
 
+var c = config.NewConfig()
+
 func TestMetricsHandler_UpdateMetrics(t *testing.T) {
-	repo := &repositories.MetricRepository{Storage: store.NewStorage()}
+	c.ParseConfig()
+
+	fmt.Println(c)
+	repo := &repositories.MetricRepository{Storage: store.NewStorage(c)}
 	service := &services.MetricsService{MetricRepository: repo}
 	handler := MetricsHandler{MetricsService: service}
 	r := chi.NewRouter()

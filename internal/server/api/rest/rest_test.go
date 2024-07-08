@@ -9,7 +9,6 @@ import (
 )
 
 func TestMetricsAPI_Run(t *testing.T) {
-	config.ParseConfig()
 
 	type fields struct {
 		server *http.ServeMux
@@ -41,7 +40,8 @@ func TestNewMetricsAPI(t *testing.T) {
 	type fields struct {
 		storage *store.MemStorage
 	}
-
+	c := config.AppConfig{}
+	c.ParseConfig()
 	tests := []struct {
 		name    string
 		fields  fields
@@ -49,7 +49,7 @@ func TestNewMetricsAPI(t *testing.T) {
 	}{
 		{
 			name:    "Test with storage",
-			fields:  fields{storage: store.NewStorage()},
+			fields:  fields{storage: store.NewStorage(&c)},
 			wantErr: false,
 		},
 		{

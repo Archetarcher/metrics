@@ -37,7 +37,8 @@ func TestTrackingService_Fetch(t *testing.T) {
 }
 
 func TestTrackingService_Send(t *testing.T) {
-	config.ParseConfig()
+	c := config.AppConfig{}
+	c.ParseConfig()
 	type args struct {
 		request *domain.Metrics
 	}
@@ -46,7 +47,7 @@ func TestTrackingService_Send(t *testing.T) {
 		args    args
 		wantErr bool
 	}{}
-	service := &TrackingService{}
+	service := &TrackingService{Config: &c}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
