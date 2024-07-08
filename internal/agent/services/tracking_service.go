@@ -2,51 +2,68 @@ package services
 
 import (
 	"fmt"
+	"github.com/Archetarcher/metrics.git/internal/agent/compression"
+	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/go-resty/resty/v2"
 	"math/rand"
 	"net/http"
-	"reflect"
 	"runtime"
+)
+
+const (
+	gaugeType     = "gauge"
+	counterType   = "counter"
+	pollCount     = "PollCount"
+	randomValue   = "RandomValue"
+	alloc         = "Alloc"
+	buckHashSys   = "BuckHashSys"
+	frees         = "Frees"
+	gCCPUFraction = "GCCPUFraction"
+	gCSys         = "GCSys"
+	heapAlloc     = "HeapAlloc"
+	heapIdle      = "HeapIdle"
+	heapInuse     = "HeapInuse"
+	heapObjects   = "HeapObjects"
+	heapReleased  = "HeapReleased"
+	heapSys       = "HeapSys"
+	lastGC        = "LastGC"
+	lookups       = "Lookups"
+	mCacheInuse   = "MCacheInuse"
+	mCacheSys     = "MCacheSys"
+	mSpanInuse    = "MSpanInuse"
+	mSpanSys      = "MSpanSys"
+	mallocs       = "Mallocs"
+	nextGC        = "NextGC"
+	numForcedGC   = "NumForcedGC"
+	numGC         = "NumGC"
+	otherSys      = "OtherSys"
+	pauseTotalNs  = "PauseTotalNs"
+	stackInuse    = "StackInuse"
+	stackSys      = "StackSys"
+	sys           = "Sys"
+	totalAlloc    = "TotalAlloc"
 )
 
 type TrackingService struct {
 	Client *resty.Client
+	Config *config.AppConfig
 }
 
-func (s *TrackingService) Fetch(counterInterval int) ([]domain.MetricData, *domain.TrackingError) {
-
-	var metrics = make([]domain.MetricData, 0)
-
-	var gauge = mapMetricValues()
-
-	values := reflect.ValueOf(gauge)
-	types := values.Type()
-	for i := 0; i < values.NumField(); i++ {
-		name := types.Field(i).Name
-		field := values.FieldByName(name)
-
-		metrics = append(metrics, domain.MetricData{
-			Name:  name,
-			Type:  domain.GaugeType,
-			Value: field.Float(),
-		})
-	}
-
-	metrics = append(metrics, domain.MetricData{
-		Name:  domain.CounterMetric,
-		Type:  domain.CounterType,
-		Value: float64(counterInterval),
-	})
-	return metrics, nil
+func (s *TrackingService) Fetch(counterInterval int64, metrics *domain.MetricsData) *domain.TrackingError {
+	var m domain.MetricsData
+	mapMetricsValues(counterInterval, &m)
+	*metrics = m
+	return nil
 }
 
-func (s *TrackingService) Send(request *domain.MetricData) (*domain.SendResponse, *domain.TrackingError) {
+func (s *TrackingService) Send(request *domain.Metrics) (*domain.SendResponse, *domain.TrackingError) {
 
-	url := fmt.Sprintf("http://%s/update/%s/%s/%f", domain.ServerRunAddr, request.Type, request.Name, request.Value)
-	res, err := s.Client.R().SetHeader("Content-Type", "text/plain").Post(url)
+	url := fmt.Sprintf("http://%s/update/", s.Config.ServerRunAddr)
+
+	res, err := s.Client.OnBeforeRequest(compression.GzipMiddleware).R().SetBody(request).Post(url)
 	if err != nil {
-		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err), Code: http.StatusInternalServerError}
+		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err.Error()), Code: http.StatusInternalServerError}
 	}
 
 	if res.StatusCode() != http.StatusOK {
@@ -55,11 +72,59 @@ func (s *TrackingService) Send(request *domain.MetricData) (*domain.SendResponse
 	return &domain.SendResponse{Status: http.StatusOK}, nil
 }
 
-func mapMetricValues() domain.Gauge {
-	var rtm runtime.MemStats
-	var gauge domain.Gauge
+func metricsValue(name string, mtype string, delta *int64, value *float64) domain.Metrics {
+	return domain.Metrics{
+		ID:    name,
+		MType: mtype,
+		Delta: delta,
+		Value: value,
+	}
+}
 
+func mapMetricsValues(counterInterval int64, metrics *domain.MetricsData) {
+	rv := rand.ExpFloat64()
+	gauge := gatherGaugeValues()
+
+	metrics.PollCount = metricsValue(pollCount, counterType, &counterInterval, nil)
+	metrics.RandomValue = metricsValue(randomValue, gaugeType, nil, &rv)
+	metrics.Alloc = metricsValue(alloc, gaugeType, nil, &gauge.Alloc)
+	metrics.BuckHashSys = metricsValue(buckHashSys, gaugeType, nil, &gauge.BuckHashSys)
+	metrics.Frees = metricsValue(frees, gaugeType, nil, &gauge.Frees)
+	metrics.GCCPUFraction = metricsValue(gCCPUFraction, gaugeType, nil, &gauge.GCCPUFraction)
+	metrics.GCSys = metricsValue(gCSys, gaugeType, nil, &gauge.GCSys)
+	metrics.HeapAlloc = metricsValue(heapAlloc, gaugeType, nil, &gauge.HeapAlloc)
+	metrics.HeapIdle = metricsValue(heapIdle, gaugeType, nil, &gauge.HeapIdle)
+	metrics.HeapInuse = metricsValue(heapInuse, gaugeType, nil, &gauge.HeapInuse)
+	metrics.HeapObjects = metricsValue(heapObjects, gaugeType, nil, &gauge.HeapObjects)
+	metrics.HeapReleased = metricsValue(heapReleased, gaugeType, nil, &gauge.HeapReleased)
+	metrics.HeapSys = metricsValue(heapSys, gaugeType, nil, &gauge.HeapSys)
+	metrics.LastGC = metricsValue(lastGC, gaugeType, nil, &gauge.LastGC)
+	metrics.Lookups = metricsValue(lookups, gaugeType, nil, &gauge.Lookups)
+	metrics.MCacheInuse = metricsValue(mCacheInuse, gaugeType, nil, &gauge.MCacheInuse)
+	metrics.MCacheSys = metricsValue(mCacheSys, gaugeType, nil, &gauge.MCacheSys)
+	metrics.LastGC = metricsValue(lastGC, gaugeType, nil, &gauge.LastGC)
+	metrics.Lookups = metricsValue(lookups, gaugeType, nil, &gauge.Lookups)
+	metrics.MCacheInuse = metricsValue(mCacheInuse, gaugeType, nil, &gauge.MCacheInuse)
+	metrics.MCacheSys = metricsValue(mCacheSys, gaugeType, nil, &gauge.MCacheSys)
+	metrics.MSpanInuse = metricsValue(mSpanInuse, gaugeType, nil, &gauge.MSpanInuse)
+	metrics.MSpanSys = metricsValue(mSpanSys, gaugeType, nil, &gauge.MSpanSys)
+	metrics.Mallocs = metricsValue(mallocs, gaugeType, nil, &gauge.Mallocs)
+	metrics.NextGC = metricsValue(nextGC, gaugeType, nil, &gauge.NextGC)
+	metrics.NumForcedGC = metricsValue(numForcedGC, gaugeType, nil, &gauge.NumForcedGC)
+	metrics.NumGC = metricsValue(numGC, gaugeType, nil, &gauge.NumGC)
+	metrics.OtherSys = metricsValue(otherSys, gaugeType, nil, &gauge.OtherSys)
+	metrics.PauseTotalNs = metricsValue(pauseTotalNs, gaugeType, nil, &gauge.PauseTotalNs)
+	metrics.StackInuse = metricsValue(stackInuse, gaugeType, nil, &gauge.StackInuse)
+	metrics.StackSys = metricsValue(stackSys, gaugeType, nil, &gauge.StackSys)
+	metrics.Sys = metricsValue(sys, gaugeType, nil, &gauge.Sys)
+	metrics.TotalAlloc = metricsValue(totalAlloc, gaugeType, nil, &gauge.TotalAlloc)
+}
+func gatherGaugeValues() domain.Gauge {
+	var gauge = domain.Gauge{}
+
+	var rtm runtime.MemStats
 	runtime.ReadMemStats(&rtm)
+
 	gauge.Alloc = float64(rtm.Alloc)
 	gauge.BuckHashSys = float64(rtm.BuckHashSys)
 	gauge.Frees = float64(rtm.Frees)

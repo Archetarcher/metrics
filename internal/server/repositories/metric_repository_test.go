@@ -1,37 +1,42 @@
 package repositories
 
 import (
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
+var c = config.NewConfig()
+
+func setup() *domain.Metrics {
+	i := int64(1)
+	req := &domain.Metrics{MType: "counter", ID: "countervalue", Delta: &i}
+	return req
+}
 func TestMetricRepository_Get(t *testing.T) {
 
+	c.ParseConfig()
 	type args struct {
-		request *domain.MetricRequest
+		request *domain.Metrics
 	}
+
+	req := setup()
 	tests := []struct {
 		name    string
 		args    args
-		want    *domain.MetricResponse
+		want    *domain.Metrics
 		wantErr bool
 	}{
 		{
-			name: "positive test #1",
-			args: args{
-				&domain.MetricRequest{
-					Type:  "counter",
-					Name:  "countervalue",
-					Value: 1,
-				},
-			},
+			name:    "positive test #1",
+			args:    args{request: req},
 			wantErr: false,
 			want:    nil,
 		},
 	}
-	repo := &MetricRepository{Storage: store.NewStorage()}
+	repo := &MetricRepository{Storage: store.NewStorage(c)}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -45,28 +50,25 @@ func TestMetricRepository_Get(t *testing.T) {
 }
 
 func TestMetricRepository_Set(t *testing.T) {
+	c.ParseConfig()
 
 	type args struct {
-		request *domain.MetricRequest
+		request *domain.Metrics
 	}
+	req := setup()
+
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
 		{
-			name: "positive test #1",
-			args: args{
-				&domain.MetricRequest{
-					Type:  "counter",
-					Name:  "countervalue",
-					Value: 1,
-				},
-			},
+			name:    "positive test #1",
+			args:    args{request: req},
 			wantErr: false,
 		},
 	}
-	repo := &MetricRepository{Storage: store.NewStorage()}
+	repo := &MetricRepository{Storage: store.NewStorage(c)}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

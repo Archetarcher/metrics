@@ -1,6 +1,6 @@
 package domain
 
-type MetricError struct {
+type MetricsError struct {
 	Text string
 	Code int
 }
