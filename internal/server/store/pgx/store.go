@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -97,7 +96,6 @@ func (s *Store) GetValue(request *domain.Metrics) (*domain.Metrics, *domain.Metr
 		"SELECT id, type, delta, value from metrics where id = $1 and type = $2 ", request.ID, request.MType)
 
 	err := row.Scan(&metrics.ID, &metrics.MType, &metrics.Delta, &metrics.Value)
-	fmt.Println(err)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}

@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS metrics
 (
-    id VARCHAR (20) NOT NULL PRIMARY KEY,
+    id VARCHAR (100) NOT NULL PRIMARY KEY,
     type VARCHAR (10) NOT NULL,
     delta INT ,
     value DOUBLE PRECISION
