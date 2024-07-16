@@ -7,17 +7,22 @@ import (
 )
 
 type MetricsService struct {
-	MetricRepository
+	repo MetricRepository
 }
+
 type MetricRepository interface {
 	GetAll() ([]domain.Metrics, error)
 	Get(request *domain.Metrics) (*domain.Metrics, error)
 	Set(request *domain.Metrics) error
 }
 
+func NewMetricsService(repo MetricRepository) *MetricsService {
+	return &MetricsService{repo: repo}
+}
+
 func (s *MetricsService) Update(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
 
-	response, err := s.Get(request)
+	response, err := s.repo.Get(request)
 	if err != nil {
 		return nil, handleError(http.StatusInternalServerError, err.Error())
 	}
@@ -25,15 +30,15 @@ func (s *MetricsService) Update(request *domain.Metrics) (*domain.Metrics, *doma
 		c := *request.Delta + *response.Delta
 		request.Delta = &c
 	}
-	if err := s.Set(request); err != nil {
+	if err := s.repo.Set(request); err != nil {
 		return nil, handleError(http.StatusNotFound, err.Error())
 	}
-	response, _ = s.Get(request)
+	response, _ = s.repo.Get(request)
 	return response, nil
 }
 func (s *MetricsService) GetValue(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
 
-	response, err := s.Get(request)
+	response, err := s.repo.Get(request)
 	if err != nil {
 		return nil, handleError(http.StatusInternalServerError, err.Error())
 	}
@@ -45,7 +50,7 @@ func (s *MetricsService) GetValue(request *domain.Metrics) (*domain.Metrics, *do
 }
 func (s *MetricsService) GetAllValues() (string, *domain.MetricsError) {
 
-	response, err := s.GetAll()
+	response, err := s.repo.GetAll()
 
 	if err != nil {
 		return "", handleError(http.StatusInternalServerError, err.Error())

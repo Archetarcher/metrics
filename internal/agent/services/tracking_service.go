@@ -51,9 +51,7 @@ type TrackingService struct {
 }
 
 func (s *TrackingService) Fetch(counterInterval int64, metrics *domain.MetricsData) *domain.TrackingError {
-	var m domain.MetricsData
-	mapMetricsValues(counterInterval, &m)
-	*metrics = m
+	*metrics = mapMetricsValues(counterInterval)
 	return nil
 }
 
@@ -81,43 +79,45 @@ func metricsValue(name string, mtype string, delta *int64, value *float64) domai
 	}
 }
 
-func mapMetricsValues(counterInterval int64, metrics *domain.MetricsData) {
+func mapMetricsValues(counterInterval int64) domain.MetricsData {
 	rv := rand.ExpFloat64()
 	gauge := gatherGaugeValues()
+	metrics := make(map[string]domain.Metrics)
 
-	metrics.PollCount = metricsValue(pollCount, counterType, &counterInterval, nil)
-	metrics.RandomValue = metricsValue(randomValue, gaugeType, nil, &rv)
-	metrics.Alloc = metricsValue(alloc, gaugeType, nil, &gauge.Alloc)
-	metrics.BuckHashSys = metricsValue(buckHashSys, gaugeType, nil, &gauge.BuckHashSys)
-	metrics.Frees = metricsValue(frees, gaugeType, nil, &gauge.Frees)
-	metrics.GCCPUFraction = metricsValue(gCCPUFraction, gaugeType, nil, &gauge.GCCPUFraction)
-	metrics.GCSys = metricsValue(gCSys, gaugeType, nil, &gauge.GCSys)
-	metrics.HeapAlloc = metricsValue(heapAlloc, gaugeType, nil, &gauge.HeapAlloc)
-	metrics.HeapIdle = metricsValue(heapIdle, gaugeType, nil, &gauge.HeapIdle)
-	metrics.HeapInuse = metricsValue(heapInuse, gaugeType, nil, &gauge.HeapInuse)
-	metrics.HeapObjects = metricsValue(heapObjects, gaugeType, nil, &gauge.HeapObjects)
-	metrics.HeapReleased = metricsValue(heapReleased, gaugeType, nil, &gauge.HeapReleased)
-	metrics.HeapSys = metricsValue(heapSys, gaugeType, nil, &gauge.HeapSys)
-	metrics.LastGC = metricsValue(lastGC, gaugeType, nil, &gauge.LastGC)
-	metrics.Lookups = metricsValue(lookups, gaugeType, nil, &gauge.Lookups)
-	metrics.MCacheInuse = metricsValue(mCacheInuse, gaugeType, nil, &gauge.MCacheInuse)
-	metrics.MCacheSys = metricsValue(mCacheSys, gaugeType, nil, &gauge.MCacheSys)
-	metrics.LastGC = metricsValue(lastGC, gaugeType, nil, &gauge.LastGC)
-	metrics.Lookups = metricsValue(lookups, gaugeType, nil, &gauge.Lookups)
-	metrics.MCacheInuse = metricsValue(mCacheInuse, gaugeType, nil, &gauge.MCacheInuse)
-	metrics.MCacheSys = metricsValue(mCacheSys, gaugeType, nil, &gauge.MCacheSys)
-	metrics.MSpanInuse = metricsValue(mSpanInuse, gaugeType, nil, &gauge.MSpanInuse)
-	metrics.MSpanSys = metricsValue(mSpanSys, gaugeType, nil, &gauge.MSpanSys)
-	metrics.Mallocs = metricsValue(mallocs, gaugeType, nil, &gauge.Mallocs)
-	metrics.NextGC = metricsValue(nextGC, gaugeType, nil, &gauge.NextGC)
-	metrics.NumForcedGC = metricsValue(numForcedGC, gaugeType, nil, &gauge.NumForcedGC)
-	metrics.NumGC = metricsValue(numGC, gaugeType, nil, &gauge.NumGC)
-	metrics.OtherSys = metricsValue(otherSys, gaugeType, nil, &gauge.OtherSys)
-	metrics.PauseTotalNs = metricsValue(pauseTotalNs, gaugeType, nil, &gauge.PauseTotalNs)
-	metrics.StackInuse = metricsValue(stackInuse, gaugeType, nil, &gauge.StackInuse)
-	metrics.StackSys = metricsValue(stackSys, gaugeType, nil, &gauge.StackSys)
-	metrics.Sys = metricsValue(sys, gaugeType, nil, &gauge.Sys)
-	metrics.TotalAlloc = metricsValue(totalAlloc, gaugeType, nil, &gauge.TotalAlloc)
+	metrics[pollCount] = metricsValue(pollCount, counterType, &counterInterval, nil)
+	metrics[randomValue] = metricsValue(randomValue, gaugeType, nil, &rv)
+	metrics[alloc] = metricsValue(alloc, gaugeType, nil, &gauge.Alloc)
+	metrics[buckHashSys] = metricsValue(buckHashSys, gaugeType, nil, &gauge.BuckHashSys)
+	metrics[frees] = metricsValue(frees, gaugeType, nil, &gauge.Frees)
+	metrics[gCCPUFraction] = metricsValue(gCCPUFraction, gaugeType, nil, &gauge.GCCPUFraction)
+	metrics[gCSys] = metricsValue(gCSys, gaugeType, nil, &gauge.GCSys)
+	metrics[heapAlloc] = metricsValue(heapAlloc, gaugeType, nil, &gauge.HeapAlloc)
+	metrics[heapIdle] = metricsValue(heapIdle, gaugeType, nil, &gauge.HeapIdle)
+	metrics[heapInuse] = metricsValue(heapInuse, gaugeType, nil, &gauge.HeapInuse)
+	metrics[heapObjects] = metricsValue(heapObjects, gaugeType, nil, &gauge.HeapObjects)
+	metrics[heapReleased] = metricsValue(heapReleased, gaugeType, nil, &gauge.HeapReleased)
+	metrics[heapSys] = metricsValue(heapSys, gaugeType, nil, &gauge.HeapSys)
+	metrics[lastGC] = metricsValue(lastGC, gaugeType, nil, &gauge.LastGC)
+	metrics[lookups] = metricsValue(lookups, gaugeType, nil, &gauge.Lookups)
+	metrics[mCacheInuse] = metricsValue(mCacheInuse, gaugeType, nil, &gauge.MCacheInuse)
+	metrics[mCacheSys] = metricsValue(mCacheSys, gaugeType, nil, &gauge.MCacheSys)
+	metrics[lastGC] = metricsValue(lastGC, gaugeType, nil, &gauge.LastGC)
+	metrics[lookups] = metricsValue(lookups, gaugeType, nil, &gauge.Lookups)
+	metrics[mCacheInuse] = metricsValue(mCacheInuse, gaugeType, nil, &gauge.MCacheInuse)
+	metrics[mCacheSys] = metricsValue(mCacheSys, gaugeType, nil, &gauge.MCacheSys)
+	metrics[mSpanInuse] = metricsValue(mSpanInuse, gaugeType, nil, &gauge.MSpanInuse)
+	metrics[mSpanSys] = metricsValue(mSpanSys, gaugeType, nil, &gauge.MSpanSys)
+	metrics[mallocs] = metricsValue(mallocs, gaugeType, nil, &gauge.Mallocs)
+	metrics[nextGC] = metricsValue(nextGC, gaugeType, nil, &gauge.NextGC)
+	metrics[numForcedGC] = metricsValue(numForcedGC, gaugeType, nil, &gauge.NumForcedGC)
+	metrics[numGC] = metricsValue(numGC, gaugeType, nil, &gauge.NumGC)
+	metrics[otherSys] = metricsValue(otherSys, gaugeType, nil, &gauge.OtherSys)
+	metrics[pauseTotalNs] = metricsValue(pauseTotalNs, gaugeType, nil, &gauge.PauseTotalNs)
+	metrics[stackInuse] = metricsValue(stackInuse, gaugeType, nil, &gauge.StackInuse)
+	metrics[stackSys] = metricsValue(stackSys, gaugeType, nil, &gauge.StackSys)
+	metrics[sys] = metricsValue(sys, gaugeType, nil, &gauge.Sys)
+	metrics[totalAlloc] = metricsValue(totalAlloc, gaugeType, nil, &gauge.TotalAlloc)
+	return metrics
 }
 func gatherGaugeValues() domain.Gauge {
 	var gauge = domain.Gauge{}

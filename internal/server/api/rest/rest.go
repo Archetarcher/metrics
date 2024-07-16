@@ -6,9 +6,6 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
-	"github.com/Archetarcher/metrics.git/internal/server/repositories"
-	"github.com/Archetarcher/metrics.git/internal/server/services"
-	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"net/http"
@@ -16,10 +13,9 @@ import (
 
 type MetricsAPI struct {
 	router chi.Router
-	config *config.AppConfig
 }
 
-func NewMetricsAPI(storage *store.MemStorage, config *config.AppConfig) (*MetricsAPI, *domain.MetricsError) {
+func NewMetricsAPI(handler *handlers.MetricsHandler, config config.AppConfig) (*MetricsAPI, *domain.MetricsError) {
 	r := chi.NewRouter()
 
 	if err := logger.Initialize(config.LogLevel); err != nil {
@@ -31,26 +27,23 @@ func NewMetricsAPI(storage *store.MemStorage, config *config.AppConfig) (*Metric
 	r.Use(compression.GzipMiddleware)
 	r.Use(logger.RequestLoggerMiddleware)
 
-	repo := &repositories.MetricRepository{Storage: storage}
-	service := &services.MetricsService{MetricRepository: repo}
-	handler := handlers.MetricsHandler{MetricsService: service}
-
 	r.Post("/update/{type}/{name}/{value}", handler.UpdateMetrics)
 	r.Get("/value/{type}/{name}", handler.GetMetrics)
 	r.Get("/", handler.GetMetricsPage)
 
 	r.Post("/update/", handler.UpdateMetricsJSON)
 	r.Post("/value/", handler.GetMetricsJSON)
+
+	r.Get("/ping", handler.GetPing)
 	return &MetricsAPI{
 		router: r,
-		config: config,
 	}, nil
 }
 
-func (a MetricsAPI) Run() *domain.MetricsError {
+func (a MetricsAPI) Run(config config.AppConfig) *domain.MetricsError {
 
-	logger.Log.Info("Running server ", zap.String("address", a.config.RunAddr))
-	err := http.ListenAndServe(a.config.RunAddr, a.router)
+	logger.Log.Info("Running server ", zap.String("address", config.RunAddr))
+	err := http.ListenAndServe(config.RunAddr, a.router)
 	if err != nil {
 		return &domain.MetricsError{
 			Text: err.Error(),

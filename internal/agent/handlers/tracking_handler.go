@@ -5,7 +5,6 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/Archetarcher/metrics.git/internal/agent/logger"
 	"net/http"
-	"reflect"
 	"sync"
 	"time"
 )
@@ -71,14 +70,8 @@ func startReport(send send, metrics *domain.MetricsData, wg *sync.WaitGroup, int
 
 	var reportInterval = time.Duration(interval) * time.Second
 	for {
-
-		values := reflect.ValueOf(metrics).Elem()
-		for i := 0; i < values.NumField(); i++ {
-			field := values.Field(i)
-
-			request := field.Interface().(domain.Metrics)
-
-			_, err := send(&request)
+		for _, value := range *metrics {
+			_, err := send(&value)
 			if err != nil {
 				logger.Log.Info(err.Text)
 			}

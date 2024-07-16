@@ -3,20 +3,31 @@ package services
 import (
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
+	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
+	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"testing"
 )
 
-var c = config.NewConfig()
+var c = config.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx: &pgx.Config{}})
 
-func setup() (*domain.Metrics, *domain.Metrics) {
+func setup() (*domain.Metrics, *domain.Metrics, *MetricsService) {
 	i := float64(1)
 
 	req := &domain.Metrics{MType: "gauge", ID: "test", Value: &i}
 	res := &domain.Metrics{MType: "gauge", ID: "test", Value: &i}
-	return req, res
+	storage, err := store.NewStore(c.Store)
+	if err != nil {
+		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
+	}
+
+	repo := repositories.NewMetricsRepository(storage)
+	service := NewMetricsService(repo)
+	return req, res, service
 }
 func TestMetricsService_Update(t *testing.T) {
 	c.ParseConfig()
@@ -24,7 +35,7 @@ func TestMetricsService_Update(t *testing.T) {
 	type args struct {
 		request *domain.Metrics
 	}
-	req, res := setup()
+	req, res, service := setup()
 	tests := []struct {
 		name string
 		args args
@@ -38,8 +49,6 @@ func TestMetricsService_Update(t *testing.T) {
 			err:  nil,
 		},
 	}
-	repo := &repositories.MetricRepository{Storage: store.NewStorage(c)}
-	service := &MetricsService{MetricRepository: repo}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := service.Update(tt.args.request)

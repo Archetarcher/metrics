@@ -1,21 +1,23 @@
 package config
 
+import "github.com/Archetarcher/metrics.git/internal/server/store"
+
 func (c *AppConfig) ParseConfig() {
 	c.parseFlags()
 	c.parseEnv()
 }
 
 type AppConfig struct {
-	RunAddr         string
-	LogLevel        string
-	FileStoragePath string
-	StoreInterval   int
-	Restore         bool
+	RunAddr  string
+	LogLevel string
+	Store    store.Config
 }
 
-func NewConfig() *AppConfig {
-	var c AppConfig
+func NewConfig(store store.Config) AppConfig {
+	var c = AppConfig{
+		Store: store,
+	}
 	c.initFlags()
 
-	return &c
+	return c
 }

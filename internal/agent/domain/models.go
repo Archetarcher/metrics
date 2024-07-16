@@ -45,8 +45,11 @@ type Gauge struct {
 	RandomValue float64
 }
 
-// MetricsData struct
-type MetricsData struct {
+// MetricsData map
+type MetricsData map[string]Metrics
+
+// MetricsDat struct
+type MetricsDat struct {
 	PollCount,
 	RandomValue,
 	Alloc,

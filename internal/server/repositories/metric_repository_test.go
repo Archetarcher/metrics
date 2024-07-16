@@ -3,17 +3,29 @@ package repositories
 import (
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
+	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
+	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"testing"
 )
 
-var c = config.NewConfig()
+var c = config.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx: &pgx.Config{}})
 
-func setup() *domain.Metrics {
+func setup() (*domain.Metrics, *MetricRepository) {
 	i := int64(1)
 	req := &domain.Metrics{MType: "counter", ID: "countervalue", Delta: &i}
-	return req
+
+	storage, err := store.NewStore(c.Store)
+	if err != nil {
+		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
+	}
+
+	repo := NewMetricsRepository(storage)
+
+	return req, repo
 }
 func TestMetricRepository_Get(t *testing.T) {
 
@@ -22,7 +34,7 @@ func TestMetricRepository_Get(t *testing.T) {
 		request *domain.Metrics
 	}
 
-	req := setup()
+	req, repo := setup()
 	tests := []struct {
 		name    string
 		args    args
@@ -36,7 +48,6 @@ func TestMetricRepository_Get(t *testing.T) {
 			want:    nil,
 		},
 	}
-	repo := &MetricRepository{Storage: store.NewStorage(c)}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -55,7 +66,7 @@ func TestMetricRepository_Set(t *testing.T) {
 	type args struct {
 		request *domain.Metrics
 	}
-	req := setup()
+	req, repo := setup()
 
 	tests := []struct {
 		name    string
@@ -68,7 +79,6 @@ func TestMetricRepository_Set(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	repo := &MetricRepository{Storage: store.NewStorage(c)}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

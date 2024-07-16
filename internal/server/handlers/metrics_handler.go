@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
-	"fmt"
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/go-chi/chi/v5"
@@ -10,16 +12,22 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"time"
 )
 
 type MetricsHandler struct {
-	MetricsService
+	service MetricsService
+	config  config.AppConfig
 }
 
 type MetricsService interface {
 	Update(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
 	GetValue(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
 	GetAllValues() (string, *domain.MetricsError)
+}
+
+func NewMetricsHandler(service MetricsService, appConfig config.AppConfig) *MetricsHandler {
+	return &MetricsHandler{service: service, config: appConfig}
 }
 
 func (h *MetricsHandler) UpdateMetrics(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +41,7 @@ func (h *MetricsHandler) UpdateMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.Update(request)
+	_, err = h.service.Update(request)
 	if err != nil {
 		sendResponse(enc, err.Text, err.Code, w)
 		return
@@ -51,7 +59,7 @@ func (h *MetricsHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.GetValue(request)
+	result, err := h.service.GetValue(request)
 	if err != nil {
 		sendResponse(enc, err.Text, err.Code, w)
 		return
@@ -80,7 +88,7 @@ func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	response, err := h.Update(request)
+	response, err := h.service.Update(request)
 	if err != nil {
 		sendResponse(enc, err.Text, err.Code, w)
 		return
@@ -100,7 +108,7 @@ func (h *MetricsHandler) GetMetricsJSON(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	response, err := h.GetValue(request)
+	response, err := h.service.GetValue(request)
 	if err != nil {
 		sendResponse(enc, err.Text, err.Code, w)
 		return
@@ -111,7 +119,7 @@ func (h *MetricsHandler) GetMetricsJSON(w http.ResponseWriter, r *http.Request) 
 }
 func (h *MetricsHandler) GetMetricsPage(w http.ResponseWriter, r *http.Request) {
 
-	result, err := h.GetAllValues()
+	result, err := h.service.GetAllValues()
 	enc := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -121,6 +129,30 @@ func (h *MetricsHandler) GetMetricsPage(w http.ResponseWriter, r *http.Request) 
 	}
 
 	sendResponse(enc, result, http.StatusOK, w)
+}
+
+func (h *MetricsHandler) GetPing(w http.ResponseWriter, r *http.Request) {
+	enc := json.NewEncoder(w)
+	w.Header().Set("Content-Type", "application/json")
+
+	db, err := sql.Open("pgx", h.config.Store.Pgx.DatabaseDsn)
+
+	if err != nil {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	err = db.PingContext(ctx)
+
+	if err != nil {
+		sendResponse(enc, err.Error(), http.StatusInternalServerError, w)
+		return
+
+	}
+
+	sendResponse(enc, "", http.StatusOK, w)
+
 }
 
 func validateGetRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
@@ -211,9 +243,6 @@ func validateRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
 			}
 		}
 	}
-	fmt.Println("r.Body")
-	fmt.Println(r.Body)
-	fmt.Println(metrics)
 
 	if metrics.ID == domain.EmptyParam || metrics.MType == domain.EmptyParam || ((metrics.MType == domain.GaugeType && metrics.Value == nil) || (metrics.MType == domain.CounterType && metrics.Delta == nil)) {
 		return nil, &domain.MetricsError{

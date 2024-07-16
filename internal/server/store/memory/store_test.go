@@ -1,14 +1,11 @@
-package store
+package memory
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 )
-
-var c = config.NewConfig()
 
 func setup() *domain.Metrics {
 	i := int64(1)
@@ -20,8 +17,7 @@ func setup() *domain.Metrics {
 	}
 	return req
 }
-func TestMemStorage_GetValue(t *testing.T) {
-	c.ParseConfig()
+func TestStore_GetValue(t *testing.T) {
 
 	type args struct {
 		request *domain.Metrics
@@ -42,7 +38,7 @@ func TestMemStorage_GetValue(t *testing.T) {
 		},
 	}
 
-	store := NewStorage(c)
+	store := NewStore(&Config{StoreInterval: 300, FileStoragePath: "/tmp/metrics-pgx.json", Restore: false})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := store.GetValue(tt.args.request)
@@ -54,8 +50,7 @@ func TestMemStorage_GetValue(t *testing.T) {
 	}
 }
 
-func TestMemStorage_SetValue(t *testing.T) {
-	c.ParseConfig()
+func TestStore_SetValue(t *testing.T) {
 
 	type args struct {
 		request *domain.Metrics
@@ -74,7 +69,7 @@ func TestMemStorage_SetValue(t *testing.T) {
 		},
 	}
 
-	store := NewStorage(c)
+	store := NewStore(&Config{StoreInterval: 300, FileStoragePath: "/tmp/metrics-pgx.json", Restore: false})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -84,26 +79,24 @@ func TestMemStorage_SetValue(t *testing.T) {
 		})
 	}
 }
-func TestNewStorage(t *testing.T) {
-	c.ParseConfig()
-	c.Restore = false
+func TestNewStore(t *testing.T) {
+	store := NewStore(&Config{StoreInterval: 300, FileStoragePath: "/tmp/metrics-pgx.json", Restore: false})
 
 	tests := []struct {
 		name string
-		want *MemStorage
+		want *Store
 	}{
 		{
 			name: "positive test #1",
-			want: &MemStorage{
-				mux:    sync.Mutex{},
-				data:   make(map[string]domain.Metrics),
-				Config: c,
+			want: &Store{
+				mux:  sync.Mutex{},
+				data: make(map[string]domain.Metrics),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, NewStorage(c))
+			assert.Equal(t, tt.want, store)
 		})
 	}
 }
