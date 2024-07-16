@@ -15,7 +15,7 @@ type MetricsAPI struct {
 	router chi.Router
 }
 
-func NewMetricsAPI(handler *handlers.MetricsHandler, config config.AppConfig) (*MetricsAPI, *domain.MetricsError) {
+func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (*MetricsAPI, *domain.MetricsError) {
 	r := chi.NewRouter()
 
 	if err := logger.Initialize(config.LogLevel); err != nil {
@@ -40,7 +40,7 @@ func NewMetricsAPI(handler *handlers.MetricsHandler, config config.AppConfig) (*
 	}, nil
 }
 
-func (a MetricsAPI) Run(config config.AppConfig) *domain.MetricsError {
+func (a MetricsAPI) Run(config *config.AppConfig) *domain.MetricsError {
 
 	logger.Log.Info("Running server ", zap.String("address", config.RunAddr))
 	err := http.ListenAndServe(config.RunAddr, a.router)

@@ -17,7 +17,7 @@ import (
 
 type MetricsHandler struct {
 	service MetricsService
-	config  config.AppConfig
+	config  *config.AppConfig
 }
 
 type MetricsService interface {
@@ -26,7 +26,7 @@ type MetricsService interface {
 	GetAllValues() (string, *domain.MetricsError)
 }
 
-func NewMetricsHandler(service MetricsService, appConfig config.AppConfig) *MetricsHandler {
+func NewMetricsHandler(service MetricsService, appConfig *config.AppConfig) *MetricsHandler {
 	return &MetricsHandler{service: service, config: appConfig}
 }
 
