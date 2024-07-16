@@ -139,7 +139,6 @@ func (h *MetricsHandler) GetPing(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	err = db.PingContext(ctx)
