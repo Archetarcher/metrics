@@ -2,19 +2,32 @@ package repositories
 
 import (
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"github.com/Archetarcher/metrics.git/internal/server/store"
 )
 
 type MetricRepository struct {
-	Storage *store.MemStorage
+	store Store
 }
 
-func (r *MetricRepository) GetAll() ([]domain.MetricResponse, error) {
-	return r.Storage.GetValues()
+type Store interface {
+	GetValues() ([]domain.Metrics, error)
+	GetValue(request *domain.Metrics) (*domain.Metrics, error)
+	SetValue(request *domain.Metrics) error
+	CheckConnection() *domain.MetricsError
 }
-func (r *MetricRepository) Get(request *domain.MetricRequest) (*domain.MetricResponse, error) {
-	return r.Storage.GetValue(request)
+
+func NewMetricsRepository(store Store) *MetricRepository {
+	return &MetricRepository{
+		store: store,
+	}
+
 }
-func (r *MetricRepository) Set(request *domain.MetricRequest) error {
-	return r.Storage.SetValue(request)
+
+func (r *MetricRepository) GetAll() ([]domain.Metrics, error) {
+	return r.store.GetValues()
+}
+func (r *MetricRepository) Get(request *domain.Metrics) (*domain.Metrics, error) {
+	return r.store.GetValue(request)
+}
+func (r *MetricRepository) Set(request *domain.Metrics) error {
+	return r.store.SetValue(request)
 }

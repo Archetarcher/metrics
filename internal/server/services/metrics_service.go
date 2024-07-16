@@ -1,93 +1,76 @@
 package services
 
 import (
-	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/utils"
 	"net/http"
-	"strconv"
 )
 
 type MetricsService struct {
-	MetricRepository
+	repo MetricRepository
 }
+
 type MetricRepository interface {
-	GetAll() ([]domain.MetricResponse, error)
-	Get(request *domain.MetricRequest) (*domain.MetricResponse, error)
-	Set(request *domain.MetricRequest) error
+	GetAll() ([]domain.Metrics, error)
+	Get(request *domain.Metrics) (*domain.Metrics, error)
+	Set(request *domain.Metrics) error
 }
 
-func (s *MetricsService) Update(request *domain.MetricRequest) (*domain.MetricResponse, *domain.MetricError) {
-
-	response, err := s.Get(request)
-	if err != nil {
-		return nil, &domain.MetricError{
-			Code: http.StatusInternalServerError,
-			Text: err.Error(),
-		}
-	}
-	if response != nil && request.Type == domain.CounterType {
-		i, err := strconv.ParseFloat(response.Value, 64)
-		if err != nil {
-			return nil, &domain.MetricError{
-				Code: http.StatusInternalServerError,
-				Text: err.Error(),
-			}
-		}
-		request.Value += i
-	}
-	if err := s.Set(request); err != nil {
-		return nil, &domain.MetricError{
-			Code: http.StatusInternalServerError,
-			Text: err.Error(),
-		}
-	}
-	response, _ = s.Get(request)
-	fmt.Println(response)
-	return nil, nil
+func NewMetricsService(repo MetricRepository) *MetricsService {
+	return &MetricsService{repo: repo}
 }
-func (s *MetricsService) GetValue(request *domain.MetricRequest) (*domain.MetricResponse, *domain.MetricError) {
 
-	response, err := s.Get(request)
+func (s *MetricsService) Update(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
+
+	response, err := s.repo.Get(request)
 	if err != nil {
-		return nil, &domain.MetricError{
-			Code: http.StatusInternalServerError,
-			Text: err.Error(),
-		}
+		return nil, handleError(http.StatusInternalServerError, err.Error())
+	}
+	if response != nil && request.MType == domain.CounterType {
+		c := *request.Delta + *response.Delta
+		request.Delta = &c
+	}
+	if err := s.repo.Set(request); err != nil {
+		return nil, handleError(http.StatusNotFound, err.Error())
+	}
+	response, _ = s.repo.Get(request)
+	return response, nil
+}
+func (s *MetricsService) GetValue(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
+
+	response, err := s.repo.Get(request)
+	if err != nil {
+		return nil, handleError(http.StatusInternalServerError, err.Error())
 	}
 	if response == nil {
-		return nil, &domain.MetricError{
-			Code: http.StatusNotFound,
-			Text: "value not found",
-		}
+		return nil, handleError(http.StatusNotFound, "value not found")
 	}
 
-	return &domain.MetricResponse{
-		Name:  response.Name,
-		Value: response.Value,
-	}, nil
+	return response, nil
 }
-func (s *MetricsService) GetAllValues() (string, *domain.MetricError) {
+func (s *MetricsService) GetAllValues() (string, *domain.MetricsError) {
 
-	response, err := s.GetAll()
+	response, err := s.repo.GetAll()
 
 	if err != nil {
-		return "", &domain.MetricError{
-			Code: http.StatusInternalServerError,
-			Text: err.Error(),
-		}
+		return "", handleError(http.StatusInternalServerError, err.Error())
 	}
 	if response == nil {
-		return "", &domain.MetricError{
-			Code: http.StatusNotFound,
-			Text: "value not found",
-		}
+		return "", handleError(http.StatusNotFound, "value not found")
 	}
 	page := "<table><tr><th>Name</th><th>Value</th></tr>"
 
 	for _, val := range response {
-		page += "<tr><td>" + val.Name + "</td>" + "<td>" + val.Value + "</td></tr>"
+		v := utils.GetStringValue(&val)
+		page += "<tr><td>" + val.ID + "</td>" + "<td>" + v + "</td></tr>"
 	}
 
 	page += "</table>"
 	return page, nil
+}
+func handleError(code int, err string) *domain.MetricsError {
+	return &domain.MetricsError{
+		Code: code,
+		Text: err,
+	}
 }
