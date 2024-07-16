@@ -22,7 +22,6 @@ func main() {
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 	}
-
 	repo := repositories.NewMetricsRepository(storage)
 	service := services.NewMetricsService(repo)
 	handler := handlers.NewMetricsHandler(service, c)

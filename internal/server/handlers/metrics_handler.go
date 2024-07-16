@@ -136,7 +136,6 @@ func (h *MetricsHandler) GetPing(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	db, err := sql.Open("pgx", h.config.Store.Pgx.DatabaseDsn)
-
 	if err != nil {
 		return
 	}
