@@ -11,11 +11,16 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
 	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
 	"go.uber.org/zap"
+	"log"
 )
 
 func main() {
-	c := config.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx: &pgx.Config{}})
+	c := config.NewConfig(store.Config{Memory: &memory.Config{}, Pgx: &pgx.Config{}})
 	c.ParseConfig()
+
+	if err := logger.Initialize(c.LogLevel); err != nil {
+		log.Fatal("failed to init logger")
+	}
 
 	storage, err := store.NewStore(c.Store)
 
@@ -27,7 +32,7 @@ func main() {
 	service := services.NewMetricsService(repo)
 	handler := handlers.NewMetricsHandler(service, c)
 
-	api, err := rest.NewMetricsAPI(handler, c)
+	api, err := rest.NewMetricsAPI(handler)
 
 	if err != nil {
 		logger.Log.Error("failed with error", zap.String("error", err.Text), zap.Int("code", err.Code))

@@ -49,11 +49,13 @@ func NewStore(config *Config) *Store {
 	return storage
 }
 func (s *Store) CheckConnection() *domain.MetricsError {
-
 	return nil
 }
+func (s *Store) Close() {
 
-func (s *Store) GetValues() ([]domain.Metrics, error) {
+}
+
+func (s *Store) GetValues() ([]domain.Metrics, *domain.MetricsError) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
@@ -64,7 +66,7 @@ func (s *Store) GetValues() ([]domain.Metrics, error) {
 	}
 	return res, nil
 }
-func (s *Store) GetValue(request *domain.Metrics) (*domain.Metrics, error) {
+func (s *Store) GetValue(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
@@ -74,7 +76,7 @@ func (s *Store) GetValue(request *domain.Metrics) (*domain.Metrics, error) {
 	}
 	return &res, nil
 }
-func (s *Store) SetValue(request *domain.Metrics) error {
+func (s *Store) SetValue(request *domain.Metrics) *domain.MetricsError {
 	s.data[getName(request)] = *request
 	return nil
 }

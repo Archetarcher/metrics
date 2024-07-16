@@ -13,11 +13,11 @@ type AppConfig struct {
 	Store    store.Config
 }
 
-func NewConfig(store store.Config) AppConfig {
+func NewConfig(store store.Config) *AppConfig {
 	var c = AppConfig{
 		Store: store,
 	}
 	c.initFlags()
 
-	return c
+	return &c
 }

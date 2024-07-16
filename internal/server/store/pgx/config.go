@@ -6,4 +6,5 @@ type Config struct {
 	StoreInterval   int
 	Restore         bool
 	DatabaseDsn     string
+	MigrationsPath  string
 }

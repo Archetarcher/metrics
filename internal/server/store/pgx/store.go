@@ -3,18 +3,20 @@ package pgx
 import (
 	"context"
 	"database/sql"
-	_ "github.com/jackc/pgx/v5/stdlib"
-
+	"errors"
 	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/logger"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
+	"go.uber.org/zap"
+	"log"
 	"net/http"
-	"sync"
 	"time"
 )
 
 type Store struct {
-	mux sync.Mutex
-	db  *sql.DB
+	db *sql.DB
 }
 
 func NewStore(config *Config) (*Store, *domain.MetricsError) {
@@ -22,15 +24,11 @@ func NewStore(config *Config) (*Store, *domain.MetricsError) {
 	db, err := sql.Open("pgx", config.DatabaseDsn)
 
 	if err != nil {
-		return nil, &domain.MetricsError{
-			Text: err.Error(),
-			Code: http.StatusInternalServerError,
-		}
+		return nil, handleError(err.Error(), http.StatusInternalServerError)
 	}
 
 	storage := &Store{
-		mux: sync.Mutex{},
-		db:  db,
+		db: db,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -38,35 +36,12 @@ func NewStore(config *Config) (*Store, *domain.MetricsError) {
 	err = db.PingContext(ctx)
 
 	if err != nil {
-
-		return nil, &domain.MetricsError{
-			Text: err.Error(),
-			Code: http.StatusInternalServerError,
-		}
+		return nil, handleError(err.Error(), http.StatusInternalServerError)
 	}
 
-	//if config.Restore {
-	//	err := storage.Load(config)
-	//	if err != nil {
-	//		logger.Log.Info("failed to load metrics from file", zap.Error(err))
-	//	}
-	//}
-	//
-	//var wg sync.WaitGroup
-	//wg.Add(1)
-	//
-	//go func() {
-	//	defer wg.Done()
-	//	var storeInterval = time.Duration(config.StoreInterval) * time.Second
-	//
-	//	for {
-	//		err := storage.Save(config)
-	//		if err != nil {
-	//			logger.Log.Info("failed to store metrics to file", zap.Error(err))
-	//		}
-	//		time.Sleep(storeInterval)
-	//	}
-	//}()
+	if err := runMigrations(config); err != nil {
+		return nil, err
+	}
 
 	return storage, nil
 }
@@ -84,69 +59,82 @@ func (s *Store) CheckConnection() *domain.MetricsError {
 	}
 	return nil
 }
-
-func (s *Store) GetValues() ([]domain.Metrics, error) {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-
-	//var res []domain.Metrics
-	//
-	//for _, value := range s.data {
-	//	res = append(res, value)
-	//}
-	return nil, nil
+func (s *Store) Close() {
+	err := s.db.Close()
+	if err != nil {
+		logger.Log.Info("Error close db", zap.Error(err))
+	}
 }
-func (s *Store) GetValue(request *domain.Metrics) (*domain.Metrics, error) {
-	s.mux.Lock()
-	defer s.mux.Unlock()
 
-	//res, ok := s.data[getName(request)]
-	//if !ok {
-	//	return nil, nil
-	//}
-	return nil, nil
+func (s *Store) GetValues() ([]domain.Metrics, *domain.MetricsError) {
+	metrics := make([]domain.Metrics, 0, 10)
+
+	rows, err := s.db.QueryContext(context.Background(), "SELECT id, type, delta, value from metrics ")
+	if err != nil {
+		return nil, handleError(err.Error(), http.StatusInternalServerError)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var m domain.Metrics
+		err = rows.Scan(&m.ID, &m.MType, &m.Delta, &m.Value)
+		if err != nil {
+			return nil, handleError(err.Error(), http.StatusInternalServerError)
+		}
+		metrics = append(metrics, m)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, handleError(err.Error(), http.StatusInternalServerError)
+	}
+	return metrics, nil
 }
-func (s *Store) SetValue(request *domain.Metrics) error {
-	//s.data[getName(request)] = *request
+func (s *Store) GetValue(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
+	metrics := domain.Metrics{}
+
+	row := s.db.QueryRowContext(context.Background(),
+		"SELECT id, type, delta, value from metrics where id = $1 and type = $2 ", request.ID, request.MType)
+
+	err := row.Scan(&metrics.ID, &metrics.MType, &metrics.Delta, &metrics.Value)
+	fmt.Println(err)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, handleError(err.Error(), http.StatusInternalServerError)
+	}
+	return &metrics, nil
+}
+func (s *Store) SetValue(request *domain.Metrics) *domain.MetricsError {
+	_, err := s.db.Exec(
+		"insert into metrics (id, type, delta, value) values ($1, $2, $3, $4)"+
+			"on conflict (id) do update set id = excluded.id, type = excluded.type, delta = excluded.delta, value = excluded.value",
+		request.ID, request.MType, request.Delta, request.Value,
+	)
+
+	if err != nil {
+		return handleError(err.Error(), http.StatusInternalServerError)
+	}
 	return nil
 }
 
-func getName(request *domain.Metrics) string {
-	return fmt.Sprintf("%s_%s", request.ID, request.MType)
-}
+func runMigrations(config *Config) *domain.MetricsError {
+	db, err := goose.OpenDBWithDriver("pgx", config.DatabaseDsn)
+	if err != nil {
+		log.Fatalf("goose: failed to open DB: %v\n", err)
+	}
 
-func (s *Store) Save(config *Config) error {
+	if err := goose.RunContext(context.Background(), "up", db, config.MigrationsPath); err != nil {
+		return handleError(err.Error(), http.StatusInternalServerError)
+	}
 
-	//if config.FileStoragePath == domain.EmptyParam {
-	//	return nil
-	//}
-	//
-	//data, err := json.MarshalIndent(s.data, "", "   ")
-	//if err != nil {
-	//	return err
-	//}
 	return nil
 }
-func (s *Store) Load(config *Config) error {
-	//if config.FileStoragePath == domain.EmptyParam {
-	//	return nil
-	//}
-	//
-	//data, err := os.ReadFile(config.FileStoragePath)
-	//
-	//if errors.Is(err, os.ErrNotExist) {
-	//	return nil
-	//}
-	//
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//var metrics map[string]domain.Metrics
-	//if err := json.Unmarshal(data, &metrics); err != nil {
-	//	return err
-	//}
-	//
-	//s.data = metrics
-	return nil
+
+func handleError(text string, code int) *domain.MetricsError {
+	return &domain.MetricsError{
+		Text: text,
+		Code: code,
+	}
 }
