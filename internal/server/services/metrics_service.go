@@ -5,6 +5,7 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/utils"
 	"net/http"
+	"slices"
 )
 
 type MetricsService struct {
@@ -27,7 +28,9 @@ func (s *MetricsService) Updates(request *[]domain.Metrics) (*[]domain.Metrics, 
 	keys := make([]string, len(*request))
 
 	for _, m := range *request {
-		keys = append(keys, getKey(m))
+		if !slices.Contains(keys, getKey(m)) {
+			keys = append(keys, getKey(m))
+		}
 	}
 
 	metricsByKey, err := s.repo.GetAllIn(keys)
@@ -35,14 +38,31 @@ func (s *MetricsService) Updates(request *[]domain.Metrics) (*[]domain.Metrics, 
 		return nil, err
 	}
 
-	for _, mbk := range metricsByKey {
-		for key, m := range *request {
-			if getKey(m) == getKey(mbk) && m.MType == domain.CounterType {
-				c := *m.Delta + *mbk.Delta
-				m.Delta = &c
-
+	existingKeys := make(map[string]int64)
+	for key, m := range *request {
+		if m.MType == domain.CounterType {
+			if existingKeys[getKey(m)] != 0 {
+				c := *m.Delta + existingKeys[getKey(m)]
 				(*request)[key].Delta = &c
 				continue
+			}
+			existingKeys[getKey(m)] = *m.Delta
+		}
+
+	}
+
+	fmt.Println("metricsByKey")
+	fmt.Println(metricsByKey)
+	for _, mbk := range metricsByKey {
+		for key, m := range *request {
+			fmt.Println(getKey(m))
+			fmt.Println(getKey(mbk))
+			if getKey(m) == getKey(mbk) && m.MType == domain.CounterType {
+				c := *m.Delta + *mbk.Delta
+				fmt.Println("cccccc")
+				fmt.Println(c)
+				fmt.Println(getKey(m))
+				(*request)[key].Delta = &c
 			}
 		}
 	}

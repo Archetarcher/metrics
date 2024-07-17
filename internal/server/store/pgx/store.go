@@ -66,12 +66,17 @@ func (s *Store) Close() {
 func (s *Store) GetValuesIn(keys []string) ([]domain.Metrics, *domain.MetricsError) {
 	var metrics []domain.Metrics
 
+	fmt.Println(keys)
+
 	q, args, err := sqlx.In("select id, type, delta, value FROM metrics WHERE key in (?);", keys)
 	if err != nil {
 		return nil, handleError(err.Error(), http.StatusInternalServerError)
 	}
 	q = sqlx.Rebind(sqlx.DOLLAR, q)
 	err = s.db.SelectContext(context.Background(), &metrics, q, args...)
+
+	fmt.Println("metrics")
+	fmt.Println(metrics)
 
 	if err != nil {
 		return nil, handleError(err.Error(), http.StatusInternalServerError)
@@ -150,7 +155,12 @@ func (s *Store) SetValues(request *[]domain.Metrics) *domain.MetricsError {
 	defer stmt.Close()
 
 	for _, m := range *request {
+		//if m.MType == domain.CounterType {
+		//	fmt.Println("hjhk")
+		//	fmt.Println(*m.Delta)
+		//}
 		_, err := stmt.ExecContext(ctx, m.ID, m.MType, m.Delta, m.Value, getKey(m))
+
 		if err != nil {
 			return handleError(err.Error(), http.StatusInternalServerError)
 		}
