@@ -60,13 +60,9 @@ func (s *Store) GetValuesIn(keys []string) ([]domain.Metrics, *domain.MetricsErr
 
 	var metrics []domain.Metrics
 
-	fmt.Println(keys)
 	for _, key := range keys {
 		metrics = append(metrics, s.data[key])
 	}
-
-	fmt.Println("metrics")
-	fmt.Println(metrics)
 
 	return metrics, nil
 }

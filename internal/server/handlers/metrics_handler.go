@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
@@ -83,8 +82,6 @@ func (h *MetricsHandler) UpdatesMetrics(w http.ResponseWriter, r *http.Request) 
 	// validate
 	request, err := validateUpdatesRequest(r)
 
-	fmt.Println("request")
-	fmt.Println(request)
 	enc := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "application/json")
 

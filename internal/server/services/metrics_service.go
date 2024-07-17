@@ -51,17 +51,10 @@ func (s *MetricsService) Updates(request *[]domain.Metrics) (*[]domain.Metrics, 
 
 	}
 
-	fmt.Println("metricsByKey")
-	fmt.Println(metricsByKey)
 	for _, mbk := range metricsByKey {
 		for key, m := range *request {
-			fmt.Println(getKey(m))
-			fmt.Println(getKey(mbk))
 			if getKey(m) == getKey(mbk) && m.MType == domain.CounterType {
 				c := *m.Delta + *mbk.Delta
-				fmt.Println("cccccc")
-				fmt.Println(c)
-				fmt.Println(getKey(m))
 				(*request)[key].Delta = &c
 			}
 		}
