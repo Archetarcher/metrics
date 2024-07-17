@@ -26,7 +26,7 @@ func (c *AppConfig) initFlags() {
 	flag.IntVar(&c.Store.Memory.StoreInterval, flagStoreIntervalName, 300, "seconds to save data to file")
 	flag.BoolVar(&c.Store.Memory.Restore, flagRestoreName, true, "load data from file")
 
-	flag.StringVar(&c.Store.Pgx.DatabaseDsn, flagDatabaseDsnName, "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", "dsn")
+	flag.StringVar(&c.Store.Pgx.DatabaseDsn, flagDatabaseDsnName, "", "dsn")
 	flag.StringVar(&c.Store.Pgx.MigrationsPath, flagDatabaseMigrationsPathName, "internal/server/migrations", "migrations")
 
 }
