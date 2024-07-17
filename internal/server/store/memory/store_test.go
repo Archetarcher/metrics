@@ -1,4 +1,4 @@
-package store
+package memory
 
 import (
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
@@ -7,32 +7,38 @@ import (
 	"testing"
 )
 
-func TestMemStorage_GetValue(t *testing.T) {
+func setup() *domain.Metrics {
+	i := int64(1)
+
+	req := &domain.Metrics{
+		MType: "counter",
+		ID:    "counterValue",
+		Delta: &i,
+	}
+	return req
+}
+func TestStore_GetValue(t *testing.T) {
 
 	type args struct {
-		request *domain.MetricRequest
+		request *domain.Metrics
 	}
+
+	req := setup()
 	tests := []struct {
 		name    string
 		args    args
-		res     *domain.MetricResponse
+		res     *domain.Metrics
 		wantErr bool
 	}{
 		{
-			name: "positive test #1",
-			args: args{
-				&domain.MetricRequest{
-					Type:  "counter",
-					Name:  "countervalue",
-					Value: 1,
-				},
-			},
+			name:    "positive test #1",
+			args:    args{request: req},
 			wantErr: false,
 			res:     nil,
 		},
 	}
 
-	store := NewStorage()
+	store := NewStore(&Config{StoreInterval: 300, FileStoragePath: "/tmp/metrics-pgx.json", Restore: false})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := store.GetValue(tt.args.request)
@@ -44,29 +50,26 @@ func TestMemStorage_GetValue(t *testing.T) {
 	}
 }
 
-func TestMemStorage_SetValue(t *testing.T) {
+func TestStore_SetValue(t *testing.T) {
+
 	type args struct {
-		request *domain.MetricRequest
+		request *domain.Metrics
 	}
+	req := setup()
+
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
 		{
-			name: "positive test #1",
-			args: args{
-				&domain.MetricRequest{
-					Type:  "counter",
-					Name:  "countervalue",
-					Value: 1,
-				},
-			},
+			name:    "positive test #1",
+			args:    args{request: req},
 			wantErr: false,
 		},
 	}
 
-	store := NewStorage()
+	store := NewStore(&Config{StoreInterval: 300, FileStoragePath: "/tmp/metrics-pgx.json", Restore: false})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -76,31 +79,34 @@ func TestMemStorage_SetValue(t *testing.T) {
 		})
 	}
 }
+func TestNewStore(t *testing.T) {
+	store := NewStore(&Config{StoreInterval: 300, FileStoragePath: "/tmp/metrics-pgx.json", Restore: false})
 
-func TestNewStorage(t *testing.T) {
 	tests := []struct {
 		name string
-		want *MemStorage
+		want *Store
 	}{
 		{
 			name: "positive test #1",
-			want: &MemStorage{
+			want: &Store{
 				mux:  sync.Mutex{},
-				data: make(map[string]string),
+				data: make(map[string]domain.Metrics),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, NewStorage())
+			assert.Equal(t, tt.want, store)
 		})
 	}
 }
 
 func Test_getName(t *testing.T) {
 	type args struct {
-		request *domain.MetricRequest
+		request domain.Metrics
 	}
+	req := setup()
+
 	tests := []struct {
 		name string
 		args args
@@ -108,11 +114,7 @@ func Test_getName(t *testing.T) {
 	}{
 		{
 			name: "positive test #1",
-			args: args{request: &domain.MetricRequest{
-				Type:  "counter",
-				Value: 1,
-				Name:  "counterValue",
-			}},
+			args: args{request: *req},
 			want: "counterValue_counter",
 		},
 	}
