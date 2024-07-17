@@ -155,10 +155,6 @@ func (s *Store) SetValues(request *[]domain.Metrics) *domain.MetricsError {
 	defer stmt.Close()
 
 	for _, m := range *request {
-		//if m.MType == domain.CounterType {
-		//	fmt.Println("hjhk")
-		//	fmt.Println(*m.Delta)
-		//}
 		_, err := stmt.ExecContext(ctx, m.ID, m.MType, m.Delta, m.Value, getKey(m))
 
 		if err != nil {

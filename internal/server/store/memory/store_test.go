@@ -103,7 +103,7 @@ func TestNewStore(t *testing.T) {
 
 func Test_getName(t *testing.T) {
 	type args struct {
-		request *domain.Metrics
+		request domain.Metrics
 	}
 	req := setup()
 
@@ -114,7 +114,7 @@ func Test_getName(t *testing.T) {
 	}{
 		{
 			name: "positive test #1",
-			args: args{request: req},
+			args: args{request: *req},
 			want: "counterValue_counter",
 		},
 	}

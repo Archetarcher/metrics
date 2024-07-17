@@ -55,7 +55,20 @@ func (s *Store) Close() {
 
 }
 func (s *Store) GetValuesIn(keys []string) ([]domain.Metrics, *domain.MetricsError) {
-	return nil, nil
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	var metrics []domain.Metrics
+
+	fmt.Println(keys)
+	for _, key := range keys {
+		metrics = append(metrics, s.data[key])
+	}
+
+	fmt.Println("metrics")
+	fmt.Println(metrics)
+
+	return metrics, nil
 }
 func (s *Store) GetValues() ([]domain.Metrics, *domain.MetricsError) {
 	s.mux.Lock()
@@ -72,22 +85,24 @@ func (s *Store) GetValue(request *domain.Metrics) (*domain.Metrics, *domain.Metr
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
-	res, ok := s.data[getName(request)]
+	res, ok := s.data[getName(*request)]
 	if !ok {
 		return nil, nil
 	}
 	return &res, nil
 }
 func (s *Store) SetValue(request *domain.Metrics) *domain.MetricsError {
-	s.data[getName(request)] = *request
+	s.data[getName(*request)] = *request
 	return nil
 }
 func (s *Store) SetValues(request *[]domain.Metrics) *domain.MetricsError {
-
+	for _, value := range *request {
+		s.data[getName(value)] = value
+	}
 	return nil
 }
 
-func getName(request *domain.Metrics) string {
+func getName(request domain.Metrics) string {
 	return fmt.Sprintf("%s_%s", request.ID, request.MType)
 }
 
@@ -125,4 +140,11 @@ func (s *Store) Load(config *Config) error {
 
 	s.data = metrics
 	return nil
+}
+
+func handleError(text string, code int) *domain.MetricsError {
+	return &domain.MetricsError{
+		Text: text,
+		Code: code,
+	}
 }
