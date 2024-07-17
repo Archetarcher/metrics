@@ -7,9 +7,11 @@ import (
 )
 
 type Store interface {
+	GetValuesIn(keys []string) ([]domain.Metrics, *domain.MetricsError)
 	GetValues() ([]domain.Metrics, *domain.MetricsError)
 	GetValue(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
 	SetValue(request *domain.Metrics) *domain.MetricsError
+	SetValues(request *[]domain.Metrics) *domain.MetricsError
 	CheckConnection() *domain.MetricsError
 	Close()
 }

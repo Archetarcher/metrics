@@ -84,6 +84,7 @@ func GzipMiddleware(next http.Handler) http.Handler {
 		contentEncoding := r.Header.Get("Content-Encoding")
 		sendsGzip := strings.Contains(contentEncoding, "gzip")
 		if sendsGzip {
+
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
 				rw.WriteHeader(http.StatusInternalServerError)

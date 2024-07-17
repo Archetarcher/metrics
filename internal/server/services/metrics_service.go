@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/utils"
 	"net/http"
@@ -11,15 +12,47 @@ type MetricsService struct {
 }
 
 type MetricRepository interface {
+	GetAllIn(keys []string) ([]domain.Metrics, *domain.MetricsError)
 	GetAll() ([]domain.Metrics, *domain.MetricsError)
 	Get(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
 	Set(request *domain.Metrics) *domain.MetricsError
+	SetAll(request *[]domain.Metrics) *domain.MetricsError
 }
 
 func NewMetricsService(repo MetricRepository) *MetricsService {
 	return &MetricsService{repo: repo}
 }
 
+func (s *MetricsService) Updates(request *[]domain.Metrics) (*[]domain.Metrics, *domain.MetricsError) {
+	keys := make([]string, len(*request))
+
+	for _, m := range *request {
+		keys = append(keys, getKey(m))
+	}
+
+	metricsByKey, err := s.repo.GetAllIn(keys)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, mbk := range metricsByKey {
+		for key, m := range *request {
+			if getKey(m) == getKey(mbk) && m.MType == domain.CounterType {
+				c := *m.Delta + *mbk.Delta
+				m.Delta = &c
+
+				(*request)[key].Delta = &c
+				continue
+			}
+		}
+	}
+
+	if err := s.repo.SetAll(request); err != nil {
+		return nil, err
+	}
+	response, _ := s.repo.GetAllIn(keys)
+	return &response, nil
+}
 func (s *MetricsService) Update(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
 	response, err := s.repo.Get(request)
 	if err != nil {
@@ -65,6 +98,9 @@ func (s *MetricsService) GetAllValues() (string, *domain.MetricsError) {
 
 	page += "</table>"
 	return page, nil
+}
+func getKey(request domain.Metrics) string {
+	return fmt.Sprintf("%s_%s", request.ID, request.MType)
 }
 func handleError(code int, err string) *domain.MetricsError {
 	return &domain.MetricsError{

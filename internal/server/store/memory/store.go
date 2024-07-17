@@ -54,7 +54,9 @@ func (s *Store) CheckConnection() *domain.MetricsError {
 func (s *Store) Close() {
 
 }
-
+func (s *Store) GetValuesIn(keys []string) ([]domain.Metrics, *domain.MetricsError) {
+	return nil, nil
+}
 func (s *Store) GetValues() ([]domain.Metrics, *domain.MetricsError) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
@@ -78,6 +80,10 @@ func (s *Store) GetValue(request *domain.Metrics) (*domain.Metrics, *domain.Metr
 }
 func (s *Store) SetValue(request *domain.Metrics) *domain.MetricsError {
 	s.data[getName(request)] = *request
+	return nil
+}
+func (s *Store) SetValues(request *[]domain.Metrics) *domain.MetricsError {
+
 	return nil
 }
 

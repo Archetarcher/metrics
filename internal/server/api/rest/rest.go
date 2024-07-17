@@ -26,6 +26,7 @@ func NewMetricsAPI(handler *handlers.MetricsHandler) (*MetricsAPI, *domain.Metri
 	r.Get("/", handler.GetMetricsPage)
 
 	r.Post("/update/", handler.UpdateMetricsJSON)
+	r.Post("/updates/", handler.UpdatesMetrics)
 	r.Post("/value/", handler.GetMetricsJSON)
 
 	r.Get("/ping", handler.GetPing)

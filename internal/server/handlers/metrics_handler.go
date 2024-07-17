@@ -4,11 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
+	"io"
 	"net/http"
 	"slices"
 	"strconv"
@@ -21,6 +23,7 @@ type MetricsHandler struct {
 }
 
 type MetricsService interface {
+	Updates(request *[]domain.Metrics) (*[]domain.Metrics, *domain.MetricsError)
 	Update(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
 	GetValue(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
 	GetAllValues() (string, *domain.MetricsError)
@@ -76,6 +79,28 @@ func (h *MetricsHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	sendResponse(enc, resp, http.StatusOK, w)
 }
 
+func (h *MetricsHandler) UpdatesMetrics(w http.ResponseWriter, r *http.Request) {
+	// validate
+	request, err := validateUpdatesRequest(r)
+
+	fmt.Println("request")
+	fmt.Println(request)
+	enc := json.NewEncoder(w)
+	w.Header().Set("Content-Type", "application/json")
+
+	if err != nil {
+		sendResponse(enc, err.Text, err.Code, w)
+		return
+	}
+
+	_, err = h.service.Updates(request)
+	if err != nil {
+		sendResponse(enc, err.Text, err.Code, w)
+		return
+	}
+
+	sendResponse(enc, "", http.StatusOK, w)
+}
 func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Request) {
 	// validate
 	request, err := validateRequest(r)
@@ -255,6 +280,36 @@ func validateRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
 		return nil, &domain.MetricsError{
 			Text: "incorrect type",
 			Code: http.StatusBadRequest,
+		}
+	}
+
+	return &metrics, nil
+}
+func validateUpdatesRequest(r *http.Request) (*[]domain.Metrics, *domain.MetricsError) {
+	// validate method
+	if r.Method != http.MethodPost {
+
+		return nil, &domain.MetricsError{
+			Text: "method not allowed",
+			Code: http.StatusMethodNotAllowed,
+		}
+	}
+
+	// validate params
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, &domain.MetricsError{
+			Text: err.Error(),
+			Code: http.StatusMethodNotAllowed,
+		}
+	}
+
+	metrics := make([]domain.Metrics, 3)
+	err = json.Unmarshal(body, &metrics)
+	if err != nil {
+		return nil, &domain.MetricsError{
+			Text: err.Error(),
+			Code: http.StatusMethodNotAllowed,
 		}
 	}
 

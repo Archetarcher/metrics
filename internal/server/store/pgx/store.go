@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
 	"go.uber.org/zap"
 	"log"
@@ -15,16 +17,12 @@ import (
 )
 
 type Store struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 func NewStore(config *Config) (*Store, *domain.MetricsError) {
 
-	db, err := sql.Open("pgx", config.DatabaseDsn)
-
-	if err != nil {
-		return nil, handleError(err.Error(), http.StatusInternalServerError)
-	}
+	db := sqlx.MustOpen("pgx", config.DatabaseDsn)
 
 	storage := &Store{
 		db: db,
@@ -32,7 +30,7 @@ func NewStore(config *Config) (*Store, *domain.MetricsError) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	err = db.PingContext(ctx)
+	err := db.PingContext(ctx)
 
 	if err != nil {
 		return nil, handleError(err.Error(), http.StatusInternalServerError)
@@ -65,6 +63,22 @@ func (s *Store) Close() {
 	}
 }
 
+func (s *Store) GetValuesIn(keys []string) ([]domain.Metrics, *domain.MetricsError) {
+	var metrics []domain.Metrics
+
+	q, args, err := sqlx.In("select id, type, delta, value FROM metrics WHERE key in (?);", keys)
+	if err != nil {
+		return nil, handleError(err.Error(), http.StatusInternalServerError)
+	}
+	q = sqlx.Rebind(sqlx.DOLLAR, q)
+	err = s.db.SelectContext(context.Background(), &metrics, q, args...)
+
+	if err != nil {
+		return nil, handleError(err.Error(), http.StatusInternalServerError)
+	}
+
+	return metrics, nil
+}
 func (s *Store) GetValues() ([]domain.Metrics, *domain.MetricsError) {
 	metrics := make([]domain.Metrics, 0, 10)
 
@@ -105,16 +119,51 @@ func (s *Store) GetValue(request *domain.Metrics) (*domain.Metrics, *domain.Metr
 	return &metrics, nil
 }
 func (s *Store) SetValue(request *domain.Metrics) *domain.MetricsError {
-	_, err := s.db.Exec(
-		"insert into metrics (id, type, delta, value) values ($1, $2, $3, $4)"+
-			"on conflict (id) do update set id = excluded.id, type = excluded.type, delta = excluded.delta, value = excluded.value",
-		request.ID, request.MType, request.Delta, request.Value,
+	_, err := s.db.ExecContext(context.Background(),
+		"insert into metrics (id, type, delta, value, key) values ($1, $2, $3, $4, $5)"+
+			"on conflict (id) do update set id = excluded.id, type = excluded.type, delta = excluded.delta, value = excluded.value, key = excluded.key",
+		request.ID, request.MType, request.Delta, request.Value, getKey(*request),
 	)
 
 	if err != nil {
 		return handleError(err.Error(), http.StatusInternalServerError)
 	}
 	return nil
+}
+func (s *Store) SetValues(request *[]domain.Metrics) *domain.MetricsError {
+
+	ctx := context.Background()
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return handleError(err.Error(), http.StatusInternalServerError)
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx,
+
+		"insert into metrics (id, type, delta, value, key) values ($1, $2, $3, $4, $5)"+
+			"on conflict (id) do update set id = excluded.id, type = excluded.type, delta = excluded.delta, value = excluded.value, key = excluded.key")
+	if err != nil {
+		return handleError(err.Error(), http.StatusInternalServerError)
+	}
+	defer stmt.Close()
+
+	for _, m := range *request {
+		_, err := stmt.ExecContext(ctx, m.ID, m.MType, m.Delta, m.Value, getKey(m))
+		if err != nil {
+			return handleError(err.Error(), http.StatusInternalServerError)
+		}
+	}
+	err = tx.Commit()
+
+	if err != nil {
+		return handleError(err.Error(), http.StatusInternalServerError)
+	}
+	return nil
+}
+func getKey(request domain.Metrics) string {
+	return fmt.Sprintf("%s_%s", request.ID, request.MType)
 }
 
 func runMigrations(config *Config) *domain.MetricsError {

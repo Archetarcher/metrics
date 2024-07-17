@@ -4,6 +4,7 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/Archetarcher/metrics.git/internal/agent/logger"
+	"golang.org/x/exp/maps"
 	"net/http"
 	"sync"
 	"time"
@@ -16,7 +17,7 @@ type TrackingHandler struct {
 
 type TrackingService interface {
 	Fetch(counterInterval int64, metrics *domain.MetricsData) *domain.TrackingError
-	Send(request *domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
+	Send(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
 }
 
 func (h *TrackingHandler) TrackMetrics() *domain.TrackingError {
@@ -44,7 +45,7 @@ func (h *TrackingHandler) TrackMetrics() *domain.TrackingError {
 }
 
 type fetch func(counterInterval int64, metrics *domain.MetricsData) *domain.TrackingError
-type send func(request *domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
+type send func(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
 
 func startPoll(fetch fetch, metrics *domain.MetricsData, wg *sync.WaitGroup, interval int) {
 	defer wg.Done()
@@ -70,13 +71,13 @@ func startReport(send send, metrics *domain.MetricsData, wg *sync.WaitGroup, int
 
 	var reportInterval = time.Duration(interval) * time.Second
 	for {
-		for _, value := range *metrics {
-			_, err := send(&value)
-			if err != nil {
-				logger.Log.Info(err.Text)
-			}
 
+		vals := maps.Values(*metrics)
+		_, err := send(vals)
+		if err != nil {
+			logger.Log.Info(err.Text)
 		}
+
 		time.Sleep(reportInterval)
 
 	}
