@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
@@ -15,6 +17,8 @@ import (
 	"net/http"
 	"time"
 )
+
+var ConnectionException = errors.New("db connection exception")
 
 type Store struct {
 	db *sqlx.DB
@@ -33,7 +37,7 @@ func NewStore(config *Config) (*Store, *domain.MetricsError) {
 	err := db.PingContext(ctx)
 
 	if err != nil {
-		return nil, handleError(err.Error(), http.StatusInternalServerError)
+		return nil, handleDBError(err, http.StatusInternalServerError)
 	}
 
 	if err := runMigrations(config); err != nil {
@@ -68,13 +72,13 @@ func (s *Store) GetValuesIn(keys []string) ([]domain.Metrics, *domain.MetricsErr
 
 	q, args, err := sqlx.In("select id, type, delta, value FROM metrics WHERE key in (?);", keys)
 	if err != nil {
-		return nil, handleError(err.Error(), http.StatusInternalServerError)
+		return nil, handleDBError(err, http.StatusInternalServerError)
 	}
 	q = sqlx.Rebind(sqlx.DOLLAR, q)
 	err = s.db.SelectContext(context.Background(), &metrics, q, args...)
 
 	if err != nil {
-		return nil, handleError(err.Error(), http.StatusInternalServerError)
+		return nil, handleDBError(err, http.StatusInternalServerError)
 	}
 
 	return metrics, nil
@@ -84,7 +88,7 @@ func (s *Store) GetValues() ([]domain.Metrics, *domain.MetricsError) {
 
 	rows, err := s.db.QueryContext(context.Background(), "SELECT id, type, delta, value from metrics ")
 	if err != nil {
-		return nil, handleError(err.Error(), http.StatusInternalServerError)
+		return nil, handleDBError(err, http.StatusInternalServerError)
 	}
 	defer rows.Close()
 
@@ -92,14 +96,14 @@ func (s *Store) GetValues() ([]domain.Metrics, *domain.MetricsError) {
 		var m domain.Metrics
 		err = rows.Scan(&m.ID, &m.MType, &m.Delta, &m.Value)
 		if err != nil {
-			return nil, handleError(err.Error(), http.StatusInternalServerError)
+			return nil, handleDBError(err, http.StatusInternalServerError)
 		}
 		metrics = append(metrics, m)
 	}
 
 	err = rows.Err()
 	if err != nil {
-		return nil, handleError(err.Error(), http.StatusInternalServerError)
+		return nil, handleDBError(err, http.StatusInternalServerError)
 	}
 	return metrics, nil
 }
@@ -113,9 +117,11 @@ func (s *Store) GetValue(request *domain.Metrics) (*domain.Metrics, *domain.Metr
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
+
 	if err != nil {
-		return nil, handleError(err.Error(), http.StatusInternalServerError)
+		return nil, handleDBError(err, http.StatusInternalServerError)
 	}
+
 	return &metrics, nil
 }
 func (s *Store) SetValue(request *domain.Metrics) *domain.MetricsError {
@@ -124,10 +130,10 @@ func (s *Store) SetValue(request *domain.Metrics) *domain.MetricsError {
 			"on conflict (id) do update set id = excluded.id, type = excluded.type, delta = excluded.delta, value = excluded.value, key = excluded.key",
 		request.ID, request.MType, request.Delta, request.Value, getKey(*request),
 	)
-
 	if err != nil {
-		return handleError(err.Error(), http.StatusInternalServerError)
+		return handleDBError(err, http.StatusInternalServerError)
 	}
+
 	return nil
 }
 func (s *Store) SetValues(request *[]domain.Metrics) *domain.MetricsError {
@@ -136,7 +142,7 @@ func (s *Store) SetValues(request *[]domain.Metrics) *domain.MetricsError {
 
 	tx, err := s.db.Begin()
 	if err != nil {
-		return handleError(err.Error(), http.StatusInternalServerError)
+		return handleDBError(err, http.StatusInternalServerError)
 	}
 	defer tx.Rollback()
 
@@ -145,7 +151,7 @@ func (s *Store) SetValues(request *[]domain.Metrics) *domain.MetricsError {
 		"insert into metrics (id, type, delta, value, key) values ($1, $2, $3, $4, $5)"+
 			"on conflict (id) do update set id = excluded.id, type = excluded.type, delta = excluded.delta, value = excluded.value, key = excluded.key")
 	if err != nil {
-		return handleError(err.Error(), http.StatusInternalServerError)
+		return handleDBError(err, http.StatusInternalServerError)
 	}
 	defer stmt.Close()
 
@@ -153,13 +159,13 @@ func (s *Store) SetValues(request *[]domain.Metrics) *domain.MetricsError {
 		_, err := stmt.ExecContext(ctx, m.ID, m.MType, m.Delta, m.Value, getKey(m))
 
 		if err != nil {
-			return handleError(err.Error(), http.StatusInternalServerError)
+			return handleDBError(err, http.StatusInternalServerError)
 		}
 	}
 	err = tx.Commit()
 
 	if err != nil {
-		return handleError(err.Error(), http.StatusInternalServerError)
+		return handleDBError(err, http.StatusInternalServerError)
 	}
 	return nil
 }
@@ -174,15 +180,21 @@ func runMigrations(config *Config) *domain.MetricsError {
 	}
 
 	if err := goose.RunContext(context.Background(), "up", db, config.MigrationsPath); err != nil {
-		return handleError(err.Error(), http.StatusInternalServerError)
+		return handleDBError(err, http.StatusInternalServerError)
 	}
 
 	return nil
 }
 
-func handleError(text string, code int) *domain.MetricsError {
+func handleDBError(err error, code int) *domain.MetricsError {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) {
+		err = ConnectionException
+	}
+
 	return &domain.MetricsError{
-		Text: text,
+		Text: err.Error(),
 		Code: code,
+		Err:  err,
 	}
 }

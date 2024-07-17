@@ -4,6 +4,7 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/Archetarcher/metrics.git/internal/agent/logger"
+	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"net/http"
 	"sync"
@@ -76,10 +77,27 @@ func startReport(send send, metrics *domain.MetricsData, wg *sync.WaitGroup, int
 		_, err := send(vals)
 		if err != nil {
 			logger.Log.Info(err.Text)
+
+			retry(1, 3, vals, send)
 		}
 
 		time.Sleep(reportInterval)
 
 	}
 
+}
+
+func retry(interval int, try int, vals []domain.Metrics, send send) {
+	logger.Log.Info("retrying send", zap.Int("interval", interval), zap.Int("try", try))
+
+	time.Sleep(time.Duration(interval) * time.Second)
+
+	if try > 0 {
+		return
+	}
+
+	_, err := send(vals)
+	if err != nil {
+		retry(interval+2, try-1, vals, send)
+	}
 }
