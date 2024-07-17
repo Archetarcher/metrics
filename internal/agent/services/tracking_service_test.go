@@ -40,7 +40,7 @@ func TestTrackingService_Send(t *testing.T) {
 	c := config.AppConfig{}
 	c.ParseConfig()
 	type args struct {
-		request *domain.Metrics
+		request []domain.Metrics
 	}
 	tests := []struct {
 		name    string

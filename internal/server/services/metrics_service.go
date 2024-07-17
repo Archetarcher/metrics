@@ -51,6 +51,7 @@ func (s *MetricsService) Updates(request *[]domain.Metrics) (*[]domain.Metrics, 
 		return nil, err
 	}
 	response, _ := s.repo.GetAllIn(keys)
+
 	return &response, nil
 }
 func (s *MetricsService) Update(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
