@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-var ConnectionException = errors.New("db connection exception")
+var ErrConnectionException = errors.New("db connection exception")
 
 type Store struct {
 	db *sqlx.DB
@@ -189,7 +189,7 @@ func runMigrations(config *Config) *domain.MetricsError {
 func handleDBError(err error, code int) *domain.MetricsError {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) {
-		err = ConnectionException
+		err = ErrConnectionException
 	}
 
 	return &domain.MetricsError{
