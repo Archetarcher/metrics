@@ -2,19 +2,40 @@ package repositories
 
 import (
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"github.com/Archetarcher/metrics.git/internal/server/store"
 )
 
 type MetricRepository struct {
-	Storage *store.MemStorage
+	store Store
 }
 
-func (r *MetricRepository) GetAll() ([]domain.MetricResponse, error) {
-	return r.Storage.GetValues()
+type Store interface {
+	GetValuesIn(keys []string) ([]domain.Metrics, *domain.MetricsError)
+	GetValues() ([]domain.Metrics, *domain.MetricsError)
+	GetValue(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
+	SetValue(request *domain.Metrics) *domain.MetricsError
+	SetValues(request *[]domain.Metrics) *domain.MetricsError
+	CheckConnection() *domain.MetricsError
+	Close()
 }
-func (r *MetricRepository) Get(request *domain.MetricRequest) (*domain.MetricResponse, error) {
-	return r.Storage.GetValue(request)
+
+func NewMetricsRepository(store Store) *MetricRepository {
+	return &MetricRepository{
+		store: store,
+	}
 }
-func (r *MetricRepository) Set(request *domain.MetricRequest) error {
-	return r.Storage.SetValue(request)
+
+func (r *MetricRepository) GetAllIn(keys []string) ([]domain.Metrics, *domain.MetricsError) {
+	return r.store.GetValuesIn(keys)
+}
+func (r *MetricRepository) GetAll() ([]domain.Metrics, *domain.MetricsError) {
+	return r.store.GetValues()
+}
+func (r *MetricRepository) Get(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
+	return r.store.GetValue(request)
+}
+func (r *MetricRepository) Set(request *domain.Metrics) *domain.MetricsError {
+	return r.store.SetValue(request)
+}
+func (r *MetricRepository) SetAll(request *[]domain.Metrics) *domain.MetricsError {
+	return r.store.SetValues(request)
 }
