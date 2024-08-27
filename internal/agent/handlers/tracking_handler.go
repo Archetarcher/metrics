@@ -92,7 +92,7 @@ func retry(interval int, try int, vals []domain.Metrics, send send) {
 
 	time.Sleep(time.Duration(interval) * time.Second)
 
-	if try > 0 {
+	if try < 0 {
 		return
 	}
 
