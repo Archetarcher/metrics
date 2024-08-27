@@ -88,6 +88,9 @@ func (s *Store) GetValue(request *domain.Metrics) (*domain.Metrics, *domain.Metr
 	return &res, nil
 }
 func (s *Store) SetValue(request *domain.Metrics) *domain.MetricsError {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
 	s.data[getName(*request)] = *request
 	return nil
 }
@@ -103,6 +106,8 @@ func getName(request domain.Metrics) string {
 }
 
 func (s *Store) Save(config *Config) error {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 
 	if config.FileStoragePath == domain.EmptyParam {
 		return nil

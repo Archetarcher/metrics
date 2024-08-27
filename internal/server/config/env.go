@@ -41,6 +41,9 @@ func getEnvOrDefault(env string, def any, t int) any {
 	}
 }
 func (c *AppConfig) parseEnv() {
+	c.mux.Lock()
+	defer c.mux.Unlock()
+
 	c.RunAddr = getEnvOrDefault(envRunAddrName, c.RunAddr, 1).(string)
 	c.LogLevel = getEnvOrDefault(envLogLevelName, c.LogLevel, 1).(string)
 	c.Key = getEnvOrDefault(envKeyName, c.Key, 1).(string)

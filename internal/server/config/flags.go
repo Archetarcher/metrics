@@ -19,6 +19,8 @@ func (c *AppConfig) parseFlags() {
 	flag.Parse()
 }
 func (c *AppConfig) initFlags() {
+	c.mux.Lock()
+	defer c.mux.Unlock()
 
 	flag.StringVar(&c.RunAddr, flagRunAddrName, ":8080", "address and port to run server")
 	flag.StringVar(&c.LogLevel, flagLogLevelName, "info", "log level")
