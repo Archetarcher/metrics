@@ -7,6 +7,7 @@ import (
 const (
 	flagRunAddrName                = "a"
 	flagLogLevelName               = "l"
+	flagKeyName                    = "k"
 	flagFileStoragePathName        = "f"
 	flagStoreIntervalName          = "i"
 	flagRestoreName                = "r"
@@ -21,6 +22,7 @@ func (c *AppConfig) initFlags() {
 
 	flag.StringVar(&c.RunAddr, flagRunAddrName, ":8080", "address and port to run server")
 	flag.StringVar(&c.LogLevel, flagLogLevelName, "info", "log level")
+	flag.StringVar(&c.Key, flagKeyName, "", "key")
 
 	flag.StringVar(&c.Store.Memory.FileStoragePath, flagFileStoragePathName, "/tmp/metrics-pgx.json", "file storage path")
 	flag.IntVar(&c.Store.Memory.StoreInterval, flagStoreIntervalName, 300, "seconds to save data to file")

@@ -8,6 +8,7 @@ import (
 const (
 	envRunAddrName                = "ADDRESS"
 	envLogLevelName               = "LOG_LEVEL"
+	envKeyName                    = "KEY"
 	envFileStoragePathName        = "FILE_STORAGE_PATH"
 	envStoreIntervalName          = "STORE_INTERVAL"
 	envRestoreName                = "RESTORE"
@@ -42,6 +43,7 @@ func getEnvOrDefault(env string, def any, t int) any {
 func (c *AppConfig) parseEnv() {
 	c.RunAddr = getEnvOrDefault(envRunAddrName, c.RunAddr, 1).(string)
 	c.LogLevel = getEnvOrDefault(envLogLevelName, c.LogLevel, 1).(string)
+	c.Key = getEnvOrDefault(envKeyName, c.Key, 1).(string)
 
 	c.Store.Memory.FileStoragePath = getEnvOrDefault(envFileStoragePathName, c.Store.Memory.FileStoragePath, 1).(string)
 	c.Store.Memory.StoreInterval = getEnvOrDefault(envStoreIntervalName, c.Store.Memory.StoreInterval, 2).(int)

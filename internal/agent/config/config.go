@@ -10,6 +10,7 @@ type AppConfig struct {
 	ReportInterval int
 	PollInterval   int
 	LogLevel       string
+	Key            string
 }
 
 func NewConfig() *AppConfig {

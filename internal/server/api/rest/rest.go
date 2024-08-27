@@ -4,6 +4,7 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/compression"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/encoding"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/go-chi/chi/v5"
@@ -15,11 +16,14 @@ type MetricsAPI struct {
 	router chi.Router
 }
 
-func NewMetricsAPI(handler *handlers.MetricsHandler) (*MetricsAPI, *domain.MetricsError) {
+func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (*MetricsAPI, *domain.MetricsError) {
 	r := chi.NewRouter()
 
 	r.Use(compression.GzipMiddleware)
 	r.Use(logger.RequestLoggerMiddleware)
+	r.Use(func(handler http.Handler) http.Handler {
+		return encoding.RequestHashesMiddleware(handler, config)
+	})
 
 	r.Post("/update/{type}/{name}/{value}", handler.UpdateMetrics)
 	r.Get("/value/{type}/{name}", handler.GetMetrics)

@@ -32,7 +32,7 @@ func main() {
 	service := services.NewMetricsService(repo)
 	handler := handlers.NewMetricsHandler(service, c)
 
-	api, err := rest.NewMetricsAPI(handler)
+	api, err := rest.NewMetricsAPI(handler, c)
 
 	if err != nil {
 		logger.Log.Error("failed with error", zap.String("error", err.Text), zap.Int("code", err.Code))

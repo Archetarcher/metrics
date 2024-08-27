@@ -5,6 +5,7 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/agent/compression"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
+	"github.com/Archetarcher/metrics.git/internal/agent/encoding"
 	"github.com/go-resty/resty/v2"
 	"math/rand"
 	"net/http"
@@ -59,7 +60,14 @@ func (s *TrackingService) Send(request []domain.Metrics) (*domain.SendResponse, 
 
 	url := fmt.Sprintf("http://%s/updates/", s.Config.ServerRunAddr)
 
-	res, err := s.Client.OnBeforeRequest(compression.GzipMiddleware).R().SetBody(request).Post(url)
+	res, err := s.Client.
+		OnBeforeRequest(compression.GzipMiddleware).
+		OnBeforeRequest(func(client *resty.Client, request *resty.Request) error {
+			return encoding.HashMiddleware(client, request, s.Config)
+		}).
+		R().
+		SetBody(request).
+		Post(url)
 	if err != nil {
 		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err.Error()), Code: http.StatusInternalServerError}
 	}

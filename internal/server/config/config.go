@@ -10,6 +10,7 @@ func (c *AppConfig) ParseConfig() {
 type AppConfig struct {
 	RunAddr  string
 	LogLevel string
+	Key      string
 	Store    store.Config
 }
 
