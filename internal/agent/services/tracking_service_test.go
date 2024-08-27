@@ -30,7 +30,7 @@ func TestTrackingService_Fetch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := service.Fetch(tt.args.counterInterval, &tt.args.metrics)
+			_, err := service.FetchRuntime(tt.args.counterInterval)
 			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}

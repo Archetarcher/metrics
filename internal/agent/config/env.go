@@ -11,6 +11,7 @@ const (
 	envPollIntervalName   = "p"
 	envLogLevelName       = "LOG_LEVEL"
 	envKeyName            = "KEY"
+	envRateLimitName      = "RATE_LIMIT"
 )
 
 func getEnvOrDefault(env string, def any, t int) any {
@@ -44,4 +45,5 @@ func (c *AppConfig) parseEnv() {
 	c.ReportInterval = getEnvOrDefault(envReportIntervalName, c.ReportInterval, 2).(int)
 	c.PollInterval = getEnvOrDefault(envPollIntervalName, c.PollInterval, 2).(int)
 	c.Key = getEnvOrDefault(envKeyName, c.Key, 1).(string)
+	c.RateLimit = getEnvOrDefault(envRateLimitName, c.RateLimit, 2).(int)
 }

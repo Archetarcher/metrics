@@ -10,6 +10,7 @@ const (
 	flagPollIntervalName   = "p"
 	flagLogLevelName       = "l"
 	flagKeyName            = "k"
+	flagRateLimitName      = "rl"
 )
 
 func (c *AppConfig) parseFlags() {
@@ -22,4 +23,5 @@ func (c *AppConfig) initFlags() {
 	flag.IntVar(&c.PollInterval, flagPollIntervalName, 2, "interval in seconds for poll ")
 	flag.StringVar(&c.LogLevel, flagLogLevelName, "info", "log level")
 	flag.StringVar(&c.Key, flagKeyName, "", "key")
+	flag.IntVar(&c.RateLimit, flagRateLimitName, 6, "rate limit")
 }

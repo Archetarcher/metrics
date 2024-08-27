@@ -42,41 +42,11 @@ type Gauge struct {
 	StackSys,
 	Sys,
 	TotalAlloc,
-	RandomValue float64
+	RandomValue,
+	TotalMemory,
+	FreeMemory,
+	CPUutilization1 float64
 }
 
 // MetricsData map
 type MetricsData map[string]Metrics
-
-// MetricsDat struct
-type MetricsDat struct {
-	PollCount,
-	RandomValue,
-	Alloc,
-	BuckHashSys,
-	Frees,
-	GCCPUFraction,
-	GCSys,
-	HeapAlloc,
-	HeapIdle,
-	HeapInuse,
-	HeapObjects,
-	HeapReleased,
-	HeapSys,
-	LastGC,
-	Lookups,
-	MCacheInuse,
-	MCacheSys,
-	MSpanInuse,
-	MSpanSys,
-	Mallocs,
-	NextGC,
-	NumForcedGC,
-	NumGC,
-	OtherSys,
-	PauseTotalNs,
-	StackInuse,
-	StackSys,
-	Sys,
-	TotalAlloc Metrics
-}

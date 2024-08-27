@@ -1,12 +1,15 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/agent/compression"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/Archetarcher/metrics.git/internal/agent/encoding"
 	"github.com/go-resty/resty/v2"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/mem"
 	"math/rand"
 	"net/http"
 	"runtime"
@@ -51,9 +54,15 @@ type TrackingService struct {
 	Config *config.AppConfig
 }
 
-func (s *TrackingService) Fetch(counterInterval int64, metrics *domain.MetricsData) *domain.TrackingError {
-	*metrics = mapMetricsValues(counterInterval)
-	return nil
+func (s *TrackingService) FetchMemory() (*domain.MetricsData, *domain.TrackingError) {
+	metrics := mapGaugeMetrics(gatherMemoryValues)
+	return &metrics, nil
+}
+func (s *TrackingService) FetchRuntime(counterInterval int64) (*domain.MetricsData, *domain.TrackingError) {
+	metrics := mapGaugeMetrics(gatherRuntimeValues)
+	metrics[pollCount] = metricsValue(pollCount, counterType, &counterInterval, nil)
+
+	return &metrics, nil
 }
 
 func (s *TrackingService) Send(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError) {
@@ -87,12 +96,11 @@ func metricsValue(name string, mtype string, delta *int64, value *float64) domai
 	}
 }
 
-func mapMetricsValues(counterInterval int64) domain.MetricsData {
+func mapGaugeMetrics(value gatherGaugeValue) domain.MetricsData {
 	rv := rand.ExpFloat64()
-	gauge := gatherGaugeValues()
+	gauge := value()
 	metrics := make(map[string]domain.Metrics)
 
-	metrics[pollCount] = metricsValue(pollCount, counterType, &counterInterval, nil)
 	metrics[randomValue] = metricsValue(randomValue, gaugeType, nil, &rv)
 	metrics[alloc] = metricsValue(alloc, gaugeType, nil, &gauge.Alloc)
 	metrics[buckHashSys] = metricsValue(buckHashSys, gaugeType, nil, &gauge.BuckHashSys)
@@ -127,7 +135,8 @@ func mapMetricsValues(counterInterval int64) domain.MetricsData {
 	metrics[totalAlloc] = metricsValue(totalAlloc, gaugeType, nil, &gauge.TotalAlloc)
 	return metrics
 }
-func gatherGaugeValues() domain.Gauge {
+
+func gatherRuntimeValues() domain.Gauge {
 	var gauge = domain.Gauge{}
 
 	var rtm runtime.MemStats
@@ -163,3 +172,17 @@ func gatherGaugeValues() domain.Gauge {
 	gauge.RandomValue = rand.ExpFloat64()
 	return gauge
 }
+func gatherMemoryValues() domain.Gauge {
+	var gauge = domain.Gauge{}
+	vm, _ := mem.VirtualMemory()
+
+	gauge.TotalMemory = float64(vm.Total)
+	gauge.FreeMemory = float64(vm.Free)
+
+	cp, _ := cpu.PercentWithContext(context.TODO(), 0, true)
+	gauge.CPUutilization1 = float64(len(cp))
+
+	return gauge
+}
+
+type gatherGaugeValue func() domain.Gauge

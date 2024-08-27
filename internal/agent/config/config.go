@@ -10,6 +10,7 @@ type AppConfig struct {
 	ReportInterval int
 	PollInterval   int
 	LogLevel       string
+	RateLimit      int
 	Key            string
 }
 
