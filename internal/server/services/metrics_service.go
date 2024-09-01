@@ -88,7 +88,7 @@ func (s *MetricsService) Update(request *domain.Metrics, ctx context.Context) (*
 	}
 
 	response, err = s.repo.Get(request, ctx)
-	if err := s.repo.Set(request, ctx); err != nil {
+	if err != nil {
 		return nil, err
 	}
 	return response, nil
