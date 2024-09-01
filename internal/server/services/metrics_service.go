@@ -68,8 +68,11 @@ func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) 
 	if err := s.repo.SetAll(request, ctx); err != nil {
 		return nil, err
 	}
-	response, _ := s.repo.GetAllIn(keys, ctx)
+	response, err := s.repo.GetAllIn(keys, ctx)
 
+	if err != nil {
+		return nil, err
+	}
 	return response, nil
 }
 func (s *MetricsService) Update(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
