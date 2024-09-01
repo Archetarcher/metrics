@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/utils"
@@ -13,37 +14,41 @@ type MetricsService struct {
 }
 
 type MetricRepository interface {
-	GetAllIn(keys []string) ([]domain.Metrics, *domain.MetricsError)
-	GetAll() ([]domain.Metrics, *domain.MetricsError)
-	Get(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
-	Set(request *domain.Metrics) *domain.MetricsError
-	SetAll(request *[]domain.Metrics) *domain.MetricsError
+	GetAllIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
+	GetAll(ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
+	Get(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError)
+	Set(request *domain.Metrics, ctx context.Context) *domain.MetricsError
+	SetAll(request []domain.Metrics, ctx context.Context) *domain.MetricsError
+	CheckConnection(ctx context.Context) *domain.MetricsError
 }
 
 func NewMetricsService(repo MetricRepository) *MetricsService {
 	return &MetricsService{repo: repo}
 }
 
-func (s *MetricsService) Updates(request *[]domain.Metrics) (*[]domain.Metrics, *domain.MetricsError) {
-	keys := make([]string, len(*request))
+func (s *MetricsService) CheckConnection(ctx context.Context) *domain.MetricsError {
+	return s.repo.CheckConnection(ctx)
+}
+func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
+	keys := make([]string, len(request))
 
-	for _, m := range *request {
+	for _, m := range request {
 		if !slices.Contains(keys, getKey(m)) {
 			keys = append(keys, getKey(m))
 		}
 	}
 
-	metricsByKey, err := s.repo.GetAllIn(keys)
+	metricsByKey, err := s.repo.GetAllIn(keys, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	existingKeys := make(map[string]int64)
-	for key, m := range *request {
+	for key, m := range request {
 		if m.MType == domain.CounterType {
 			if existingKeys[getKey(m)] != 0 {
 				c := *m.Delta + existingKeys[getKey(m)]
-				(*request)[key].Delta = &c
+				(request)[key].Delta = &c
 				continue
 			}
 			existingKeys[getKey(m)] = *m.Delta
@@ -52,39 +57,45 @@ func (s *MetricsService) Updates(request *[]domain.Metrics) (*[]domain.Metrics, 
 	}
 
 	for _, mbk := range metricsByKey {
-		for key, m := range *request {
+		for key, m := range request {
 			if getKey(m) == getKey(mbk) && m.MType == domain.CounterType {
 				c := *m.Delta + *mbk.Delta
-				(*request)[key].Delta = &c
+				(request)[key].Delta = &c
 			}
 		}
 	}
 
-	if err := s.repo.SetAll(request); err != nil {
+	if err := s.repo.SetAll(request, ctx); err != nil {
 		return nil, err
 	}
-	response, _ := s.repo.GetAllIn(keys)
+	response, _ := s.repo.GetAllIn(keys, ctx)
 
-	return &response, nil
+	return response, nil
 }
-func (s *MetricsService) Update(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
-	response, err := s.repo.Get(request)
+func (s *MetricsService) Update(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
+	response, err := s.repo.Get(request, ctx)
 	if err != nil {
 		return nil, err
 	}
+
 	if response != nil && request.MType == domain.CounterType {
 		c := *request.Delta + *response.Delta
 		request.Delta = &c
 	}
-	if err := s.repo.Set(request); err != nil {
+
+	if err := s.repo.Set(request, ctx); err != nil {
 		return nil, err
 	}
-	response, _ = s.repo.Get(request)
+
+	response, err = s.repo.Get(request, ctx)
+	if err := s.repo.Set(request, ctx); err != nil {
+		return nil, err
+	}
 	return response, nil
 }
-func (s *MetricsService) GetValue(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
+func (s *MetricsService) GetValue(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
 
-	response, err := s.repo.Get(request)
+	response, err := s.repo.Get(request, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -94,8 +105,8 @@ func (s *MetricsService) GetValue(request *domain.Metrics) (*domain.Metrics, *do
 
 	return response, nil
 }
-func (s *MetricsService) GetAllValues() (string, *domain.MetricsError) {
-	response, err := s.repo.GetAll()
+func (s *MetricsService) GetAllValues(ctx context.Context) (string, *domain.MetricsError) {
+	response, err := s.repo.GetAll(ctx)
 
 	if err != nil {
 		return "", err

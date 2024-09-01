@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"context"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
@@ -17,8 +18,9 @@ var c = config.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx:
 func setup() (*domain.Metrics, *MetricRepository) {
 	i := int64(1)
 	req := &domain.Metrics{MType: "counter", ID: "countervalue", Delta: &i}
+	ctx := context.Background()
 
-	storage, err := store.NewStore(c.Store)
+	storage, err := store.NewStore(c.Store, ctx)
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 	}
@@ -48,10 +50,11 @@ func TestMetricRepository_Get(t *testing.T) {
 			want:    nil,
 		},
 	}
+	ctx := context.Background()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := repo.Get(tt.args.request)
+			res, err := repo.Get(tt.args.request, ctx)
 
 			assert.Equal(t, tt.want, res)
 			assert.Equal(t, tt.wantErr, err != nil)
@@ -79,10 +82,11 @@ func TestMetricRepository_Set(t *testing.T) {
 			wantErr: false,
 		},
 	}
+	ctx := context.Background()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := repo.Set(tt.args.request)
+			err := repo.Set(tt.args.request, ctx)
 
 			assert.Equal(t, tt.wantErr, err != nil)
 		})

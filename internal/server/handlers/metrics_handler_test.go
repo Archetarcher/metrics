@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
@@ -21,8 +22,9 @@ var c = config.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx:
 
 func TestMetricsHandler_UpdateMetrics(t *testing.T) {
 	c.ParseConfig()
+	ctx := context.Background()
 
-	storage, err := store.NewStore(c.Store)
+	storage, err := store.NewStore(c.Store, ctx)
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 	}

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/api/rest"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
@@ -21,12 +23,22 @@ func main() {
 	if err := logger.Initialize(c.LogLevel); err != nil {
 		log.Fatal("failed to init logger")
 	}
+	ctx := context.Background()
 
-	storage, err := store.NewStore(c.Store)
+	storage, err := store.NewStore(c.Store, ctx)
 
 	if err != nil {
-		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
+		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Error(err.Err))
+
+		ns, e := store.Retry(err, 1, 3, c.Store, ctx)
+
+		if e != nil {
+			logger.Log.Error("failed to retry init storage with error, finishing app", zap.String("error", e.Text), zap.Error(e.Err))
+			return
+		}
+		storage = ns
 	}
+	fmt.Println("continue app")
 
 	repo := repositories.NewMetricsRepository(storage)
 	service := services.NewMetricsService(repo)
@@ -35,7 +47,8 @@ func main() {
 	api, err := rest.NewMetricsAPI(handler, c)
 
 	if err != nil {
-		logger.Log.Error("failed with error", zap.String("error", err.Text), zap.Int("code", err.Code))
+		logger.Log.Error("failed to init api with error, finishing app", zap.String("error", err.Text), zap.Int("code", err.Code))
+		return
 	}
 
 	if err := api.Run(c); err != nil {

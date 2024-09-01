@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,7 +18,7 @@ type Store struct {
 	data map[string]domain.Metrics
 }
 
-func NewStore(config *Config) *Store {
+func NewStore(config *Config, ctx context.Context) (*Store, *domain.MetricsError) {
 	storage := &Store{
 		mux:  sync.Mutex{},
 		data: make(map[string]domain.Metrics),
@@ -46,15 +47,20 @@ func NewStore(config *Config) *Store {
 		}
 	}()
 
-	return storage
+	return storage, nil
 }
-func (s *Store) CheckConnection() *domain.MetricsError {
+func RetryConnection(error *domain.MetricsError, interval int, try int, config *Config, ctx context.Context) (*Store, *domain.MetricsError) {
+	return nil, nil
+}
+
+func (s *Store) CheckConnection(ctx context.Context) *domain.MetricsError {
 	return nil
 }
+
 func (s *Store) Close() {
 
 }
-func (s *Store) GetValuesIn(keys []string) ([]domain.Metrics, *domain.MetricsError) {
+func (s *Store) GetValuesIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
@@ -66,7 +72,7 @@ func (s *Store) GetValuesIn(keys []string) ([]domain.Metrics, *domain.MetricsErr
 
 	return metrics, nil
 }
-func (s *Store) GetValues() ([]domain.Metrics, *domain.MetricsError) {
+func (s *Store) GetValues(ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
@@ -77,7 +83,7 @@ func (s *Store) GetValues() ([]domain.Metrics, *domain.MetricsError) {
 	}
 	return res, nil
 }
-func (s *Store) GetValue(request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
+func (s *Store) GetValue(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
@@ -87,15 +93,15 @@ func (s *Store) GetValue(request *domain.Metrics) (*domain.Metrics, *domain.Metr
 	}
 	return &res, nil
 }
-func (s *Store) SetValue(request *domain.Metrics) *domain.MetricsError {
+func (s *Store) SetValue(request *domain.Metrics, ctx context.Context) *domain.MetricsError {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
 	s.data[getName(*request)] = *request
 	return nil
 }
-func (s *Store) SetValues(request *[]domain.Metrics) *domain.MetricsError {
-	for _, value := range *request {
+func (s *Store) SetValues(request []domain.Metrics, ctx context.Context) *domain.MetricsError {
+	for _, value := range request {
 		s.data[getName(value)] = value
 	}
 	return nil

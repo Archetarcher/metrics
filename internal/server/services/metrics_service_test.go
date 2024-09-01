@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
@@ -20,7 +21,9 @@ func setup() (*domain.Metrics, *domain.Metrics, *MetricsService) {
 
 	req := &domain.Metrics{MType: "gauge", ID: "test", Value: &i}
 	res := &domain.Metrics{MType: "gauge", ID: "test", Value: &i}
-	storage, err := store.NewStore(c.Store)
+
+	ctx := context.Background()
+	storage, err := store.NewStore(c.Store, ctx)
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 	}
@@ -36,6 +39,8 @@ func TestMetricsService_Update(t *testing.T) {
 		request *domain.Metrics
 	}
 	req, res, service := setup()
+	ctx := context.Background()
+
 	tests := []struct {
 		name string
 		args args
@@ -51,7 +56,7 @@ func TestMetricsService_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := service.Update(tt.args.request)
+			res, err := service.Update(tt.args.request, ctx)
 			assert.Equal(t, tt.res, res)
 			assert.Equal(t, tt.err, err)
 
