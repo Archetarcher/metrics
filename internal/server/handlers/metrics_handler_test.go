@@ -1,21 +1,37 @@
 package handlers
 
 import (
+	"context"
+	"github.com/Archetarcher/metrics.git/internal/server/config"
+	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
+	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
+	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
+var c = config.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx: &pgx.Config{}})
+
 func TestMetricsHandler_UpdateMetrics(t *testing.T) {
-	repo := &repositories.MetricRepository{Storage: store.NewStorage()}
-	service := &services.MetricsService{MetricRepository: repo}
-	handler := MetricsHandler{MetricsService: service}
+	c.ParseConfig()
+	ctx := context.Background()
+
+	storage, err := store.NewStore(c.Store, ctx)
+	if err != nil {
+		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
+	}
+
+	repo := repositories.NewMetricsRepository(storage)
+	service := services.NewMetricsService(repo)
+	handler := NewMetricsHandler(service, c)
 	r := chi.NewRouter()
 	r.Post("/update/{type}/{name}/{value}", handler.UpdateMetrics)
 

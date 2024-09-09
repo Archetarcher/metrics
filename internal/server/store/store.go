@@ -1,60 +1,36 @@
 package store
 
 import (
-	"fmt"
+	"context"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"strconv"
-	"sync"
+	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
+	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
 )
 
-type MemStorage struct {
-	mux  sync.Mutex
-	data map[string]string
+type Store interface {
+	GetValuesIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
+	GetValues(ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
+	GetValue(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError)
+	SetValue(request *domain.Metrics, ctx context.Context) *domain.MetricsError
+	SetValues(request []domain.Metrics, ctx context.Context) *domain.MetricsError
+	CheckConnection(ctx context.Context) *domain.MetricsError
+	Close()
 }
 
-func NewStorage() *MemStorage {
-	return &MemStorage{
-		mux:  sync.Mutex{},
-		data: make(map[string]string),
-	}
-}
+func NewStore(conf Config, ctx context.Context) (Store, *domain.MetricsError) {
 
-func (s *MemStorage) GetValues() ([]domain.MetricResponse, error) {
-	var res []domain.MetricResponse
-
-	for name, value := range s.data {
-		res = append(res, domain.MetricResponse{
-			Name:  name,
-			Value: value,
-		})
-	}
-	return res, nil
-}
-func (s *MemStorage) GetValue(request *domain.MetricRequest) (*domain.MetricResponse, error) {
-	res, ok := s.data[getName(request)]
-	if !ok {
-		return nil, nil
+	if conf.Pgx.DatabaseDsn != domain.EmptyParam {
+		return pgx.NewStore(conf.Pgx, ctx)
 	}
 
-	return &domain.MetricResponse{
-		Name:  getName(request),
-		Value: res,
-	}, nil
+	return memory.NewStore(conf.Memory, ctx)
+
 }
 
-func (s *MemStorage) SetValue(request *domain.MetricRequest) error {
-	if request.Type == domain.GaugeType {
-		gaugeValue := request.Value
-
-		s.data[getName(request)] = strconv.FormatFloat(gaugeValue, 'f', 3, 64)
-		return nil
+func Retry(error *domain.MetricsError, interval int, try int, conf Config, ctx context.Context) (Store, *domain.MetricsError) {
+	if conf.Pgx.DatabaseDsn != domain.EmptyParam {
+		return pgx.RetryConnection(error, interval, try, conf.Pgx, ctx)
 	}
 
-	counterValue := int64(request.Value)
-	s.data[getName(request)] = strconv.FormatInt(counterValue, 10)
-	return nil
-}
-
-func getName(request *domain.MetricRequest) string {
-	return fmt.Sprintf("%s_%s", request.Name, request.Type)
+	return memory.RetryConnection(error, interval, try, conf.Memory, ctx)
 }

@@ -9,7 +9,8 @@ import (
 
 func TestTrackingService_Fetch(t *testing.T) {
 	type args struct {
-		counterInterval int
+		counterInterval int64
+		metrics         domain.MetricsData
 	}
 	tests := []struct {
 		name    string
@@ -19,7 +20,8 @@ func TestTrackingService_Fetch(t *testing.T) {
 		{
 			name: "positive test #1",
 			args: args{
-				counterInterval: 1,
+				counterInterval: int64(1),
+				metrics:         domain.MetricsData{},
 			},
 			wantErr: false,
 		},
@@ -28,25 +30,24 @@ func TestTrackingService_Fetch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := service.Fetch(tt.args.counterInterval)
-
+			_, err := service.FetchRuntime(tt.args.counterInterval)
 			assert.Equal(t, tt.wantErr, err != nil)
-			assert.NotNil(t, res)
 		})
 	}
 }
 
 func TestTrackingService_Send(t *testing.T) {
-	config.ParseConfig()
+	c := config.AppConfig{}
+	c.ParseConfig()
 	type args struct {
-		request *domain.MetricData
+		request []domain.Metrics
 	}
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{}
-	service := &TrackingService{}
+	service := &TrackingService{Config: &c}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

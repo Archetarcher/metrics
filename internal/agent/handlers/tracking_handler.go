@@ -1,80 +1,126 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
+	"github.com/Archetarcher/metrics.git/internal/agent/logger"
+	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
+	"net/http"
 	"sync"
 	"time"
 )
 
 type TrackingHandler struct {
 	TrackingService
+	Config *config.AppConfig
 }
 
 type TrackingService interface {
-	Fetch(counterInterval int) ([]domain.MetricData, *domain.TrackingError)
-	Send(request *domain.MetricData) (*domain.SendResponse, *domain.TrackingError)
+	FetchMemory() (*domain.MetricsData, *domain.TrackingError)
+	FetchRuntime(counterInterval int64) (*domain.MetricsData, *domain.TrackingError)
+	Send(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
 }
 
-func (h *TrackingHandler) TrackMetrics() {
-	config.ParseConfig()
+func (h *TrackingHandler) TrackMetrics() *domain.TrackingError {
 
-	fmt.Println("start tracking")
+	if err := logger.Initialize(h.Config.LogLevel); err != nil {
+		return &domain.TrackingError{
+			Text: err.Error(),
+			Code: http.StatusInternalServerError,
+		}
+	}
+	logger.Log.Info("start tracking")
 
 	var wg sync.WaitGroup
-	metrics := make(chan domain.MetricData)
-	wg.Add(2)
+	wg.Add(1)
 
-	go startPoll(h.Fetch, metrics, &wg)
-	go startReport(h.Send, metrics, &wg)
+	metricsData := make(chan domain.MetricsData, h.Config.RateLimit)
 
-	fmt.Println("Waiting for goroutines to finish...")
+	for w := 1; w <= h.Config.RateLimit; w++ {
+		go reportWorker(h.Send, metricsData, h.Config.ReportInterval)
+	}
+	go startRuntimePoll(h.FetchRuntime, &wg, h.Config.PollInterval, metricsData)
+	go startMemoryPoll(h.FetchMemory, &wg, h.Config.PollInterval, metricsData)
+
+	logger.Log.Info("Waiting for goroutines to finish...")
+
 	wg.Wait()
-	fmt.Println("Done!")
+	logger.Log.Info("Done!")
+
+	return nil
 }
 
-type fetch func(counterInterval int) ([]domain.MetricData, *domain.TrackingError)
-type send func(request *domain.MetricData) (*domain.SendResponse, *domain.TrackingError)
+type fetchMemory func() (*domain.MetricsData, *domain.TrackingError)
+type fetchRuntime func(counterInterval int64) (*domain.MetricsData, *domain.TrackingError)
+type send func(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
 
-func startPoll(fetch fetch, metrics chan<- domain.MetricData, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var pollInterval = time.Duration(domain.PollInterval) * time.Second
-	counterInterval := 1
-	fmt.Println("starting poll")
-	for {
-		response, err := fetch(counterInterval)
+func reportWorker(send send, metricsData <-chan domain.MetricsData, interval int) {
+	var reportInterval = time.Duration(interval) * time.Second
+	logger.Log.Info("starting report")
+
+	for data := range metricsData {
+		vals := maps.Values(data)
+		_, err := send(vals)
 		if err != nil {
-			fmt.Println(err)
+			logger.Log.Info(err.Text)
+
+			retry(1, 3, vals, send)
+		}
+		logger.Log.Info("send data and sleep")
+
+		time.Sleep(reportInterval)
+	}
+}
+
+func startRuntimePoll(fetch fetchRuntime, wg *sync.WaitGroup, interval int, pollData chan<- domain.MetricsData) {
+	defer wg.Done()
+	var pollInterval = time.Duration(interval) * time.Second
+	counterInterval := int64(1)
+	logger.Log.Info("starting runtime poll")
+	for {
+		metrics, err := fetch(counterInterval)
+		if err != nil {
+			logger.Log.Info(err.Text)
 		}
 
-		for _, m := range response {
-			fmt.Println("write to chan")
-			fmt.Println(m)
-			metrics <- m
+		pollData <- *metrics
+
+		counterInterval++
+
+		time.Sleep(pollInterval)
+	}
+}
+func startMemoryPoll(fetch fetchMemory, wg *sync.WaitGroup, interval int, pollData chan<- domain.MetricsData) {
+	defer wg.Done()
+	var pollInterval = time.Duration(interval) * time.Second
+	counterInterval := int64(1)
+	logger.Log.Info("starting memory poll")
+	for {
+		metrics, err := fetch()
+		if err != nil {
+			logger.Log.Info(err.Text)
 		}
+
+		pollData <- *metrics
+
 		counterInterval++
 
 		time.Sleep(pollInterval)
 	}
 }
 
-func startReport(send send, metrics <-chan domain.MetricData, wg *sync.WaitGroup) {
-	defer wg.Done()
-	fmt.Println("starting report")
+func retry(interval int, try int, vals []domain.Metrics, send send) {
+	logger.Log.Info("retrying send", zap.Int("interval", interval), zap.Int("try", try))
 
-	var reportInterval = time.Duration(domain.ReportInterval) * time.Second
+	time.Sleep(time.Duration(interval) * time.Second)
 
-	for metric := range metrics {
-		fmt.Println("reading from chan")
-		fmt.Println(metric)
+	if try < 0 {
+		return
+	}
 
-		response, err := send(&metric)
-		if err != nil {
-			fmt.Println(err)
-		}
-		fmt.Println(response)
-
-		time.Sleep(reportInterval)
+	_, err := send(vals)
+	if err != nil {
+		retry(interval+2, try-1, vals, send)
 	}
 }

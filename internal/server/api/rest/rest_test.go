@@ -1,15 +1,13 @@
 package rest
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/config"
-	"github.com/Archetarcher/metrics.git/internal/server/store"
+	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
 )
 
-func TestMetricAPI_Run(t *testing.T) {
-	config.ParseConfig()
+func TestMetricsAPI_Run(t *testing.T) {
 
 	type fields struct {
 		server *http.ServeMux
@@ -37,9 +35,9 @@ func TestMetricAPI_Run(t *testing.T) {
 	}
 }
 
-func TestNewMetricAPI(t *testing.T) {
+func TestNewMetricsAPI(t *testing.T) {
 	type fields struct {
-		storage *store.MemStorage
+		handler *handlers.MetricsHandler
 	}
 
 	tests := []struct {
@@ -48,8 +46,8 @@ func TestNewMetricAPI(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "Test with storage",
-			fields:  fields{storage: store.NewStorage()},
+			name:    "Test with handler",
+			fields:  fields{handler: &handlers.MetricsHandler{}},
 			wantErr: false,
 		},
 		{
@@ -60,7 +58,7 @@ func TestNewMetricAPI(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.fields.storage == nil, tt.wantErr)
+			assert.Equal(t, tt.fields.handler == nil, tt.wantErr)
 		})
 	}
 }
