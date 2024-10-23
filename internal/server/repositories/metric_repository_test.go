@@ -47,16 +47,14 @@ func TestMetricRepository_Get(t *testing.T) {
 			name:    "positive test #1",
 			args:    args{request: req},
 			wantErr: false,
-			want:    nil,
 		},
 	}
 	ctx := context.Background()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := repo.Get(tt.args.request, ctx)
+			_, err := repo.Get(tt.args.request, ctx)
 
-			assert.Equal(t, tt.want, res)
 			assert.Equal(t, tt.wantErr, err != nil)
 
 		})

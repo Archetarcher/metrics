@@ -8,6 +8,7 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 	"net/http"
 )
@@ -24,6 +25,8 @@ func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (
 	r.Use(func(handler http.Handler) http.Handler {
 		return encoding.RequestHashesMiddleware(handler, config)
 	})
+
+	r.Mount("/debug", middleware.Profiler())
 
 	r.Post("/update/{type}/{name}/{value}", handler.UpdateMetrics)
 	r.Get("/value/{type}/{name}", handler.GetMetrics)

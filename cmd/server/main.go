@@ -14,6 +14,8 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
 	"go.uber.org/zap"
 	"log"
+
+	_ "net/http/pprof"
 )
 
 func main() {
