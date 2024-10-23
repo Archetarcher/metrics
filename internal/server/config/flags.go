@@ -31,6 +31,6 @@ func (c *AppConfig) initFlags() {
 	flag.BoolVar(&c.Store.Memory.Restore, flagRestoreName, true, "load data from file")
 
 	flag.StringVar(&c.Store.Pgx.DatabaseDsn, flagDatabaseDsnName, "", "dsn")
-	flag.StringVar(&c.Store.Pgx.MigrationsPath, flagDatabaseMigrationsPathName, "../../internal/server/migrations", "migrations")
+	flag.StringVar(&c.Store.Pgx.MigrationsPath, flagDatabaseMigrationsPathName, "internal/server/migrations", "migrations")
 
 }
