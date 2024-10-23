@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/jackc/pgerrcode"
@@ -192,7 +191,8 @@ func (s *Store) SetValues(request []domain.Metrics, ctx context.Context) *domain
 	return nil
 }
 func getKey(request domain.Metrics) string {
-	return fmt.Sprintf("%s_%s", request.ID, request.MType)
+	return request.ID + "_" + request.MType
+
 }
 
 func runMigrations(config *Config, ctx context.Context) *domain.MetricsError {

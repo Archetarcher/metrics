@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/api/rest"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
@@ -40,7 +39,6 @@ func main() {
 		}
 		storage = ns
 	}
-	fmt.Println("continue app")
 
 	repo := repositories.NewMetricsRepository(storage)
 	service := services.NewMetricsService(repo)

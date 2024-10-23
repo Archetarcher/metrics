@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"go.uber.org/zap"
@@ -108,7 +107,7 @@ func (s *Store) SetValues(request []domain.Metrics, ctx context.Context) *domain
 }
 
 func getName(request domain.Metrics) string {
-	return fmt.Sprintf("%s_%s", request.ID, request.MType)
+	return request.ID + "_" + request.MType
 }
 
 func (s *Store) Save(config *Config) error {
