@@ -287,7 +287,7 @@ func validateUpdatesRequest(r *http.Request) ([]domain.Metrics, *domain.MetricsE
 	if err != nil {
 		return nil, &domain.MetricsError{
 			Text: err.Error(),
-			Code: http.StatusMethodNotAllowed,
+			Code: http.StatusBadRequest,
 		}
 	}
 
@@ -296,7 +296,18 @@ func validateUpdatesRequest(r *http.Request) ([]domain.Metrics, *domain.MetricsE
 	if err != nil {
 		return nil, &domain.MetricsError{
 			Text: err.Error(),
-			Code: http.StatusMethodNotAllowed,
+			Code: http.StatusBadRequest,
+		}
+	}
+
+	for _, m := range metrics {
+		if m.MType == domain.EmptyParam ||
+			!slices.Contains([]string{domain.GaugeType, domain.CounterType}, m.MType) ||
+			m.ID == domain.EmptyParam {
+			return nil, &domain.MetricsError{
+				Text: "invalid param provided",
+				Code: http.StatusBadRequest,
+			}
 		}
 	}
 

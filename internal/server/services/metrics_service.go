@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/utils"
 	"net/http"
@@ -128,7 +127,7 @@ func (s *MetricsService) GetAllValues(ctx context.Context) (string, *domain.Metr
 	return page, nil
 }
 func getKey(request domain.Metrics) string {
-	return fmt.Sprintf("%s_%s", request.ID, request.MType)
+	return request.ID + "_" + request.MType
 }
 func handleError(code int, err string) *domain.MetricsError {
 	return &domain.MetricsError{

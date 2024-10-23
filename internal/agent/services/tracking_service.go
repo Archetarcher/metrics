@@ -67,7 +67,7 @@ func (s *TrackingService) FetchRuntime(counterInterval int64) (*domain.MetricsDa
 
 func (s *TrackingService) Send(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError) {
 
-	url := fmt.Sprintf("http://%s/updates/", s.Config.ServerRunAddr)
+	url := s.Config.ServerRunAddr + "/updates/"
 
 	res, err := s.Client.
 		OnBeforeRequest(compression.GzipMiddleware).
