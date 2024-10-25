@@ -51,6 +51,7 @@ const (
 	totalAlloc    = "TotalAlloc"
 )
 
+// TrackingService tracks metrics and sends to server
 type TrackingService struct {
 	Client *resty.Client
 	Config *config.AppConfig
