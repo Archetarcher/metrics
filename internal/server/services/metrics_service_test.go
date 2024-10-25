@@ -215,3 +215,12 @@ func TestMetricsService_GetAllValues(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkMetricsService_Updates(b *testing.B) {
+	b.ReportAllocs()
+	ctx := context.Background()
+	metrics := []domain.Metrics{values[0], values[1], values[2], values[3]}
+	for i := 0; i < b.N; i++ {
+		conf.service.Updates(metrics, ctx)
+	}
+}

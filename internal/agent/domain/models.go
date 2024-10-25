@@ -1,19 +1,19 @@
 package domain
 
-// SendResponse is a response struct for send response
+// SendResponse is a response struct of server response after sending metrics.
 type SendResponse struct {
 	Status int `json:"status"`
 }
 
-// Metrics struct
+// Metrics is a metric struct keeps type, name, and value of metrics.
 type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	ID    string   `json:"id"`              // metrics name
+	MType string   `json:"type"`            // metrics type, accepts value gauge or counter.
+	Delta *int64   `json:"delta,omitempty"` // metrics value if provided type is counter.
+	Value *float64 `json:"value,omitempty"` // metrics value if provided type is gauge.
 }
 
-// Gauge struct
+// Gauge is a struct with all fields of metrics with type gauge.
 type Gauge struct {
 	Alloc,
 	BuckHashSys,
@@ -48,5 +48,5 @@ type Gauge struct {
 	CPUutilization1 float64
 }
 
-// MetricsData map
+// MetricsData is a map of Metrics.
 type MetricsData map[string]Metrics

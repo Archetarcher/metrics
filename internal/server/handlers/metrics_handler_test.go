@@ -38,17 +38,13 @@ func (c *Config) setConfig() {
 	c.once.Do(func() {
 		c.c = config.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx: &pgx.Config{}})
 
-		server, err := setupServer()
+		server, err := setupConfigServer()
 
 		c.server = server
 		c.err = err
 	})
 }
-func init() {
-	conf.setConfig()
-}
-
-func setupServer() (*httptest.Server, error) {
+func setupConfigServer() (*httptest.Server, error) {
 	ctx := context.Background()
 
 	storage, err := store.NewStore(conf.c.Store, ctx)
@@ -72,6 +68,10 @@ func setupServer() (*httptest.Server, error) {
 	srv := httptest.NewServer(r)
 
 	return srv, nil
+}
+
+func init() {
+	conf.setConfig()
 }
 
 var (

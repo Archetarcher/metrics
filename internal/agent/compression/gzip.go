@@ -8,6 +8,7 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+// GzipMiddleware is a middleware for encrypting data before sending to server.
 func GzipMiddleware(c *resty.Client, req *resty.Request) error {
 	if req.Header.Get("Content-Encoding") != "gzip" {
 

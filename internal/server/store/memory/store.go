@@ -14,11 +14,15 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 )
 
+const emptyParam = ""
+
+// Store is a struct for in memory storage, keeps sync.Mutex and metrics map
 type Store struct {
 	mux  sync.Mutex
 	data map[string]domain.Metrics
 }
 
+// NewStore creates new storage, restores data from file
 func NewStore(config *Config, ctx context.Context) (*Store, *domain.MetricsError) {
 	storage := &Store{
 		mux:  sync.Mutex{},
@@ -50,17 +54,23 @@ func NewStore(config *Config, ctx context.Context) (*Store, *domain.MetricsError
 
 	return storage, nil
 }
+
+// RetryConnection retries connection to storage, not implemented for in memory storage
 func RetryConnection(error *domain.MetricsError, interval int, try int, config *Config, ctx context.Context) (*Store, *domain.MetricsError) {
 	return nil, nil
 }
 
+// CheckConnection checks connection to storage, not implemented for in memory storage
 func (s *Store) CheckConnection(ctx context.Context) *domain.MetricsError {
 	return nil
 }
 
+// Close closes connection to storage, not implemented for in memory storage
 func (s *Store) Close() {
 
 }
+
+// GetValuesIn fetches metrics by keys in slices
 func (s *Store) GetValuesIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
@@ -73,6 +83,8 @@ func (s *Store) GetValuesIn(keys []string, ctx context.Context) ([]domain.Metric
 
 	return metrics, nil
 }
+
+// GetValues fetches all metrics
 func (s *Store) GetValues(ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
@@ -84,6 +96,8 @@ func (s *Store) GetValues(ctx context.Context) ([]domain.Metrics, *domain.Metric
 	}
 	return res, nil
 }
+
+// GetValue fetches metric by ID and MType from domain.Metrics
 func (s *Store) GetValue(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
@@ -94,6 +108,8 @@ func (s *Store) GetValue(request *domain.Metrics, ctx context.Context) (*domain.
 	}
 	return &res, nil
 }
+
+// SetValue sets metric data by key
 func (s *Store) SetValue(request *domain.Metrics, ctx context.Context) *domain.MetricsError {
 	s.mux.Lock()
 	defer s.mux.Unlock()
@@ -101,6 +117,8 @@ func (s *Store) SetValue(request *domain.Metrics, ctx context.Context) *domain.M
 	s.data[getName(*request)] = *request
 	return nil
 }
+
+// SetValues sets batch of metrics data by key
 func (s *Store) SetValues(request []domain.Metrics, ctx context.Context) *domain.MetricsError {
 	for _, v := range request {
 		s.data[getName(v)] = v
@@ -108,15 +126,12 @@ func (s *Store) SetValues(request []domain.Metrics, ctx context.Context) *domain
 	return nil
 }
 
-func getName(request domain.Metrics) string {
-	return request.ID + "_" + request.MType
-}
-
+// Save saves metrics data to file
 func (s *Store) Save(config *Config) error {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
-	if config.FileStoragePath == domain.EmptyParam {
+	if config.FileStoragePath == emptyParam {
 		return nil
 	}
 
@@ -126,8 +141,10 @@ func (s *Store) Save(config *Config) error {
 	}
 	return os.WriteFile(config.FileStoragePath, data, 0666)
 }
+
+// Load loads metrics data from file
 func (s *Store) Load(config *Config) error {
-	if config.FileStoragePath == domain.EmptyParam {
+	if config.FileStoragePath == emptyParam {
 		return nil
 	}
 
@@ -148,6 +165,9 @@ func (s *Store) Load(config *Config) error {
 
 	s.data = metrics
 	return nil
+}
+func getName(request domain.Metrics) string {
+	return request.ID + "_" + request.MType
 }
 
 func handleError(text string, code int) *domain.MetricsError {

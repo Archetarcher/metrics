@@ -9,10 +9,12 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/utils"
 )
 
+// MetricsService is a service struct for metrics, keeps implementation of MetricRepository interface
 type MetricsService struct {
 	repo MetricRepository
 }
 
+// MetricRepository is an interface that describes interaction with repository layer
 type MetricRepository interface {
 	GetAllIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
 	GetAll(ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
@@ -22,13 +24,17 @@ type MetricRepository interface {
 	CheckConnection(ctx context.Context) *domain.MetricsError
 }
 
+// NewMetricsService creates MetricsService
 func NewMetricsService(repo MetricRepository) *MetricsService {
 	return &MetricsService{repo: repo}
 }
 
+// CheckConnection checks connection to storage in repository
 func (s *MetricsService) CheckConnection(ctx context.Context) *domain.MetricsError {
 	return s.repo.CheckConnection(ctx)
 }
+
+// Updates creates or updates batch of metrics data
 func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
 	keys := make([]string, len(request))
 
@@ -75,6 +81,8 @@ func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) 
 	}
 	return response, nil
 }
+
+// Update creates or updates metric data
 func (s *MetricsService) Update(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
 	response, err := s.repo.Get(request, ctx)
 	if err != nil {
@@ -96,6 +104,8 @@ func (s *MetricsService) Update(request *domain.Metrics, ctx context.Context) (*
 	}
 	return response, nil
 }
+
+// GetValue fetches metric data by ID and MType in domain.Metrics
 func (s *MetricsService) GetValue(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
 
 	response, err := s.repo.Get(request, ctx)
@@ -108,6 +118,8 @@ func (s *MetricsService) GetValue(request *domain.Metrics, ctx context.Context) 
 
 	return response, nil
 }
+
+// GetAllValues fetches all metrics data
 func (s *MetricsService) GetAllValues(ctx context.Context) (string, *domain.MetricsError) {
 	response, err := s.repo.GetAll(ctx)
 
@@ -127,6 +139,7 @@ func (s *MetricsService) GetAllValues(ctx context.Context) (string, *domain.Metr
 	page += "</table>"
 	return page, nil
 }
+
 func getKey(request domain.Metrics) string {
 	return request.ID + "_" + request.MType
 }

@@ -51,16 +51,19 @@ const (
 	totalAlloc    = "TotalAlloc"
 )
 
-// TrackingService tracks metrics and sends to server
+// TrackingService is a service for gathering and sending metrics to server.
 type TrackingService struct {
 	Client *resty.Client
 	Config *config.AppConfig
 }
 
+// FetchMemory fetches memory and gauge metrics.
 func (s *TrackingService) FetchMemory() (*domain.MetricsData, *domain.TrackingError) {
 	metrics := mapGaugeMetrics(gatherMemoryValues)
 	return &metrics, nil
 }
+
+// FetchRuntime fetches runtime gauge an nd counter metrics.
 func (s *TrackingService) FetchRuntime(counterInterval int64) (*domain.MetricsData, *domain.TrackingError) {
 	metrics := mapGaugeMetrics(gatherRuntimeValues)
 	metrics[pollCount] = metricsValue(pollCount, counterType, &counterInterval, nil)
@@ -68,9 +71,10 @@ func (s *TrackingService) FetchRuntime(counterInterval int64) (*domain.MetricsDa
 	return &metrics, nil
 }
 
+// Send sends prepared metrics data to server
 func (s *TrackingService) Send(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError) {
 
-	url := s.Config.ServerRunAddr + "/updates/"
+	url := "http://" + s.Config.ServerRunAddr + "/updates/"
 
 	res, err := s.Client.
 		OnBeforeRequest(compression.GzipMiddleware).

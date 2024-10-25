@@ -18,7 +18,7 @@ type (
 	}
 )
 
-// Log будет доступен всему коду как синглтон.
+// Log will be available as singleton.
 var Log *zap.Logger
 
 func init() {
@@ -27,7 +27,7 @@ func init() {
 	defer Log.Sync()
 }
 
-// Initialize инициализирует синглтон логера с необходимым уровнем логирования.
+// Initialize initiates singleton of Log with appropriate log level.
 func Initialize(level string) error {
 
 	lvl, err := zap.ParseAtomicLevel(level)
@@ -47,7 +47,7 @@ func Initialize(level string) error {
 	return nil
 }
 
-// RequestLoggerMiddleware — middleware-логер для входящих HTTP-запросов.
+// RequestLoggerMiddleware — log-middleware for incoming HTTP-requests.
 func RequestLoggerMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -74,12 +74,14 @@ func RequestLoggerMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// Write writes to http.ResponseWriter.
 func (r *loggerResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.size += size // захватываем размер
 	return size, err
 }
 
+// WriteHeader writes status to header.
 func (r *loggerResponseWriter) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
 	r.responseData.status = statusCode // захватываем код статуса

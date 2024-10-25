@@ -16,11 +16,15 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 )
 
+const emptyParam = ""
+
+// MetricsHandler is a handler to work with metrics, keeps implementation of MetricsService and configuration
 type MetricsHandler struct {
 	service MetricsService
 	config  *config.AppConfig
 }
 
+// MetricsService is an interface that describes interaction with service layer
 type MetricsService interface {
 	Updates(request []domain.Metrics, ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
 	Update(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError)
@@ -29,10 +33,13 @@ type MetricsService interface {
 	CheckConnection(ctx context.Context) *domain.MetricsError
 }
 
+// NewMetricsHandler creates new handler
 func NewMetricsHandler(service MetricsService, appConfig *config.AppConfig) *MetricsHandler {
 	return &MetricsHandler{service: service, config: appConfig}
 }
 
+// UpdateMetrics handler that creates or updates existing metric.
+// Data provided in path parameters
 func (h *MetricsHandler) UpdateMetrics(w http.ResponseWriter, r *http.Request) {
 	// validate
 	request, err := validateRequest(r)
@@ -51,6 +58,9 @@ func (h *MetricsHandler) UpdateMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 	sendResponse(enc, "", http.StatusOK, w)
 }
+
+// GetMetrics handler that returns existing metric by ID and MType in domain.Metrics.
+// Data provided in path parameters.
 func (h *MetricsHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	// validate
 	request, err := validateGetRequest(r)
@@ -79,6 +89,8 @@ func (h *MetricsHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	sendResponse(enc, resp, http.StatusOK, w)
 }
 
+// UpdatesMetrics handler that creates or updates existing batch of metrics.
+// Data provided in body json.
 func (h *MetricsHandler) UpdatesMetrics(w http.ResponseWriter, r *http.Request) {
 	// validate
 	request, err := validateUpdatesRequest(r)
@@ -99,6 +111,9 @@ func (h *MetricsHandler) UpdatesMetrics(w http.ResponseWriter, r *http.Request) 
 
 	sendResponse(enc, "", http.StatusOK, w)
 }
+
+// UpdateMetricsJSON handler that creates or updates existing metric.
+// Data provided in body json format.
 func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Request) {
 	// validate
 	request, err := validateRequest(r)
@@ -119,6 +134,9 @@ func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Reques
 
 	sendResponse(enc, response, http.StatusOK, w)
 }
+
+// GetMetricsJSON handler that returns existing metric by ID and MType in domain.Metrics.
+// Data provided in body json format
 func (h *MetricsHandler) GetMetricsJSON(w http.ResponseWriter, r *http.Request) {
 	// validate
 	request, err := validateGetRequest(r)
@@ -140,6 +158,8 @@ func (h *MetricsHandler) GetMetricsJSON(w http.ResponseWriter, r *http.Request) 
 	sendResponse(enc, response, http.StatusOK, w)
 
 }
+
+// GetMetricsPage handler that returns all metrics from database, in table view.
 func (h *MetricsHandler) GetMetricsPage(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.service.GetAllValues(r.Context())
@@ -154,6 +174,7 @@ func (h *MetricsHandler) GetMetricsPage(w http.ResponseWriter, r *http.Request) 
 	sendResponse(enc, result, http.StatusOK, w)
 }
 
+// GetPing handler that checks database connection.
 func (h *MetricsHandler) GetPing(w http.ResponseWriter, r *http.Request) {
 	enc := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "application/json")
@@ -180,7 +201,7 @@ func validateGetRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError)
 	metrics.ID = n
 	metrics.MType = t
 
-	if metrics.ID == domain.EmptyParam && metrics.MType == domain.EmptyParam {
+	if metrics.ID == emptyParam && metrics.MType == emptyParam {
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&metrics); err != nil {
 			return nil, &domain.MetricsError{
@@ -190,7 +211,7 @@ func validateGetRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError)
 		}
 	}
 
-	if metrics.ID == domain.EmptyParam || metrics.MType == domain.EmptyParam {
+	if metrics.ID == emptyParam || metrics.MType == emptyParam {
 		return nil, &domain.MetricsError{
 			Text: "empty param",
 			Code: http.StatusBadRequest,
@@ -248,7 +269,7 @@ func validateRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
 		metrics.Delta = &value
 	}
 
-	if metrics.ID == domain.EmptyParam && metrics.MType == domain.EmptyParam && metrics.Delta == nil && metrics.Value == nil {
+	if metrics.ID == emptyParam && metrics.MType == emptyParam && metrics.Delta == nil && metrics.Value == nil {
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&metrics); err != nil {
 			return nil, &domain.MetricsError{
@@ -258,7 +279,7 @@ func validateRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
 		}
 	}
 
-	if metrics.ID == domain.EmptyParam || metrics.MType == domain.EmptyParam || ((metrics.MType == domain.GaugeType && metrics.Value == nil) || (metrics.MType == domain.CounterType && metrics.Delta == nil)) {
+	if metrics.ID == emptyParam || metrics.MType == emptyParam || ((metrics.MType == domain.GaugeType && metrics.Value == nil) || (metrics.MType == domain.CounterType && metrics.Delta == nil)) {
 		return nil, &domain.MetricsError{
 			Text: "empty param",
 			Code: http.StatusBadRequest,
@@ -303,9 +324,9 @@ func validateUpdatesRequest(r *http.Request) ([]domain.Metrics, *domain.MetricsE
 	}
 
 	for _, m := range metrics {
-		if m.MType == domain.EmptyParam ||
+		if m.MType == emptyParam ||
 			!slices.Contains([]string{domain.GaugeType, domain.CounterType}, m.MType) ||
-			m.ID == domain.EmptyParam {
+			m.ID == emptyParam {
 			return nil, &domain.MetricsError{
 				Text: "invalid param provided",
 				Code: http.StatusBadRequest,

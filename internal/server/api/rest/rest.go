@@ -15,10 +15,12 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 )
 
+// MetricsAPI is an api struct, keeps router.
 type MetricsAPI struct {
 	router chi.Router
 }
 
+// NewMetricsAPI registers routes, middlewares.
 func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (*MetricsAPI, *domain.MetricsError) {
 	r := chi.NewRouter()
 
@@ -44,6 +46,7 @@ func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (
 	}, nil
 }
 
+// Run starts serving application.
 func (a MetricsAPI) Run(config *config.AppConfig) *domain.MetricsError {
 
 	logger.Log.Info("Running server ", zap.String("address", config.RunAddr))

@@ -8,15 +8,16 @@ import (
 	"net/http"
 
 	"github.com/Archetarcher/metrics.git/internal/server/config"
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
 )
 
-// RequestHashesMiddleware — middleware-hashes для входящих HTTP-запросов.
+const emptyParam = ""
+
+// RequestHashesMiddleware — hash-middleware for incoming http requests.
 func RequestHashesMiddleware(next http.Handler, config *config.AppConfig) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		hash := r.Header.Get("HashSHA256")
 
-		if config.Key != domain.EmptyParam && hash != domain.EmptyParam {
+		if config.Key != emptyParam && hash != emptyParam {
 			h := hmac.New(sha256.New, []byte(config.Key))
 			body, err := io.ReadAll(r.Body)
 			if err != nil {

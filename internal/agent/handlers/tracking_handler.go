@@ -13,17 +13,22 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/agent/logger"
 )
 
+// TrackingHandler is a handler for tracking metrics, has service and configuration.
 type TrackingHandler struct {
 	TrackingService
 	Config *config.AppConfig
 }
 
+// TrackingService is an interface for tracking metrics, sends and fetch memory and runtime metrics.
 type TrackingService interface {
 	FetchMemory() (*domain.MetricsData, *domain.TrackingError)
 	FetchRuntime(counterInterval int64) (*domain.MetricsData, *domain.TrackingError)
 	Send(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
 }
 
+// TrackMetrics starts metrics tracking.
+// Runs worker pool reportWorker with domain.MetricsData chanel, each worker sends data to server.
+// Runs two goroutines for runtime and memory metrics, each goroutine pulls data to domain.MetricsData chanel.
 func (h *TrackingHandler) TrackMetrics() *domain.TrackingError {
 
 	if err := logger.Initialize(h.Config.LogLevel); err != nil {

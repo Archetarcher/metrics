@@ -19,15 +19,17 @@ import (
 )
 
 var (
-	ErrConnectionException = errors.New("db connection exception")
-	DBError                = 500
+	errConnectionException = errors.New("db connection exception")
+	dbError                = 500
 )
 
+// Store is a struct for pgx storage, keeps configurations and sqlx.DB instance
 type Store struct {
 	db     *sqlx.DB
 	config *Config
 }
 
+// NewStore creates pgx storage instance, runs migrations
 func NewStore(config *Config, ctx context.Context) (*Store, *domain.MetricsError) {
 
 	db := sqlx.MustOpen("pgx", config.DatabaseDsn)
@@ -49,6 +51,8 @@ func NewStore(config *Config, ctx context.Context) (*Store, *domain.MetricsError
 
 	return storage, nil
 }
+
+// RetryConnection retries connection
 func RetryConnection(error *domain.MetricsError, interval int, try int, config *Config, ctx context.Context) (*Store, *domain.MetricsError) {
 	logger.Log.Info("retrying db connection", zap.Int("interval", interval), zap.Int("try", try))
 
@@ -76,17 +80,19 @@ func RetryConnection(error *domain.MetricsError, interval int, try int, config *
 	return nil, error
 }
 
+// CheckConnection checks connection
 func (s *Store) CheckConnection(ctx context.Context) *domain.MetricsError {
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
 	if err := s.db.PingContext(ctx); err != nil {
 
-		return handleDBError(err, DBError)
+		return handleDBError(err, dbError)
 	}
 	return nil
 }
 
+// Close closes connection
 func (s *Store) Close() {
 	err := s.db.Close()
 	if err != nil {
@@ -94,28 +100,31 @@ func (s *Store) Close() {
 	}
 }
 
+// GetValuesIn fetches metrics by keys in slice
 func (s *Store) GetValuesIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
 	var metrics []domain.Metrics
 
 	q, args, err := sqlx.In("select id, type, delta, value FROM metrics WHERE key in (?);", keys)
 	if err != nil {
-		return nil, handleDBError(err, DBError)
+		return nil, handleDBError(err, dbError)
 	}
 	q = sqlx.Rebind(sqlx.DOLLAR, q)
 	err = s.db.SelectContext(ctx, &metrics, q, args...)
 
 	if err != nil {
-		return nil, handleDBError(err, DBError)
+		return nil, handleDBError(err, dbError)
 	}
 
 	return metrics, nil
 }
+
+// GetValues fetches all metrics
 func (s *Store) GetValues(ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
 	metrics := make([]domain.Metrics, 0, 10)
 
 	rows, err := s.db.QueryContext(ctx, "SELECT id, type, delta, value from metrics ")
 	if err != nil {
-		return nil, handleDBError(err, DBError)
+		return nil, handleDBError(err, dbError)
 	}
 	defer rows.Close()
 
@@ -123,17 +132,19 @@ func (s *Store) GetValues(ctx context.Context) ([]domain.Metrics, *domain.Metric
 		var m domain.Metrics
 		err = rows.Scan(&m.ID, &m.MType, &m.Delta, &m.Value)
 		if err != nil {
-			return nil, handleDBError(err, DBError)
+			return nil, handleDBError(err, dbError)
 		}
 		metrics = append(metrics, m)
 	}
 
 	err = rows.Err()
 	if err != nil {
-		return nil, handleDBError(err, DBError)
+		return nil, handleDBError(err, dbError)
 	}
 	return metrics, nil
 }
+
+// GetValue fetches metric data
 func (s *Store) GetValue(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
 	metrics := domain.Metrics{}
 
@@ -146,11 +157,13 @@ func (s *Store) GetValue(request *domain.Metrics, ctx context.Context) (*domain.
 	}
 
 	if err != nil {
-		return nil, handleDBError(err, DBError)
+		return nil, handleDBError(err, dbError)
 	}
 
 	return &metrics, nil
 }
+
+// SetValue inserts or updates metric data
 func (s *Store) SetValue(request *domain.Metrics, ctx context.Context) *domain.MetricsError {
 	_, err := s.db.ExecContext(ctx,
 		"insert into metrics (id, type, delta, value, key) values ($1, $2, $3, $4, $5)"+
@@ -158,16 +171,18 @@ func (s *Store) SetValue(request *domain.Metrics, ctx context.Context) *domain.M
 		request.ID, request.MType, request.Delta, request.Value, getKey(*request),
 	)
 	if err != nil {
-		return handleDBError(err, DBError)
+		return handleDBError(err, dbError)
 	}
 
 	return nil
 }
+
+// SetValues inserts or updates batch of metrics data
 func (s *Store) SetValues(request []domain.Metrics, ctx context.Context) *domain.MetricsError {
 
 	tx, err := s.db.Begin()
 	if err != nil {
-		return handleDBError(err, DBError)
+		return handleDBError(err, dbError)
 	}
 	defer tx.Rollback()
 
@@ -176,7 +191,7 @@ func (s *Store) SetValues(request []domain.Metrics, ctx context.Context) *domain
 		"insert into metrics (id, type, delta, value, key) values ($1, $2, $3, $4, $5)"+
 			"on conflict (id) do update set id = excluded.id, type = excluded.type, delta = excluded.delta, value = excluded.value, key = excluded.key")
 	if err != nil {
-		return handleDBError(err, DBError)
+		return handleDBError(err, dbError)
 	}
 	defer stmt.Close()
 
@@ -184,13 +199,13 @@ func (s *Store) SetValues(request []domain.Metrics, ctx context.Context) *domain
 		_, err := stmt.ExecContext(ctx, m.ID, m.MType, m.Delta, m.Value, getKey(m))
 
 		if err != nil {
-			return handleDBError(err, DBError)
+			return handleDBError(err, dbError)
 		}
 	}
 	err = tx.Commit()
 
 	if err != nil {
-		return handleDBError(err, DBError)
+		return handleDBError(err, dbError)
 	}
 	return nil
 }
@@ -206,7 +221,7 @@ func runMigrations(config *Config, ctx context.Context) *domain.MetricsError {
 	}
 
 	if err := goose.RunContext(ctx, "up", db, config.MigrationsPath); err != nil {
-		return handleDBError(err, DBError)
+		return handleDBError(err, dbError)
 	}
 
 	return nil
@@ -215,7 +230,7 @@ func runMigrations(config *Config, ctx context.Context) *domain.MetricsError {
 func handleDBError(err error, code int) *domain.MetricsError {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) {
-		err = ErrConnectionException
+		err = errConnectionException
 	}
 
 	return &domain.MetricsError{
