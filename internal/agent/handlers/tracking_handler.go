@@ -1,14 +1,16 @@
 package handlers
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/agent/config"
-	"github.com/Archetarcher/metrics.git/internal/agent/domain"
-	"github.com/Archetarcher/metrics.git/internal/agent/logger"
-	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 	"net/http"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
+
+	"github.com/Archetarcher/metrics.git/internal/agent/config"
+	"github.com/Archetarcher/metrics.git/internal/agent/domain"
+	"github.com/Archetarcher/metrics.git/internal/agent/logger"
 )
 
 type TrackingHandler struct {
@@ -56,11 +58,11 @@ type fetchRuntime func(counterInterval int64) (*domain.MetricsData, *domain.Trac
 type send func(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
 
 func reportWorker(send send, metricsData <-chan domain.MetricsData, interval int) {
-	var reportInterval = time.Duration(interval) * time.Second
+	reportInterval := time.Duration(interval) * time.Second
 	logger.Log.Info("starting report")
 
-	for data := range metricsData {
-		vals := maps.Values(data)
+	for d := range metricsData {
+		vals := maps.Values(d)
 		_, err := send(vals)
 		if err != nil {
 			logger.Log.Info(err.Text)
@@ -75,7 +77,7 @@ func reportWorker(send send, metricsData <-chan domain.MetricsData, interval int
 
 func startRuntimePoll(fetch fetchRuntime, wg *sync.WaitGroup, interval int, pollData chan<- domain.MetricsData) {
 	defer wg.Done()
-	var pollInterval = time.Duration(interval) * time.Second
+	pollInterval := time.Duration(interval) * time.Second
 	counterInterval := int64(1)
 	logger.Log.Info("starting runtime poll")
 	for {
@@ -93,7 +95,7 @@ func startRuntimePoll(fetch fetchRuntime, wg *sync.WaitGroup, interval int, poll
 }
 func startMemoryPoll(fetch fetchMemory, wg *sync.WaitGroup, interval int, pollData chan<- domain.MetricsData) {
 	defer wg.Done()
-	var pollInterval = time.Duration(interval) * time.Second
+	pollInterval := time.Duration(interval) * time.Second
 	counterInterval := int64(1)
 	logger.Log.Info("starting memory poll")
 	for {

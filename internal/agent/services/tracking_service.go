@@ -3,16 +3,18 @@ package services
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"net/http"
+	"runtime"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/mem"
+
 	"github.com/Archetarcher/metrics.git/internal/agent/compression"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/Archetarcher/metrics.git/internal/agent/encoding"
-	"github.com/go-resty/resty/v2"
-	"github.com/shirou/gopsutil/v4/cpu"
-	"github.com/shirou/gopsutil/v4/mem"
-	"math/rand"
-	"net/http"
-	"runtime"
 )
 
 const (
@@ -137,9 +139,9 @@ func mapGaugeMetrics(value gatherGaugeValue) domain.MetricsData {
 }
 
 func gatherRuntimeValues() domain.Gauge {
-	var gauge = domain.Gauge{}
-
+	var gauge domain.Gauge
 	var rtm runtime.MemStats
+
 	runtime.ReadMemStats(&rtm)
 
 	gauge.Alloc = float64(rtm.Alloc)
@@ -173,7 +175,7 @@ func gatherRuntimeValues() domain.Gauge {
 	return gauge
 }
 func gatherMemoryValues() domain.Gauge {
-	var gauge = domain.Gauge{}
+	var gauge domain.Gauge
 	vm, _ := mem.VirtualMemory()
 
 	gauge.TotalMemory = float64(vm.Total)

@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"github.com/Archetarcher/metrics.git/internal/server/logger"
-	"go.uber.org/zap"
 	"os"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/logger"
 )
 
 type Store struct {
@@ -35,7 +37,7 @@ func NewStore(config *Config, ctx context.Context) (*Store, *domain.MetricsError
 
 	go func() {
 		defer wg.Done()
-		var storeInterval = time.Duration(config.StoreInterval) * time.Second
+		storeInterval := time.Duration(config.StoreInterval) * time.Second
 
 		for {
 			err := storage.Save(config)
@@ -65,8 +67,8 @@ func (s *Store) GetValuesIn(keys []string, ctx context.Context) ([]domain.Metric
 
 	var metrics []domain.Metrics
 
-	for _, key := range keys {
-		metrics = append(metrics, s.data[key])
+	for _, k := range keys {
+		metrics = append(metrics, s.data[k])
 	}
 
 	return metrics, nil
@@ -77,8 +79,8 @@ func (s *Store) GetValues(ctx context.Context) ([]domain.Metrics, *domain.Metric
 
 	var res []domain.Metrics
 
-	for _, value := range s.data {
-		res = append(res, value)
+	for _, v := range s.data {
+		res = append(res, v)
 	}
 	return res, nil
 }
@@ -100,8 +102,8 @@ func (s *Store) SetValue(request *domain.Metrics, ctx context.Context) *domain.M
 	return nil
 }
 func (s *Store) SetValues(request []domain.Metrics, ctx context.Context) *domain.MetricsError {
-	for _, value := range request {
-		s.data[getName(value)] = value
+	for _, v := range request {
+		s.data[getName(v)] = v
 	}
 	return nil
 }

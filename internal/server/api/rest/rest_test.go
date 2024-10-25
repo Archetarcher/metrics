@@ -1,10 +1,12 @@
 package rest
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/handlers"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 )
 
 func TestMetricsAPI_Run(t *testing.T) {

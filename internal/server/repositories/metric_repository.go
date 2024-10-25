@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 )
 

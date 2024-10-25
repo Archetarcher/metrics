@@ -5,9 +5,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+
+	"github.com/go-resty/resty/v2"
+
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"github.com/go-resty/resty/v2"
 )
 
 func HashMiddleware(c *resty.Client, req *resty.Request, config *config.AppConfig) error {

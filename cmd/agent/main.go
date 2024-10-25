@@ -1,12 +1,13 @@
 package main
 
 import (
+	"github.com/go-resty/resty/v2"
+	"go.uber.org/zap"
+
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/handlers"
 	"github.com/Archetarcher/metrics.git/internal/agent/services"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
-	"github.com/go-resty/resty/v2"
-	"go.uber.org/zap"
 )
 
 func main() {

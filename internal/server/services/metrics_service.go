@@ -2,10 +2,11 @@ package services
 
 import (
 	"context"
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"github.com/Archetarcher/metrics.git/internal/server/utils"
 	"net/http"
 	"slices"
+
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/utils"
 )
 
 type MetricsService struct {
@@ -43,11 +44,11 @@ func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) 
 	}
 
 	existingKeys := make(map[string]int64)
-	for key, m := range request {
+	for k, m := range request {
 		if m.MType == domain.CounterType {
 			if existingKeys[getKey(m)] != 0 {
 				c := *m.Delta + existingKeys[getKey(m)]
-				(request)[key].Delta = &c
+				(request)[k].Delta = &c
 				continue
 			}
 			existingKeys[getKey(m)] = *m.Delta
@@ -56,10 +57,10 @@ func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) 
 	}
 
 	for _, mbk := range metricsByKey {
-		for key, m := range request {
+		for k, m := range request {
 			if getKey(m) == getKey(mbk) && m.MType == domain.CounterType {
 				c := *m.Delta + *mbk.Delta
-				(request)[key].Delta = &c
+				(request)[k].Delta = &c
 			}
 		}
 	}
@@ -118,9 +119,9 @@ func (s *MetricsService) GetAllValues(ctx context.Context) (string, *domain.Metr
 	}
 	page := "<table><tr><th>Name</th><th>Value</th></tr>"
 
-	for _, val := range response {
-		v := utils.GetStringValue(&val)
-		page += "<tr><td>" + val.ID + "</td>" + "<td>" + v + "</td></tr>"
+	for _, r := range response {
+		v := utils.GetStringValue(&r)
+		page += "<tr><td>" + r.ID + "</td>" + "<td>" + v + "</td></tr>"
 	}
 
 	page += "</table>"

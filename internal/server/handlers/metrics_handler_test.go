@@ -3,6 +3,18 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"sync"
+	"testing"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-resty/resty/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
@@ -11,16 +23,6 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
 	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-resty/resty/v2"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"net/http"
-	"net/http/httptest"
-	"strconv"
-	"sync"
-	"testing"
 )
 
 var conf Config
@@ -72,58 +74,60 @@ func setupServer() (*httptest.Server, error) {
 	return srv, nil
 }
 
-var counter = int64(2896127014)
-var gauge = 0.31167763133187076
-var values = [8]domain.Metrics{
-	{
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	},
-	{
-		ID:    "gauge_value",
-		MType: "gauge",
-		Delta: nil,
-		Value: &gauge,
-	},
-	{
-		ID:    "counter_value_2",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	},
-	{
-		ID:    "gauge_value_2",
-		MType: "gauge",
-		Delta: nil,
-		Value: &gauge,
-	},
-	{
-		ID:    "counter_value_3",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	},
-	{
-		ID:    "gauge_value_3",
-		MType: "gauge",
-		Delta: nil,
-		Value: &gauge,
-	},
-	{
-		ID:    "counter_value_4",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	},
-	{
-		ID:    "gauge_value_4",
-		MType: "gauge",
-		Delta: nil,
-		Value: &gauge,
-	},
-}
+var (
+	counter = int64(2896127014)
+	gauge   = 0.31167763133187076
+	values  = [8]domain.Metrics{
+		{
+			ID:    "counter_value",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+		{
+			ID:    "counter_value_2",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value_2",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+		{
+			ID:    "counter_value_3",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value_3",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+		{
+			ID:    "counter_value_4",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value_4",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+	}
+)
 
 func TestMetricsHandler_UpdateMetrics(t *testing.T) {
 	require.NoError(t, conf.err, "failed to init server", conf.server, conf.err)

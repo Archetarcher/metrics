@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"strconv"
+
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
 )
 
 func GetStringValue(result *domain.Metrics) string {

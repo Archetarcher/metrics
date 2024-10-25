@@ -15,9 +15,6 @@ const (
 	flagDatabaseMigrationsPathName = "m"
 )
 
-func (c *AppConfig) parseFlags() {
-	flag.Parse()
-}
 func (c *AppConfig) initFlags() {
 	c.mux.Lock()
 	defer c.mux.Unlock()
@@ -33,4 +30,8 @@ func (c *AppConfig) initFlags() {
 	flag.StringVar(&c.Store.Pgx.DatabaseDsn, flagDatabaseDsnName, "", "dsn")
 	flag.StringVar(&c.Store.Pgx.MigrationsPath, flagDatabaseMigrationsPathName, "internal/server/migrations", "migrations")
 
+}
+
+func (c *AppConfig) parseFlags() {
+	flag.Parse()
 }

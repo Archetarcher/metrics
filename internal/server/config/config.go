@@ -1,14 +1,10 @@
 package config
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"sync"
-)
 
-func (c *AppConfig) ParseConfig() {
-	c.parseFlags()
-	c.parseEnv()
-}
+	"github.com/Archetarcher/metrics.git/internal/server/store"
+)
 
 type AppConfig struct {
 	mux      sync.Mutex
@@ -19,11 +15,16 @@ type AppConfig struct {
 }
 
 func NewConfig(store store.Config) *AppConfig {
-	var c = AppConfig{
+	c := AppConfig{
 		mux:   sync.Mutex{},
 		Store: store,
 	}
 	c.initFlags()
 
 	return &c
+}
+
+func (c *AppConfig) ParseConfig() {
+	c.parseFlags()
+	c.parseEnv()
 }

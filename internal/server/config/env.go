@@ -16,6 +16,23 @@ const (
 	envDatabaseMigrationsPathName = "DATABASE_MIGRATIONS_PATH"
 )
 
+func (c *AppConfig) parseEnv() {
+	c.mux.Lock()
+	defer c.mux.Unlock()
+
+	c.RunAddr = getEnvOrDefault(envRunAddrName, c.RunAddr, 1).(string)
+	c.LogLevel = getEnvOrDefault(envLogLevelName, c.LogLevel, 1).(string)
+	c.Key = getEnvOrDefault(envKeyName, c.Key, 1).(string)
+
+	c.Store.Memory.FileStoragePath = getEnvOrDefault(envFileStoragePathName, c.Store.Memory.FileStoragePath, 1).(string)
+	c.Store.Memory.StoreInterval = getEnvOrDefault(envStoreIntervalName, c.Store.Memory.StoreInterval, 2).(int)
+	c.Store.Memory.Restore = getEnvOrDefault(envRestoreName, c.Store.Memory.Restore, 3).(bool)
+
+	c.Store.Pgx.DatabaseDsn = getEnvOrDefault(envDatabaseDsnName, c.Store.Pgx.DatabaseDsn, 1).(string)
+	c.Store.Pgx.MigrationsPath = getEnvOrDefault(envDatabaseMigrationsPathName, c.Store.Pgx.MigrationsPath, 1).(string)
+
+}
+
 func getEnvOrDefault(env string, def any, t int) any {
 	val := os.Getenv(env)
 	if val == "" {
@@ -39,20 +56,4 @@ func getEnvOrDefault(env string, def any, t int) any {
 	default:
 		return def
 	}
-}
-func (c *AppConfig) parseEnv() {
-	c.mux.Lock()
-	defer c.mux.Unlock()
-
-	c.RunAddr = getEnvOrDefault(envRunAddrName, c.RunAddr, 1).(string)
-	c.LogLevel = getEnvOrDefault(envLogLevelName, c.LogLevel, 1).(string)
-	c.Key = getEnvOrDefault(envKeyName, c.Key, 1).(string)
-
-	c.Store.Memory.FileStoragePath = getEnvOrDefault(envFileStoragePathName, c.Store.Memory.FileStoragePath, 1).(string)
-	c.Store.Memory.StoreInterval = getEnvOrDefault(envStoreIntervalName, c.Store.Memory.StoreInterval, 2).(int)
-	c.Store.Memory.Restore = getEnvOrDefault(envRestoreName, c.Store.Memory.Restore, 3).(bool)
-
-	c.Store.Pgx.DatabaseDsn = getEnvOrDefault(envDatabaseDsnName, c.Store.Pgx.DatabaseDsn, 1).(string)
-	c.Store.Pgx.MigrationsPath = getEnvOrDefault(envDatabaseMigrationsPathName, c.Store.Pgx.MigrationsPath, 1).(string)
-
 }

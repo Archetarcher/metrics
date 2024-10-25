@@ -13,10 +13,6 @@ const (
 	flagRateLimitName      = "rl"
 )
 
-func (c *AppConfig) parseFlags() {
-	flag.Parse()
-}
-
 func (c *AppConfig) initFlags() {
 	flag.StringVar(&c.ServerRunAddr, flagServerRunAddrName, "http://localhost:8080", "address and port where server is running")
 	flag.IntVar(&c.ReportInterval, flagReportIntervalName, 10, "interval in seconds for report to server")
@@ -24,4 +20,8 @@ func (c *AppConfig) initFlags() {
 	flag.StringVar(&c.LogLevel, flagLogLevelName, "info", "log level")
 	flag.StringVar(&c.Key, flagKeyName, "", "key")
 	flag.IntVar(&c.RateLimit, flagRateLimitName, 3, "rate limit")
+}
+
+func (c *AppConfig) parseFlags() {
+	flag.Parse()
 }

@@ -3,15 +3,17 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"github.com/Archetarcher/metrics.git/internal/server/config"
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"github.com/Archetarcher/metrics.git/internal/server/logger"
-	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"slices"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
+
+	"github.com/Archetarcher/metrics.git/internal/server/config"
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/logger"
 )
 
 type MetricsHandler struct {

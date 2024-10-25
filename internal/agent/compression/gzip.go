@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+
 	"github.com/go-resty/resty/v2"
 )
 

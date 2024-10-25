@@ -1,10 +1,5 @@
 package config
 
-func (c *AppConfig) ParseConfig() {
-	c.parseFlags()
-	c.parseEnv()
-}
-
 type AppConfig struct {
 	ServerRunAddr  string
 	ReportInterval int
@@ -19,4 +14,9 @@ func NewConfig() *AppConfig {
 	c.initFlags()
 
 	return &c
+}
+
+func (c *AppConfig) ParseConfig() {
+	c.parseFlags()
+	c.parseEnv()
 }

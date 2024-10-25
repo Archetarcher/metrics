@@ -4,10 +4,11 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/Archetarcher/metrics.git/internal/server/config"
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"io"
 	"net/http"
+
+	"github.com/Archetarcher/metrics.git/internal/server/config"
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
 )
 
 // RequestHashesMiddleware — middleware-hashes для входящих HTTP-запросов.

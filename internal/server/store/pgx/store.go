@@ -4,20 +4,24 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"github.com/Archetarcher/metrics.git/internal/server/logger"
+	"log"
+	"time"
+
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
 	"go.uber.org/zap"
-	"log"
-	"time"
+
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/logger"
 )
 
-var ErrConnectionException = errors.New("db connection exception")
-var DBError = 500
+var (
+	ErrConnectionException = errors.New("db connection exception")
+	DBError                = 500
+)
 
 type Store struct {
 	db     *sqlx.DB

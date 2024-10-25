@@ -1,10 +1,12 @@
 package services
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestTrackingService_Fetch(t *testing.T) {
