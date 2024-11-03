@@ -153,7 +153,7 @@ func (s *Store) GetValue(request *domain.Metrics, ctx context.Context) (*domain.
 	metrics := domain.Metrics{}
 
 	row := s.db.QueryRowContext(ctx,
-		metricsGetByIdAndTypeQuery, request.ID, request.MType)
+		metricsGetByIDAndTypeQuery, request.ID, request.MType)
 
 	err := row.Scan(&metrics.ID, &metrics.MType, &metrics.Delta, &metrics.Value)
 	if errors.Is(err, sql.ErrNoRows) {

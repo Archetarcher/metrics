@@ -5,5 +5,5 @@ const (
 		"on conflict (id) do update set id = excluded.id, type = excluded.type, delta = excluded.delta, value = excluded.value, key = excluded.key"
 	metricsGetByKeyQuery       = "select id, type, delta, value FROM metrics WHERE key in (?);"
 	metricsGetAllQuery         = "SELECT id, type, delta, value from metrics "
-	metricsGetByIdAndTypeQuery = "SELECT id, type, delta, value from metrics where id = $1 and type = $2 "
+	metricsGetByIDAndTypeQuery = "SELECT id, type, delta, value from metrics where id = $1 and type = $2 "
 )
