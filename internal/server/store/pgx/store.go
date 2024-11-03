@@ -27,6 +27,10 @@ var (
 type Store struct {
 	db     *sqlx.DB
 	config *Config
+	stmts  struct {
+		getMetric *sqlx.Stmt
+		setMetric *sqlx.Stmt
+	}
 }
 
 // NewStore creates pgx storage instance, runs migrations
@@ -104,7 +108,7 @@ func (s *Store) Close() {
 func (s *Store) GetValuesIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
 	var metrics []domain.Metrics
 
-	q, args, err := sqlx.In("select id, type, delta, value FROM metrics WHERE key in (?);", keys)
+	q, args, err := sqlx.In(metricsGetByKeyQuery, keys)
 	if err != nil {
 		return nil, handleDBError(err, dbError)
 	}
@@ -122,7 +126,7 @@ func (s *Store) GetValuesIn(keys []string, ctx context.Context) ([]domain.Metric
 func (s *Store) GetValues(ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
 	metrics := make([]domain.Metrics, 0, 10)
 
-	rows, err := s.db.QueryContext(ctx, "SELECT id, type, delta, value from metrics ")
+	rows, err := s.db.QueryContext(ctx, metricsGetAllQuery)
 	if err != nil {
 		return nil, handleDBError(err, dbError)
 	}
@@ -149,7 +153,7 @@ func (s *Store) GetValue(request *domain.Metrics, ctx context.Context) (*domain.
 	metrics := domain.Metrics{}
 
 	row := s.db.QueryRowContext(ctx,
-		"SELECT id, type, delta, value from metrics where id = $1 and type = $2 ", request.ID, request.MType)
+		metricsGetByIdAndTypeQuery, request.ID, request.MType)
 
 	err := row.Scan(&metrics.ID, &metrics.MType, &metrics.Delta, &metrics.Value)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -166,8 +170,7 @@ func (s *Store) GetValue(request *domain.Metrics, ctx context.Context) (*domain.
 // SetValue inserts or updates metric data
 func (s *Store) SetValue(request *domain.Metrics, ctx context.Context) *domain.MetricsError {
 	_, err := s.db.ExecContext(ctx,
-		"insert into metrics (id, type, delta, value, key) values ($1, $2, $3, $4, $5)"+
-			"on conflict (id) do update set id = excluded.id, type = excluded.type, delta = excluded.delta, value = excluded.value, key = excluded.key",
+		metricsCreateQuery,
 		request.ID, request.MType, request.Delta, request.Value, getKey(*request),
 	)
 	if err != nil {
@@ -187,9 +190,7 @@ func (s *Store) SetValues(request []domain.Metrics, ctx context.Context) *domain
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx,
-
-		"insert into metrics (id, type, delta, value, key) values ($1, $2, $3, $4, $5)"+
-			"on conflict (id) do update set id = excluded.id, type = excluded.type, delta = excluded.delta, value = excluded.value, key = excluded.key")
+		metricsCreateQuery)
 	if err != nil {
 		return handleDBError(err, dbError)
 	}

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"time"
 
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 )
@@ -36,25 +37,40 @@ func (r *MetricRepository) CheckConnection(ctx context.Context) *domain.MetricsE
 
 // GetAllIn fetches all metrics with keys equivalent to keys in slice
 func (r *MetricRepository) GetAllIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	return r.store.GetValuesIn(keys, ctx)
 }
 
 // GetAll fetches all metrics
 func (r *MetricRepository) GetAll(ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	return r.store.GetValues(ctx)
 }
 
 // Get fetches one metric by ID and MType in domain.Metrics
 func (r *MetricRepository) Get(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	return r.store.GetValue(request, ctx)
 }
 
 // Set creates or updates metric data in storage
 func (r *MetricRepository) Set(request *domain.Metrics, ctx context.Context) *domain.MetricsError {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	return r.store.SetValue(request, ctx)
 }
 
 // SetAll creates or updates batch of metrics data in storage
 func (r *MetricRepository) SetAll(request []domain.Metrics, ctx context.Context) *domain.MetricsError {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	return r.store.SetValues(request, ctx)
 }
