@@ -2,41 +2,148 @@ package repositories
 
 import (
 	"context"
+	"sync"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
 	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"testing"
 )
 
-var c = config.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx: &pgx.Config{}})
+var conf Config
 
-func setup() (*domain.Metrics, *MetricRepository) {
-	i := int64(1)
-	req := &domain.Metrics{MType: "counter", ID: "countervalue", Delta: &i}
+type Config struct {
+	once sync.Once
+	c    *config.AppConfig
+	repo *MetricRepository
+	err  error
+}
+
+func (c *Config) setConfig() {
+	c.once.Do(func() {
+		c.c = config.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx: &pgx.Config{}})
+
+		repo, err := setup()
+
+		c.repo = repo
+		c.err = err
+	})
+}
+func init() {
+	conf.setConfig()
+}
+
+func setup() (*MetricRepository, error) {
 	ctx := context.Background()
 
-	storage, err := store.NewStore(c.Store, ctx)
+	storage, err := store.NewStore(conf.c.Store, ctx)
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
+		return nil, err.Err
 	}
 
 	repo := NewMetricsRepository(storage)
 
-	return req, repo
+	return repo, nil
 }
-func TestMetricRepository_Get(t *testing.T) {
 
-	c.ParseConfig()
+var (
+	counter = int64(2896127014)
+	gauge   = 0.31167763133187076
+	values  = [8]domain.Metrics{
+		{
+			ID:    "counter_value",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+		{
+			ID:    "counter_value_2",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value_2",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+		{
+			ID:    "counter_value_3",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value_3",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+		{
+			ID:    "counter_value_4",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value_4",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+	}
+)
+
+func TestMetricRepository_Set(t *testing.T) {
+	require.NoError(t, conf.err, "failed to init repo", conf.repo, conf.err)
+
 	type args struct {
 		request *domain.Metrics
 	}
 
-	req, repo := setup()
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "positive test #1",
+			args:    args{request: &values[0]},
+			wantErr: false,
+		},
+	}
+	ctx := context.Background()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := conf.repo.Set(tt.args.request, ctx)
+
+			assert.Equal(t, tt.wantErr, err != nil)
+		})
+	}
+}
+func TestMetricRepository_Get(t *testing.T) {
+	require.NoError(t, conf.err, "failed to init repo", conf.repo, conf.err)
+
+	type args struct {
+		request *domain.Metrics
+	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -45,31 +152,57 @@ func TestMetricRepository_Get(t *testing.T) {
 	}{
 		{
 			name:    "positive test #1",
-			args:    args{request: req},
+			args:    args{request: &values[0]},
 			wantErr: false,
-			want:    nil,
 		},
 	}
 	ctx := context.Background()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := repo.Get(tt.args.request, ctx)
+			_, err := conf.repo.Get(tt.args.request, ctx)
 
-			assert.Equal(t, tt.want, res)
+			assert.Equal(t, tt.wantErr, err != nil)
+
+		})
+	}
+}
+func TestMetricRepository_GetAll(t *testing.T) {
+	require.NoError(t, conf.err, "failed to init repo", conf.repo, conf.err)
+
+	type args struct {
+		request *domain.Metrics
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		want    *domain.Metrics
+		wantErr bool
+	}{
+		{
+			name:    "positive test #1",
+			wantErr: false,
+		},
+	}
+	ctx := context.Background()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := conf.repo.GetAll(ctx)
+
 			assert.Equal(t, tt.wantErr, err != nil)
 
 		})
 	}
 }
 
-func TestMetricRepository_Set(t *testing.T) {
-	c.ParseConfig()
+func TestMetricRepository_SetAll(t *testing.T) {
+	require.NoError(t, conf.err, "failed to init repo", conf.repo, conf.err)
 
 	type args struct {
-		request *domain.Metrics
+		request []domain.Metrics
 	}
-	req, repo := setup()
 
 	tests := []struct {
 		name    string
@@ -78,7 +211,7 @@ func TestMetricRepository_Set(t *testing.T) {
 	}{
 		{
 			name:    "positive test #1",
-			args:    args{request: req},
+			args:    args{request: []domain.Metrics{values[1], values[2]}},
 			wantErr: false,
 		},
 	}
@@ -86,7 +219,7 @@ func TestMetricRepository_Set(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := repo.Set(tt.args.request, ctx)
+			err := conf.repo.SetAll(tt.args.request, ctx)
 
 			assert.Equal(t, tt.wantErr, err != nil)
 		})

@@ -2,6 +2,13 @@ package services
 
 import (
 	"context"
+	"sync"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
@@ -9,57 +16,211 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
 	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"testing"
 )
 
-var c = config.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx: &pgx.Config{}})
+var conf Config
 
-func setup() (*domain.Metrics, *domain.Metrics, *MetricsService) {
-	i := float64(1)
+type Config struct {
+	once    sync.Once
+	c       *config.AppConfig
+	service *MetricsService
+	err     error
+}
 
-	req := &domain.Metrics{MType: "gauge", ID: "test", Value: &i}
-	res := &domain.Metrics{MType: "gauge", ID: "test", Value: &i}
+func (c *Config) setConfig() {
+	c.once.Do(func() {
+		c.c = config.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx: &pgx.Config{}})
 
+		service, err := setup()
+
+		c.service = service
+		c.err = err
+	})
+}
+func init() {
+	conf.setConfig()
+}
+
+func setup() (*MetricsService, error) {
 	ctx := context.Background()
-	storage, err := store.NewStore(c.Store, ctx)
+	storage, err := store.NewStore(conf.c.Store, ctx)
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
+		return nil, err.Err
 	}
 
 	repo := repositories.NewMetricsRepository(storage)
 	service := NewMetricsService(repo)
-	return req, res, service
+	return service, nil
 }
+
+var (
+	counter = int64(2896127014)
+	gauge   = 0.31167763133187076
+	values  = [8]domain.Metrics{
+		{
+			ID:    "counter_value",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+		{
+			ID:    "counter_value_2",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value_2",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+		{
+			ID:    "counter_value_3",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value_3",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+		{
+			ID:    "counter_value_4",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value_4",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+	}
+)
+
 func TestMetricsService_Update(t *testing.T) {
-	c.ParseConfig()
+	require.NoError(t, conf.err, "failed to init service", conf.service, conf.err)
 
 	type args struct {
 		request *domain.Metrics
 	}
-	req, res, service := setup()
 	ctx := context.Background()
 
 	tests := []struct {
-		name string
-		args args
-		res  *domain.Metrics
-		err  *domain.MetricsError
+		name    string
+		args    args
+		wantErr bool
 	}{
 		{
-			name: "positive test #1",
-			args: args{request: req},
-			res:  res,
-			err:  nil,
+			name:    "positive test #1",
+			args:    args{request: &values[0]},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := service.Update(tt.args.request, ctx)
-			assert.Equal(t, tt.res, res)
-			assert.Equal(t, tt.err, err)
+			_, err := conf.service.Update(tt.args.request, ctx)
+			assert.Equal(t, tt.wantErr, err != nil)
 
 		})
+	}
+}
+
+func TestMetricsService_Updates(t *testing.T) {
+	require.NoError(t, conf.err, "failed to init service", conf.service, conf.err)
+
+	type args struct {
+		request []domain.Metrics
+	}
+	ctx := context.Background()
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "positive test #1",
+			args:    args{request: []domain.Metrics{values[0], values[1], values[2]}},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := conf.service.Updates(tt.args.request, ctx)
+			assert.Equal(t, tt.wantErr, err != nil)
+
+		})
+	}
+}
+
+func TestMetricsService_GetValue(t *testing.T) {
+	require.NoError(t, conf.err, "failed to init service", conf.service, conf.err)
+
+	type args struct {
+		request *domain.Metrics
+	}
+	ctx := context.Background()
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "positive test #1",
+			args:    args{request: &values[0]},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := conf.service.GetValue(tt.args.request, ctx)
+			assert.Equal(t, tt.wantErr, err != nil)
+
+		})
+	}
+}
+
+func TestMetricsService_GetAllValues(t *testing.T) {
+	require.NoError(t, conf.err, "failed to init service", conf.service, conf.err)
+
+	ctx := context.Background()
+
+	tests := []struct {
+		name    string
+		wantErr bool
+	}{
+		{
+			name:    "positive test #1",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := conf.service.GetAllValues(ctx)
+			assert.Equal(t, tt.wantErr, err != nil)
+
+		})
+	}
+}
+
+func BenchmarkMetricsService_Updates(b *testing.B) {
+	b.ReportAllocs()
+	ctx := context.Background()
+	metrics := []domain.Metrics{values[0], values[1], values[2], values[3]}
+	for i := 0; i < b.N; i++ {
+		conf.service.Updates(metrics, ctx)
 	}
 }

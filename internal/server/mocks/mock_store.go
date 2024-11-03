@@ -7,8 +7,9 @@ package mocks
 import (
 	reflect "reflect"
 
-	domain "github.com/Archetarcher/metrics.git/internal/server/domain"
 	gomock "github.com/golang/mock/gomock"
+
+	domain "github.com/Archetarcher/metrics.git/internal/server/domain"
 )
 
 // MockStore is a mock of Store interface.

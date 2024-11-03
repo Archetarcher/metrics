@@ -2,11 +2,15 @@ package store
 
 import (
 	"context"
+
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
 	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
 )
 
+const emptyParam = ""
+
+// Store is interface that describes interaction with storage layer
 type Store interface {
 	GetValuesIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
 	GetValues(ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
@@ -17,9 +21,10 @@ type Store interface {
 	Close()
 }
 
+// NewStore additional function to initiate Store instance according to factory pattern
 func NewStore(conf Config, ctx context.Context) (Store, *domain.MetricsError) {
 
-	if conf.Pgx.DatabaseDsn != domain.EmptyParam {
+	if conf.Pgx.DatabaseDsn != emptyParam {
 		return pgx.NewStore(conf.Pgx, ctx)
 	}
 
@@ -27,8 +32,9 @@ func NewStore(conf Config, ctx context.Context) (Store, *domain.MetricsError) {
 
 }
 
+// Retry retries connection to storage
 func Retry(error *domain.MetricsError, interval int, try int, conf Config, ctx context.Context) (Store, *domain.MetricsError) {
-	if conf.Pgx.DatabaseDsn != domain.EmptyParam {
+	if conf.Pgx.DatabaseDsn != emptyParam {
 		return pgx.RetryConnection(error, interval, try, conf.Pgx, ctx)
 	}
 

@@ -3,16 +3,18 @@ package services
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"net/http"
+	"runtime"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/mem"
+
 	"github.com/Archetarcher/metrics.git/internal/agent/compression"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/Archetarcher/metrics.git/internal/agent/encoding"
-	"github.com/go-resty/resty/v2"
-	"github.com/shirou/gopsutil/v4/cpu"
-	"github.com/shirou/gopsutil/v4/mem"
-	"math/rand"
-	"net/http"
-	"runtime"
 )
 
 const (
@@ -49,15 +51,19 @@ const (
 	totalAlloc    = "TotalAlloc"
 )
 
+// TrackingService is a service for gathering and sending metrics to server.
 type TrackingService struct {
 	Client *resty.Client
 	Config *config.AppConfig
 }
 
+// FetchMemory fetches memory and gauge metrics.
 func (s *TrackingService) FetchMemory() (*domain.MetricsData, *domain.TrackingError) {
 	metrics := mapGaugeMetrics(gatherMemoryValues)
 	return &metrics, nil
 }
+
+// FetchRuntime fetches runtime gauge an nd counter metrics.
 func (s *TrackingService) FetchRuntime(counterInterval int64) (*domain.MetricsData, *domain.TrackingError) {
 	metrics := mapGaugeMetrics(gatherRuntimeValues)
 	metrics[pollCount] = metricsValue(pollCount, counterType, &counterInterval, nil)
@@ -65,9 +71,10 @@ func (s *TrackingService) FetchRuntime(counterInterval int64) (*domain.MetricsDa
 	return &metrics, nil
 }
 
+// Send sends prepared metrics data to server
 func (s *TrackingService) Send(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError) {
 
-	url := fmt.Sprintf("http://%s/updates/", s.Config.ServerRunAddr)
+	url := "http://" + s.Config.ServerRunAddr + "/updates/"
 
 	res, err := s.Client.
 		OnBeforeRequest(compression.GzipMiddleware).
@@ -137,9 +144,9 @@ func mapGaugeMetrics(value gatherGaugeValue) domain.MetricsData {
 }
 
 func gatherRuntimeValues() domain.Gauge {
-	var gauge = domain.Gauge{}
-
+	var gauge domain.Gauge
 	var rtm runtime.MemStats
+
 	runtime.ReadMemStats(&rtm)
 
 	gauge.Alloc = float64(rtm.Alloc)
@@ -173,7 +180,7 @@ func gatherRuntimeValues() domain.Gauge {
 	return gauge
 }
 func gatherMemoryValues() domain.Gauge {
-	var gauge = domain.Gauge{}
+	var gauge domain.Gauge
 	vm, _ := mem.VirtualMemory()
 
 	gauge.TotalMemory = float64(vm.Total)

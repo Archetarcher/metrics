@@ -1,10 +1,12 @@
 package utils
 
 import (
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"strconv"
+
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
 )
 
+// GetStringValue converts metrics value to string
 func GetStringValue(result *domain.Metrics) string {
 	switch result.MType {
 	case domain.GaugeType:

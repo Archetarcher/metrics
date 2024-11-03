@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
+
+	"go.uber.org/zap"
+
 	"github.com/Archetarcher/metrics.git/internal/server/api/rest"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
@@ -12,8 +15,8 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
 	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
-	"go.uber.org/zap"
-	"log"
+
+	_ "net/http/pprof"
 )
 
 func main() {
@@ -38,7 +41,6 @@ func main() {
 		}
 		storage = ns
 	}
-	fmt.Println("continue app")
 
 	repo := repositories.NewMetricsRepository(storage)
 	service := services.NewMetricsService(repo)

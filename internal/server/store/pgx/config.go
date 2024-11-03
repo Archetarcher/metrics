@@ -1,5 +1,6 @@
 package pgx
 
+// Config is a struct for pgx storage, keeps configurations
 type Config struct {
 	Active          bool
 	FileStoragePath string

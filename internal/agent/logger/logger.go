@@ -4,7 +4,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Log будет доступен всему коду как синглтон.
+// Log will be available as singleton.
 var Log *zap.Logger
 
 func init() {
@@ -13,7 +13,7 @@ func init() {
 	defer Log.Sync()
 }
 
-// Initialize инициализирует синглтон логера с необходимым уровнем логирования.
+// Initialize initiates singleton of Log with appropriate log level.
 func Initialize(level string) error {
 	lvl, err := zap.ParseAtomicLevel(level)
 	if err != nil {

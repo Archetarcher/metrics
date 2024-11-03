@@ -1,7 +1,7 @@
 package domain
 
-const (
-	EmptyParam  = ""
-	GaugeType   = "gauge"
-	CounterType = "counter"
-)
+// GaugeType const for gauge type.
+const GaugeType = "gauge"
+
+// CounterType const for counter type.
+const CounterType = "counter"

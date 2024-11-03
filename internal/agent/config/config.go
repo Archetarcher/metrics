@@ -1,10 +1,6 @@
 package config
 
-func (c *AppConfig) ParseConfig() {
-	c.parseFlags()
-	c.parseEnv()
-}
-
+// AppConfig keeps configurations of application.
 type AppConfig struct {
 	ServerRunAddr  string
 	ReportInterval int
@@ -14,9 +10,16 @@ type AppConfig struct {
 	Key            string
 }
 
+// NewConfig creates new configuration.
 func NewConfig() *AppConfig {
 	var c AppConfig
 	c.initFlags()
 
 	return &c
+}
+
+// ParseConfig parses existing configuration.
+func (c *AppConfig) ParseConfig() {
+	c.parseFlags()
+	c.parseEnv()
 }

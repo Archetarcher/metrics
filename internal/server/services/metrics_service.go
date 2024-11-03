@@ -2,17 +2,19 @@ package services
 
 import (
 	"context"
-	"fmt"
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"github.com/Archetarcher/metrics.git/internal/server/utils"
 	"net/http"
 	"slices"
+
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/utils"
 )
 
+// MetricsService is a service struct for metrics, keeps implementation of MetricRepository interface
 type MetricsService struct {
 	repo MetricRepository
 }
 
+// MetricRepository is an interface that describes interaction with repository layer
 type MetricRepository interface {
 	GetAllIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
 	GetAll(ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
@@ -22,13 +24,17 @@ type MetricRepository interface {
 	CheckConnection(ctx context.Context) *domain.MetricsError
 }
 
+// NewMetricsService creates MetricsService
 func NewMetricsService(repo MetricRepository) *MetricsService {
 	return &MetricsService{repo: repo}
 }
 
+// CheckConnection checks connection to storage in repository
 func (s *MetricsService) CheckConnection(ctx context.Context) *domain.MetricsError {
 	return s.repo.CheckConnection(ctx)
 }
+
+// Updates creates or updates batch of metrics data
 func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
 	keys := make([]string, len(request))
 
@@ -44,11 +50,11 @@ func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) 
 	}
 
 	existingKeys := make(map[string]int64)
-	for key, m := range request {
+	for k, m := range request {
 		if m.MType == domain.CounterType {
 			if existingKeys[getKey(m)] != 0 {
 				c := *m.Delta + existingKeys[getKey(m)]
-				(request)[key].Delta = &c
+				(request)[k].Delta = &c
 				continue
 			}
 			existingKeys[getKey(m)] = *m.Delta
@@ -57,10 +63,10 @@ func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) 
 	}
 
 	for _, mbk := range metricsByKey {
-		for key, m := range request {
+		for k, m := range request {
 			if getKey(m) == getKey(mbk) && m.MType == domain.CounterType {
 				c := *m.Delta + *mbk.Delta
-				(request)[key].Delta = &c
+				(request)[k].Delta = &c
 			}
 		}
 	}
@@ -75,6 +81,8 @@ func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) 
 	}
 	return response, nil
 }
+
+// Update creates or updates metric data
 func (s *MetricsService) Update(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
 	response, err := s.repo.Get(request, ctx)
 	if err != nil {
@@ -96,6 +104,8 @@ func (s *MetricsService) Update(request *domain.Metrics, ctx context.Context) (*
 	}
 	return response, nil
 }
+
+// GetValue fetches metric data by ID and MType in domain.Metrics
 func (s *MetricsService) GetValue(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
 
 	response, err := s.repo.Get(request, ctx)
@@ -108,6 +118,8 @@ func (s *MetricsService) GetValue(request *domain.Metrics, ctx context.Context) 
 
 	return response, nil
 }
+
+// GetAllValues fetches all metrics data
 func (s *MetricsService) GetAllValues(ctx context.Context) (string, *domain.MetricsError) {
 	response, err := s.repo.GetAll(ctx)
 
@@ -119,16 +131,17 @@ func (s *MetricsService) GetAllValues(ctx context.Context) (string, *domain.Metr
 	}
 	page := "<table><tr><th>Name</th><th>Value</th></tr>"
 
-	for _, val := range response {
-		v := utils.GetStringValue(&val)
-		page += "<tr><td>" + val.ID + "</td>" + "<td>" + v + "</td></tr>"
+	for _, r := range response {
+		v := utils.GetStringValue(&r)
+		page += "<tr><td>" + r.ID + "</td>" + "<td>" + v + "</td></tr>"
 	}
 
 	page += "</table>"
 	return page, nil
 }
+
 func getKey(request domain.Metrics) string {
-	return fmt.Sprintf("%s_%s", request.ID, request.MType)
+	return request.ID + "_" + request.MType
 }
 func handleError(code int, err string) *domain.MetricsError {
 	return &domain.MetricsError{
