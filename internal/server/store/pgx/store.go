@@ -27,10 +27,6 @@ var (
 type Store struct {
 	db     *sqlx.DB
 	config *Config
-	stmts  struct {
-		getMetric *sqlx.Stmt
-		setMetric *sqlx.Stmt
-	}
 }
 
 // NewStore creates pgx storage instance, runs migrations
@@ -130,7 +126,12 @@ func (s *Store) GetValues(ctx context.Context) ([]domain.Metrics, *domain.Metric
 	if err != nil {
 		return nil, handleDBError(err, dbError)
 	}
-	defer rows.Close()
+	defer func() {
+		dErr := rows.Close()
+		if dErr != nil {
+			logger.Log.Info("failed to close rows", zap.Error(dErr))
+		}
+	}()
 
 	for rows.Next() {
 		var m domain.Metrics
@@ -187,20 +188,30 @@ func (s *Store) SetValues(request []domain.Metrics, ctx context.Context) *domain
 	if err != nil {
 		return handleDBError(err, dbError)
 	}
-	defer tx.Rollback()
+	defer func() {
+		tErr := tx.Rollback()
+		if tErr != nil {
+			logger.Log.Info("failed to rollback transaction", zap.Error(tErr))
+		}
+	}()
 
 	stmt, err := tx.PrepareContext(ctx,
 		metricsCreateQuery)
 	if err != nil {
 		return handleDBError(err, dbError)
 	}
-	defer stmt.Close()
+	defer func() {
+		sErr := stmt.Close()
+		if sErr != nil {
+			logger.Log.Info("failed to close statement", zap.Error(sErr))
+		}
+	}()
 
 	for _, m := range request {
-		_, err := stmt.ExecContext(ctx, m.ID, m.MType, m.Delta, m.Value, getKey(m))
+		_, dErr := stmt.ExecContext(ctx, m.ID, m.MType, m.Delta, m.Value, getKey(m))
 
-		if err != nil {
-			return handleDBError(err, dbError)
+		if dErr != nil {
+			return handleDBError(dErr, dbError)
 		}
 	}
 	err = tx.Commit()

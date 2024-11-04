@@ -11,12 +11,12 @@ import (
 
 func TestTrackingService_Fetch(t *testing.T) {
 	type args struct {
-		counterInterval int64
 		metrics         domain.MetricsData
+		counterInterval int64
 	}
 	tests := []struct {
-		name    string
 		args    args
+		name    string
 		wantErr bool
 	}{
 		{

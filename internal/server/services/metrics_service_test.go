@@ -21,10 +21,10 @@ import (
 var conf Config
 
 type Config struct {
-	once    sync.Once
 	c       *config.AppConfig
 	service *MetricsService
 	err     error
+	once    sync.Once
 }
 
 func (c *Config) setConfig() {
@@ -118,8 +118,8 @@ func TestMetricsService_Update(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name    string
 		args    args
+		name    string
 		wantErr bool
 	}{
 		{
@@ -174,8 +174,8 @@ func TestMetricsService_GetValue(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name    string
 		args    args
+		name    string
 		wantErr bool
 	}{
 		{

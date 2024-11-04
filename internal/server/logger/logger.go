@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -24,7 +25,12 @@ var Log *zap.Logger
 func init() {
 	Log = zap.NewNop()
 
-	defer Log.Sync()
+	defer func() {
+		err := Log.Sync()
+		if err != nil {
+			log.Fatal("failed to init logger")
+		}
+	}()
 }
 
 // Initialize initiates singleton of Log with appropriate log level.

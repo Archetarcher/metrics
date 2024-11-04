@@ -7,10 +7,11 @@ type SendResponse struct {
 
 // Metrics is a metric struct keeps type, name, and value of metrics.
 type Metrics struct {
-	ID    string   `json:"id"`              // metrics name
-	MType string   `json:"type"`            // metrics type, accepts value gauge or counter.
 	Delta *int64   `json:"delta,omitempty"` // metrics value if provided type is counter.
 	Value *float64 `json:"value,omitempty"` // metrics value if provided type is gauge.
+	ID    string   `json:"id"`              // metrics name
+	MType string   `json:"type"`            // metrics type, accepts value gauge or counter.
+
 }
 
 // Gauge is a struct with all fields of metrics with type gauge.

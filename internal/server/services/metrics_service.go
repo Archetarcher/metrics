@@ -71,8 +71,8 @@ func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) 
 		}
 	}
 
-	if err := s.repo.SetAll(request, ctx); err != nil {
-		return nil, err
+	if rErr := s.repo.SetAll(request, ctx); rErr != nil {
+		return nil, rErr
 	}
 	response, err := s.repo.GetAllIn(keys, ctx)
 
@@ -94,8 +94,8 @@ func (s *MetricsService) Update(request *domain.Metrics, ctx context.Context) (*
 		request.Delta = &c
 	}
 
-	if err := s.repo.Set(request, ctx); err != nil {
-		return nil, err
+	if rErr := s.repo.Set(request, ctx); rErr != nil {
+		return nil, rErr
 	}
 
 	response, err = s.repo.Get(request, ctx)

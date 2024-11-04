@@ -15,8 +15,8 @@ func TestMetricsAPI_Run(t *testing.T) {
 		server *http.ServeMux
 	}
 	tests := []struct {
-		name         string
 		serverFields fields
+		name         string
 		wantErr      bool
 	}{
 		{
@@ -43,8 +43,8 @@ func TestNewMetricsAPI(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
 		fields  fields
+		name    string
 		wantErr bool
 	}{
 		{

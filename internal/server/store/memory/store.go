@@ -18,8 +18,8 @@ const emptyParam = ""
 
 // Store is a struct for in memory storage, keeps sync.Mutex and metrics map
 type Store struct {
-	mux  sync.Mutex
 	data map[string]domain.Metrics
+	mux  sync.Mutex
 }
 
 // NewStore creates new storage, restores data from file
@@ -168,11 +168,4 @@ func (s *Store) Load(config *Config) error {
 }
 func getName(request domain.Metrics) string {
 	return request.ID + "_" + request.MType
-}
-
-func handleError(text string, code int) *domain.MetricsError {
-	return &domain.MetricsError{
-		Text: text,
-		Code: code,
-	}
 }

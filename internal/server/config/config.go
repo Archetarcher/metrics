@@ -8,11 +8,11 @@ import (
 
 // AppConfig keeps configurations of application.
 type AppConfig struct {
-	mux      sync.Mutex
-	RunAddr  string
-	LogLevel string
-	Key      string
 	Store    store.Config
+	RunAddr  string
+	Key      string
+	LogLevel string
+	mux      sync.Mutex
 }
 
 // NewConfig creates new configuration.

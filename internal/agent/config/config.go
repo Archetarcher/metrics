@@ -3,11 +3,11 @@ package config
 // AppConfig keeps configurations of application.
 type AppConfig struct {
 	ServerRunAddr  string
+	LogLevel       string
+	Key            string
 	ReportInterval int
 	PollInterval   int
-	LogLevel       string
 	RateLimit      int
-	Key            string
 }
 
 // NewConfig creates new configuration.

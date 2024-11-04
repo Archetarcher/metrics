@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
-
 	"go.uber.org/zap"
+	"log"
 
 	"github.com/Archetarcher/metrics.git/internal/server/api/rest"
 	"github.com/Archetarcher/metrics.git/internal/server/config"

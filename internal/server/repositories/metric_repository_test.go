@@ -20,10 +20,10 @@ import (
 var conf Config
 
 type Config struct {
-	once sync.Once
 	c    *config.AppConfig
 	repo *MetricRepository
 	err  error
+	once sync.Once
 }
 
 func (c *Config) setConfig() {
@@ -117,8 +117,8 @@ func TestMetricRepository_Set(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
 		args    args
+		name    string
 		wantErr bool
 	}{
 		{
@@ -145,9 +145,9 @@ func TestMetricRepository_Get(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		args    args
 		want    *domain.Metrics
+		args    args
+		name    string
 		wantErr bool
 	}{
 		{
@@ -171,13 +171,12 @@ func TestMetricRepository_GetAll(t *testing.T) {
 	require.NoError(t, conf.err, "failed to init repo", conf.repo, conf.err)
 
 	type args struct {
-		request *domain.Metrics
 	}
 
 	tests := []struct {
-		name    string
-		args    args
 		want    *domain.Metrics
+		args    args
+		name    string
 		wantErr bool
 	}{
 		{

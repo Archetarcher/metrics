@@ -28,10 +28,10 @@ import (
 var conf Config
 
 type Config struct {
-	once   sync.Once
 	c      *config.AppConfig
 	server *httptest.Server
 	err    error
+	once   sync.Once
 }
 
 func (c *Config) setConfig() {
@@ -132,16 +132,16 @@ var (
 func TestMetricsHandler_UpdateMetrics(t *testing.T) {
 	require.NoError(t, conf.err, "failed to init server", conf.server, conf.err)
 	type request struct {
+		params map[string]string
 		query  string
 		method string
-		params map[string]string
 	}
 	type want struct {
 		code int
 	}
 	tests := []struct {
-		name    string
 		request request
+		name    string
 		want    want
 	}{
 		{
@@ -242,16 +242,16 @@ func TestMetricsHandler_UpdateMetrics(t *testing.T) {
 func TestMetricsHandler_GetMetrics(t *testing.T) {
 	require.NoError(t, conf.err, "failed to init server", conf.server, conf.err)
 	type request struct {
+		params map[string]string
 		query  string
 		method string
-		params map[string]string
 	}
 	type want struct {
 		code int
 	}
 	tests := []struct {
-		name    string
 		request request
+		name    string
 		want    want
 	}{
 		{
@@ -455,16 +455,16 @@ func TestMetricsHandler_UpdateMetricsJSON(t *testing.T) {
 func TestMetricsHandler_GetMetricsJSON(t *testing.T) {
 	require.NoError(t, conf.err, "failed to init server", conf.server, conf.err)
 	type request struct {
+		body   map[string]string
 		query  string
 		method string
-		body   map[string]string
 	}
 	type want struct {
 		code int
 	}
 	tests := []struct {
-		name    string
 		request request
+		name    string
 		want    want
 	}{
 		{
