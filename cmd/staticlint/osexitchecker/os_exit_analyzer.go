@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// Analyzer is var that keeps analyzer instanc
 var Analyzer = &analysis.Analyzer{
 	Name: "osexit",
 	Doc:  "check for os.Exit call",
