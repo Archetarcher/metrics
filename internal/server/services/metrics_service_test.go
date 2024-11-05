@@ -43,7 +43,7 @@ func init() {
 
 func setup() (*MetricsService, error) {
 	ctx := context.Background()
-	storage, err := store.NewStore(conf.c.Store, ctx)
+	storage, err := store.NewStore(ctx, conf.c.Store)
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 		return nil, err.Err
@@ -214,6 +214,23 @@ func TestMetricsService_GetAllValues(t *testing.T) {
 
 		})
 	}
+}
+
+func TestMetricsService_CheckConnection(t *testing.T) {
+	require.NoError(t, conf.err, "failed to init service", conf.service, conf.err)
+
+	t.Run("test check connection", func(t *testing.T) {
+		ctx := context.Background()
+		err := conf.service.CheckConnection(ctx)
+		assert.Nil(t, err, "CheckConnection(%v)")
+	})
+}
+
+func TestNewMetricsService(t *testing.T) {
+	t.Run("positive test", func(t *testing.T) {
+		s := NewMetricsService(&repositories.MetricRepository{})
+		assert.NotNil(t, s)
+	})
 }
 
 func BenchmarkMetricsService_Updates(b *testing.B) {

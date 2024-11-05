@@ -1,7 +1,7 @@
 package rest
 
 import (
-	"net/http"
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,37 +9,10 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 )
 
-func TestMetricsAPI_Run(t *testing.T) {
-
-	type fields struct {
-		server *http.ServeMux
-	}
-	tests := []struct {
-		serverFields fields
-		name         string
-		wantErr      bool
-	}{
-		{
-			name:         "With server defined",
-			serverFields: fields{http.NewServeMux()},
-			wantErr:      false,
-		},
-		{
-			name:         "With no server defined",
-			serverFields: fields{},
-			wantErr:      true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.serverFields.server == nil, tt.wantErr)
-		})
-	}
-}
-
 func TestNewMetricsAPI(t *testing.T) {
 	type fields struct {
 		handler *handlers.MetricsHandler
+		conf    *config.AppConfig
 	}
 
 	tests := []struct {
@@ -49,18 +22,44 @@ func TestNewMetricsAPI(t *testing.T) {
 	}{
 		{
 			name:    "Test with handler",
-			fields:  fields{handler: &handlers.MetricsHandler{}},
+			fields:  fields{handler: &handlers.MetricsHandler{}, conf: &config.AppConfig{}},
 			wantErr: false,
 		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewMetricsAPI(tt.fields.handler, tt.fields.conf)
+			assert.Nil(t, err)
+
+		})
+	}
+}
+
+func TestMetricsAPI_Run(t *testing.T) {
+
+	type fields struct {
+		conf *config.AppConfig
+	}
+	addr := "8080"
+
+	tests := []struct {
+		fields  fields
+		name    string
+		wantErr bool
+	}{
 		{
-			name:    "Test with no storage",
-			fields:  fields{},
+			name:    "With no config defined",
+			fields:  fields{conf: &config.AppConfig{RunAddr: addr}},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.fields.handler == nil, tt.wantErr)
+			api, err := NewMetricsAPI(&handlers.MetricsHandler{}, tt.fields.conf)
+			assert.Nil(t, err)
+
+			aErr := api.Run(tt.fields.conf)
+			assert.NotNil(t, aErr)
 		})
 	}
 }

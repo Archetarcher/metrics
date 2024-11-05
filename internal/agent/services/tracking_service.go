@@ -89,7 +89,7 @@ func (s *TrackingService) Send(request []domain.Metrics) (*domain.SendResponse, 
 	}
 
 	if res.StatusCode() != http.StatusOK {
-		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: responded with error: %s\n", err), Code: res.StatusCode()}
+		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: responded with error: %s\n, %s", err, url), Code: res.StatusCode()}
 	}
 	return &domain.SendResponse{Status: http.StatusOK}, nil
 }

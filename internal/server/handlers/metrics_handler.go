@@ -319,7 +319,7 @@ func validateUpdatesRequest(r *http.Request) ([]domain.Metrics, *domain.MetricsE
 	if err != nil {
 		return nil, &domain.MetricsError{
 			Text: err.Error(),
-			Code: http.StatusBadRequest,
+			Code: http.StatusInternalServerError,
 		}
 	}
 

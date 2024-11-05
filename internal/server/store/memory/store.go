@@ -23,7 +23,7 @@ type Store struct {
 }
 
 // NewStore creates new storage, restores data from file
-func NewStore(config *Config, ctx context.Context) (*Store, *domain.MetricsError) {
+func NewStore(ctx context.Context, config *Config) (*Store, *domain.MetricsError) {
 	storage := &Store{
 		mux:  sync.Mutex{},
 		data: make(map[string]domain.Metrics),
@@ -56,8 +56,8 @@ func NewStore(config *Config, ctx context.Context) (*Store, *domain.MetricsError
 }
 
 // RetryConnection retries connection to storage, not implemented for in memory storage
-func RetryConnection(error *domain.MetricsError, interval int, try int, config *Config, ctx context.Context) (*Store, *domain.MetricsError) {
-	return nil, nil
+func RetryConnection(ctx context.Context, error *domain.MetricsError, interval int, try int, config *Config) (*Store, *domain.MetricsError) {
+	return nil, &domain.MetricsError{}
 }
 
 // CheckConnection checks connection to storage, not implemented for in memory storage
@@ -71,7 +71,7 @@ func (s *Store) Close() {
 }
 
 // GetValuesIn fetches metrics by keys in slices
-func (s *Store) GetValuesIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
+func (s *Store) GetValuesIn(ctx context.Context, keys []string) ([]domain.Metrics, *domain.MetricsError) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
@@ -98,11 +98,11 @@ func (s *Store) GetValues(ctx context.Context) ([]domain.Metrics, *domain.Metric
 }
 
 // GetValue fetches metric by ID and MType from domain.Metrics
-func (s *Store) GetValue(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
+func (s *Store) GetValue(ctx context.Context, request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
-	res, ok := s.data[getName(*request)]
+	res, ok := s.data[getKey(*request)]
 	if !ok {
 		return nil, nil
 	}
@@ -110,18 +110,18 @@ func (s *Store) GetValue(request *domain.Metrics, ctx context.Context) (*domain.
 }
 
 // SetValue sets metric data by key
-func (s *Store) SetValue(request *domain.Metrics, ctx context.Context) *domain.MetricsError {
+func (s *Store) SetValue(ctx context.Context, request *domain.Metrics) *domain.MetricsError {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
-	s.data[getName(*request)] = *request
+	s.data[getKey(*request)] = *request
 	return nil
 }
 
 // SetValues sets batch of metrics data by key
-func (s *Store) SetValues(request []domain.Metrics, ctx context.Context) *domain.MetricsError {
+func (s *Store) SetValues(ctx context.Context, request []domain.Metrics) *domain.MetricsError {
 	for _, v := range request {
-		s.data[getName(v)] = v
+		s.data[getKey(v)] = v
 	}
 	return nil
 }
@@ -166,6 +166,6 @@ func (s *Store) Load(config *Config) error {
 	s.data = metrics
 	return nil
 }
-func getName(request domain.Metrics) string {
+func getKey(request domain.Metrics) string {
 	return request.ID + "_" + request.MType
 }

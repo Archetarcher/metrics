@@ -47,7 +47,7 @@ func (c *Config) setConfig() {
 func setupConfigServer() (*httptest.Server, error) {
 	ctx := context.Background()
 
-	storage, err := store.NewStore(conf.c.Store, ctx)
+	storage, err := store.NewStore(ctx, conf.c.Store)
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 		return nil, err.Err
@@ -60,6 +60,8 @@ func setupConfigServer() (*httptest.Server, error) {
 	r.Post("/update/{type}/{name}/{value}", handler.UpdateMetrics)
 	r.Post("/update/{type}/{name}/{value}", handler.UpdateMetrics)
 	r.Get("/value/{type}/{name}", handler.GetMetrics)
+	r.Get("/", handler.GetMetricsPage)
+	r.Get("/ping", handler.GetPing)
 
 	r.Post("/update/", handler.UpdateMetricsJSON)
 	r.Post("/updates/", handler.UpdatesMetrics)
@@ -343,7 +345,7 @@ func TestMetricsHandler_UpdateMetricsJSON(t *testing.T) {
 	type request struct {
 		query  string
 		method string
-		body   domain.Metrics
+		body   string
 	}
 	type want struct {
 		code int
@@ -358,7 +360,7 @@ func TestMetricsHandler_UpdateMetricsJSON(t *testing.T) {
 			request: request{
 				query:  "/update/",
 				method: http.MethodPost,
-				body:   values[2],
+				body:   fmt.Sprintf("{\"id\": \"%s\", \"type\": \"%s\", \"delta\": %d}", values[2].ID, values[2].MType, *values[2].Delta),
 			},
 			want: want{
 				code: http.StatusOK,
@@ -369,7 +371,7 @@ func TestMetricsHandler_UpdateMetricsJSON(t *testing.T) {
 			request: request{
 				query:  "/update/",
 				method: http.MethodPost,
-				body:   values[3],
+				body:   fmt.Sprintf("{\"id\": \"%s\", \"type\": \"%s\", \"value\": %f}", values[3].ID, values[3].MType, *values[3].Value),
 			},
 			want: want{
 				code: http.StatusOK,
@@ -380,12 +382,7 @@ func TestMetricsHandler_UpdateMetricsJSON(t *testing.T) {
 			request: request{
 				query:  "/update/",
 				method: http.MethodPost,
-				body: domain.Metrics{
-					ID:    "value",
-					MType: "gauged",
-					Delta: nil,
-					Value: nil,
-				},
+				body:   fmt.Sprintf("{\"id\": \"%s\", \"type\": \"%s\"}", "value", "gauged"),
 			},
 			want: want{
 				code: http.StatusBadRequest,
@@ -396,7 +393,7 @@ func TestMetricsHandler_UpdateMetricsJSON(t *testing.T) {
 			request: request{
 				query:  "/update/",
 				method: http.MethodGet,
-				body:   domain.Metrics{},
+				body:   "{}",
 			},
 			want: want{
 				code: http.StatusMethodNotAllowed,
@@ -407,12 +404,7 @@ func TestMetricsHandler_UpdateMetricsJSON(t *testing.T) {
 			request: request{
 				query:  "/update/",
 				method: http.MethodPost,
-				body: domain.Metrics{
-					ID:    "",
-					MType: "gauge",
-					Delta: nil,
-					Value: nil,
-				},
+				body:   fmt.Sprintf("{\"id\": \"%s\", \"type\": \"%s\"}", "", "gauge"),
 			},
 			want: want{
 				code: http.StatusBadRequest,
@@ -423,15 +415,21 @@ func TestMetricsHandler_UpdateMetricsJSON(t *testing.T) {
 			request: request{
 				query:  "/update/",
 				method: http.MethodPost,
-				body: domain.Metrics{
-					ID:    "test_name",
-					MType: "",
-					Delta: nil,
-					Value: nil,
-				},
+				body:   fmt.Sprintf("{\"id\": \"%s\", \"type\": \"%s\"}", "test_name", ""),
 			},
 			want: want{
 				code: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "negative test  #7",
+			request: request{
+				query:  "/update/",
+				method: http.MethodPost,
+				body:   fmt.Sprintf("{\"id\": \"%s\", \"type\": \"%s\", \"value\": %f", values[3].ID, values[3].MType, *values[3].Value),
+			},
+			want: want{
+				code: http.StatusInternalServerError,
 			},
 		},
 	}
@@ -447,7 +445,7 @@ func TestMetricsHandler_UpdateMetricsJSON(t *testing.T) {
 
 			assert.NoError(t, err, "error making HTTP request")
 
-			assert.Equal(t, tt.want.code, resp.StatusCode(), "Код ответа не совпадает с ожидаемым", req.PathParams, req.URL, resp.String())
+			assert.Equal(t, tt.want.code, resp.StatusCode(), "Код ответа не совпадает с ожидаемым", req.PathParams, req.URL, resp.String(), tt.request.body)
 		})
 	}
 }
@@ -455,7 +453,7 @@ func TestMetricsHandler_UpdateMetricsJSON(t *testing.T) {
 func TestMetricsHandler_GetMetricsJSON(t *testing.T) {
 	require.NoError(t, conf.err, "failed to init server", conf.server, conf.err)
 	type request struct {
-		body   map[string]string
+		body   string
 		query  string
 		method string
 	}
@@ -472,7 +470,7 @@ func TestMetricsHandler_GetMetricsJSON(t *testing.T) {
 			request: request{
 				query:  "/value/",
 				method: http.MethodPost,
-				body:   map[string]string{"type": values[2].MType, "id": values[2].ID},
+				body:   fmt.Sprintf("{\"id\": \"%s\", \"type\": \"%s\"}", values[2].ID, values[2].MType),
 			},
 			want: want{
 				code: http.StatusOK,
@@ -483,7 +481,7 @@ func TestMetricsHandler_GetMetricsJSON(t *testing.T) {
 			request: request{
 				query:  "/value/",
 				method: http.MethodPost,
-				body:   map[string]string{"type": values[3].MType, "id": values[3].ID},
+				body:   fmt.Sprintf("{\"id\": \"%s\", \"type\": \"%s\"}", values[3].ID, values[3].MType),
 			},
 			want: want{
 				code: http.StatusOK,
@@ -494,7 +492,7 @@ func TestMetricsHandler_GetMetricsJSON(t *testing.T) {
 			request: request{
 				query:  "/value/",
 				method: http.MethodPost,
-				body:   map[string]string{"type": "gauged", "id": "value"},
+				body:   fmt.Sprintf("{\"id\": \"%s\", \"type\": \"%s\"}", "value", "gauged"),
 			},
 			want: want{
 				code: http.StatusBadRequest,
@@ -505,7 +503,7 @@ func TestMetricsHandler_GetMetricsJSON(t *testing.T) {
 			request: request{
 				query:  "/value/",
 				method: http.MethodGet,
-				body:   map[string]string{"type": "gauge", "id": "value"},
+				body:   fmt.Sprintf("{\"id\": \"%s\", \"type\": \"%s\"}", "value", "gauge"),
 			},
 			want: want{
 				code: http.StatusMethodNotAllowed,
@@ -516,7 +514,7 @@ func TestMetricsHandler_GetMetricsJSON(t *testing.T) {
 			request: request{
 				query:  "/value/",
 				method: http.MethodPost,
-				body:   map[string]string{"type": "gauge", "id": "value"},
+				body:   fmt.Sprintf("{\"id\": \"%s\", \"type\": \"%s\"}", "value", "gauge"),
 			},
 			want: want{
 				code: http.StatusNotFound,
@@ -527,10 +525,21 @@ func TestMetricsHandler_GetMetricsJSON(t *testing.T) {
 			request: request{
 				query:  "/value/",
 				method: http.MethodPost,
-				body:   map[string]string{},
+				body:   "{}",
 			},
 			want: want{
 				code: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "negative test #7",
+			request: request{
+				query:  "/value/",
+				method: http.MethodPost,
+				body:   fmt.Sprintf("{\"id\": \"%s\", \"type\": \"%s\"", "value", "gauge"),
+			},
+			want: want{
+				code: http.StatusInternalServerError,
 			},
 		},
 	}
@@ -644,6 +653,92 @@ func TestMetricsHandler_UpdatesMetrics(t *testing.T) {
 			req.Method = tt.request.method
 			req.URL = conf.server.URL + tt.request.query
 			req.SetBody(tt.request.body)
+
+			resp, err := req.Send()
+
+			assert.NoError(t, err, "error making HTTP request")
+
+			assert.Equal(t, tt.want.code, resp.StatusCode(), "Код ответа не совпадает с ожидаемым", req.PathParams, req.URL, resp.String())
+		})
+	}
+}
+
+func TestMetricsHandler_GetMetricsPage(t *testing.T) {
+	require.NoError(t, conf.err, "failed to init server", conf.server, conf.err)
+	type request struct {
+		query  string
+		method string
+	}
+
+	type want struct {
+		code int
+	}
+
+	tests := []struct {
+		name    string
+		request request
+		want    want
+	}{
+		{
+			name: "positive test#1",
+			request: request{
+				query:  "/",
+				method: http.MethodGet,
+			},
+			want: want{
+				code: http.StatusOK,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := resty.New().R()
+			req.Method = tt.request.method
+			req.URL = conf.server.URL + tt.request.query
+
+			resp, err := req.Send()
+
+			assert.NoError(t, err, "error making HTTP request")
+
+			assert.Equal(t, tt.want.code, resp.StatusCode(), "Код ответа не совпадает с ожидаемым", req.PathParams, req.URL, resp.String())
+		})
+	}
+}
+
+func TestMetricsHandler_GetPing(t *testing.T) {
+	require.NoError(t, conf.err, "failed to init server", conf.server, conf.err)
+	type request struct {
+		query  string
+		method string
+	}
+
+	type want struct {
+		code int
+	}
+
+	tests := []struct {
+		name    string
+		request request
+		want    want
+	}{
+		{
+			name: "positive test#1",
+			request: request{
+				query:  "/ping",
+				method: http.MethodGet,
+			},
+			want: want{
+				code: http.StatusOK,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := resty.New().R()
+			req.Method = tt.request.method
+			req.URL = conf.server.URL + tt.request.query
 
 			resp, err := req.Send()
 

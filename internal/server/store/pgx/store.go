@@ -30,7 +30,7 @@ type Store struct {
 }
 
 // NewStore creates pgx storage instance, runs migrations
-func NewStore(config *Config, ctx context.Context) (*Store, *domain.MetricsError) {
+func NewStore(ctx context.Context, config *Config) (*Store, *domain.MetricsError) {
 
 	db := sqlx.MustOpen("pgx", config.DatabaseDsn)
 
@@ -45,7 +45,7 @@ func NewStore(config *Config, ctx context.Context) (*Store, *domain.MetricsError
 		return nil, err
 	}
 
-	if err := runMigrations(config, ctx); err != nil {
+	if err := runMigrations(ctx, config); err != nil {
 		return nil, err
 	}
 
@@ -53,7 +53,7 @@ func NewStore(config *Config, ctx context.Context) (*Store, *domain.MetricsError
 }
 
 // RetryConnection retries connection
-func RetryConnection(error *domain.MetricsError, interval int, try int, config *Config, ctx context.Context) (*Store, *domain.MetricsError) {
+func RetryConnection(ctx context.Context, error *domain.MetricsError, interval int, try int, config *Config) (*Store, *domain.MetricsError) {
 	logger.Log.Info("retrying db connection", zap.Int("interval", interval), zap.Int("try", try))
 
 	time.Sleep(time.Duration(interval) * time.Second)
@@ -67,9 +67,9 @@ func RetryConnection(error *domain.MetricsError, interval int, try int, config *
 
 	if errors.As(error.Err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) {
 
-		s, err := NewStore(config, ctx)
+		s, err := NewStore(ctx, config)
 		if err != nil {
-			RetryConnection(err, interval+2, try-1, config, ctx)
+			RetryConnection(ctx, err, interval+2, try-1, config)
 		}
 		if s != nil {
 			logger.Log.Info("connection established", zap.Int("interval", interval), zap.Int("try", try))
@@ -101,7 +101,7 @@ func (s *Store) Close() {
 }
 
 // GetValuesIn fetches metrics by keys in slice
-func (s *Store) GetValuesIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
+func (s *Store) GetValuesIn(ctx context.Context, keys []string) ([]domain.Metrics, *domain.MetricsError) {
 	var metrics []domain.Metrics
 
 	q, args, err := sqlx.In(metricsGetByKeyQuery, keys)
@@ -150,7 +150,7 @@ func (s *Store) GetValues(ctx context.Context) ([]domain.Metrics, *domain.Metric
 }
 
 // GetValue fetches metric data
-func (s *Store) GetValue(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
+func (s *Store) GetValue(ctx context.Context, request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
 	metrics := domain.Metrics{}
 
 	row := s.db.QueryRowContext(ctx,
@@ -169,7 +169,7 @@ func (s *Store) GetValue(request *domain.Metrics, ctx context.Context) (*domain.
 }
 
 // SetValue inserts or updates metric data
-func (s *Store) SetValue(request *domain.Metrics, ctx context.Context) *domain.MetricsError {
+func (s *Store) SetValue(ctx context.Context, request *domain.Metrics) *domain.MetricsError {
 	_, err := s.db.ExecContext(ctx,
 		metricsCreateQuery,
 		request.ID, request.MType, request.Delta, request.Value, getKey(*request),
@@ -182,7 +182,7 @@ func (s *Store) SetValue(request *domain.Metrics, ctx context.Context) *domain.M
 }
 
 // SetValues inserts or updates batch of metrics data
-func (s *Store) SetValues(request []domain.Metrics, ctx context.Context) *domain.MetricsError {
+func (s *Store) SetValues(ctx context.Context, request []domain.Metrics) *domain.MetricsError {
 
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -226,7 +226,7 @@ func getKey(request domain.Metrics) string {
 
 }
 
-func runMigrations(config *Config, ctx context.Context) *domain.MetricsError {
+func runMigrations(ctx context.Context, config *Config) *domain.MetricsError {
 	db, err := goose.OpenDBWithDriver("pgx", config.DatabaseDsn)
 	if err != nil {
 		log.Fatalf("goose: failed to open DB: %v\n", err)
