@@ -12,15 +12,13 @@ import (
 )
 
 var (
-	buildVersion = ""
-	buildDate    = ""
-	buildCommit  = ""
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
 )
 
 func main() {
-	fmt.Printf("Build version: %s\n", buildVersion)
-	fmt.Printf("Build date: %s\n", buildDate)
-	fmt.Printf("Build commit: %s\n", buildCommit)
+	printBuildData()
 
 	c := config.NewConfig()
 	c.ParseConfig()
@@ -30,4 +28,10 @@ func main() {
 	if err != nil {
 		logger.Log.Error("failed with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 	}
+}
+
+func printBuildData() {
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
 }
