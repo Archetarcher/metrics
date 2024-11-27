@@ -1,16 +1,16 @@
 package rest
 
 import (
+	"github.com/Archetarcher/metrics.git/internal/server/encryption"
+	"github.com/Archetarcher/metrics.git/internal/server/middlewares"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 
-	"github.com/Archetarcher/metrics.git/internal/server/compression"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"github.com/Archetarcher/metrics.git/internal/server/encoding"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 )
@@ -23,11 +23,15 @@ type MetricsAPI struct {
 // NewMetricsAPI registers routes, middlewares.
 func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (*MetricsAPI, *domain.MetricsError) {
 	r := chi.NewRouter()
-
-	r.Use(compression.GzipMiddleware)
-	r.Use(logger.RequestLoggerMiddleware)
 	r.Use(func(handler http.Handler) http.Handler {
-		return encoding.RequestHashesMiddleware(handler, config)
+		return encryption.RequestDecryptMiddleware(handler, config)
+	})
+	r.Use(middlewares.GzipMiddleware)
+
+	r.Use(logger.RequestLoggerMiddleware)
+
+	r.Use(func(handler http.Handler) http.Handler {
+		return middlewares.RequestHashesMiddleware(handler, config)
 	})
 
 	r.Mount("/debug", middleware.Profiler())
@@ -39,6 +43,7 @@ func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (
 	r.Post("/update/", handler.UpdateMetricsJSON)
 	r.Post("/updates/", handler.UpdatesMetrics)
 	r.Post("/value/", handler.GetMetricsJSON)
+	r.Post("/session/", handler.StartSession)
 
 	r.Get("/ping", handler.GetPing)
 	return &MetricsAPI{

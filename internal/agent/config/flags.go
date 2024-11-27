@@ -11,6 +11,7 @@ const (
 	flagLogLevelName       = "l"
 	flagKeyName            = "k"
 	flagRateLimitName      = "rl"
+	flagPublicKeyPathName  = "crypto-key"
 )
 
 func (c *AppConfig) initFlags() {
@@ -19,6 +20,7 @@ func (c *AppConfig) initFlags() {
 	flag.IntVar(&c.PollInterval, flagPollIntervalName, 2, "interval in seconds for poll ")
 	flag.StringVar(&c.LogLevel, flagLogLevelName, "info", "log level")
 	flag.StringVar(&c.Key, flagKeyName, "", "key")
+	flag.StringVar(&c.PublicKeyPath, flagPublicKeyPathName, "public.pem", "crypto-key")
 	flag.IntVar(&c.RateLimit, flagRateLimitName, 3, "rate limit")
 }
 

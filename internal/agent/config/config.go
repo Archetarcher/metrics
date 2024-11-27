@@ -5,6 +5,8 @@ type AppConfig struct {
 	ServerRunAddr  string
 	LogLevel       string
 	Key            string
+	PublicKeyPath  string
+	Session        string
 	ReportInterval int
 	PollInterval   int
 	RateLimit      int

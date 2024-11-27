@@ -14,6 +14,7 @@ const (
 	envRestoreName                = "RESTORE"
 	envDatabaseDsnName            = "DATABASE_DSN"
 	envDatabaseMigrationsPathName = "DATABASE_MIGRATIONS_PATH"
+	envPrivateKeyPathName         = "CRYPTO_KEY"
 )
 
 func (c *AppConfig) parseEnv() {
@@ -30,6 +31,8 @@ func (c *AppConfig) parseEnv() {
 
 	c.Store.Pgx.DatabaseDsn = getEnvOrDefault(envDatabaseDsnName, c.Store.Pgx.DatabaseDsn, 1).(string)
 	c.Store.Pgx.MigrationsPath = getEnvOrDefault(envDatabaseMigrationsPathName, c.Store.Pgx.MigrationsPath, 1).(string)
+
+	c.PrivateKeyPath = getEnvOrDefault(envPrivateKeyPathName, c.PrivateKeyPath, 1).(string)
 
 }
 

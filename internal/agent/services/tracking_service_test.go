@@ -2,10 +2,12 @@ package services
 
 import (
 	"context"
-	"github.com/Archetarcher/metrics.git/internal/server/compression"
+	"fmt"
+	"github.com/Archetarcher/metrics.git/internal/agent/encryption"
 	config2 "github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
+	"github.com/Archetarcher/metrics.git/internal/server/middlewares"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
@@ -156,7 +158,7 @@ func setupConfigServer() (*httptest.Server, error) {
 	service := services.NewMetricsService(repo)
 	handler := handlers.NewMetricsHandler(service, conf.c)
 	r := chi.NewRouter()
-	r.Use(compression.GzipMiddleware)
+	r.Use(middlewares.GzipMiddleware)
 
 	r.Post("/updates/", handler.UpdatesMetrics)
 
@@ -213,8 +215,14 @@ func TestTrackingService_Send(t *testing.T) {
 
 	client := resty.New()
 
+	c := config.AppConfig{}
+	err := encryption.StartSession(&c, client)
+	fmt.Println(err)
+	assert.Nil(t, err)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.config.Session = c.Session
 			service := &TrackingService{Config: tt.config, Client: client}
 
 			_, err := service.Send(tt.args.request)
