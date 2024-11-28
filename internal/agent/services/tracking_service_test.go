@@ -180,8 +180,8 @@ func TestTrackingService_Send(t *testing.T) {
 		request []domain.Metrics
 	}
 	client := resty.New()
-	c := config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""), PublicKeyPath: "../../../public.pem"}
-	eErr := encryption.StartSession(&c, client)
+	c := config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""), PublicKeyPath: "../../../public.pem", Session: config.Session{RetryConn: 3}}
+	eErr := encryption.StartSession(&c, client, c.Session.RetryConn)
 	require.Nil(t, eErr)
 
 	tests := []struct {
