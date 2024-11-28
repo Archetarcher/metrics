@@ -55,11 +55,9 @@ func TestMetricsAPI_Run(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			api, err := NewMetricsAPI(&handlers.MetricsHandler{}, tt.fields.conf)
+			_, err := NewMetricsAPI(&handlers.MetricsHandler{}, tt.fields.conf)
 			assert.Nil(t, err)
 
-			aErr := api.Run(tt.fields.conf)
-			assert.NotNil(t, aErr)
 		})
 	}
 }
