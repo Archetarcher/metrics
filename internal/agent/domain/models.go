@@ -51,3 +51,8 @@ type Gauge struct {
 
 // MetricsData is a map of Metrics.
 type MetricsData map[string]Metrics
+
+// SessionRequest is a session struct keeps encrypted key
+type SessionRequest struct {
+	Key []byte `json:"key"`
+}

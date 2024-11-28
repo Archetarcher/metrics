@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
@@ -22,21 +23,21 @@ type Store interface {
 }
 
 // NewStore additional function to initiate Store instance according to factory pattern
-func NewStore(ctx context.Context, conf Config) (Store, *domain.MetricsError) {
+func NewStore(ctx context.Context, conf *config.AppConfig) (Store, *domain.MetricsError) {
 
-	if conf.Pgx.DatabaseDsn != emptyParam {
-		return pgx.NewStore(ctx, conf.Pgx)
+	if conf.DatabaseDsn != emptyParam {
+		return pgx.NewStore(ctx, conf)
 	}
 
-	return memory.NewStore(ctx, conf.Memory)
+	return memory.NewStore(ctx, conf)
 
 }
 
 // Retry retries connection to storage
-func Retry(ctx context.Context, error *domain.MetricsError, interval int, try int, conf Config) (Store, *domain.MetricsError) {
-	if conf.Pgx.DatabaseDsn != emptyParam {
-		return pgx.RetryConnection(ctx, error, interval, try, conf.Pgx)
+func Retry(ctx context.Context, error *domain.MetricsError, interval int, try int, conf *config.AppConfig) (Store, *domain.MetricsError) {
+	if conf.DatabaseDsn != emptyParam {
+		return pgx.RetryConnection(ctx, error, interval, try, conf)
 	}
 
-	return memory.RetryConnection(ctx, error, interval, try, conf.Memory)
+	return memory.RetryConnection(ctx, error, interval, try, conf)
 }
