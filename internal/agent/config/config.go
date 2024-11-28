@@ -31,4 +31,5 @@ func NewConfig() *AppConfig {
 func (c *AppConfig) ParseConfig() {
 	c.parseFlags()
 	c.parseEnv()
+	c.parseJSON()
 }

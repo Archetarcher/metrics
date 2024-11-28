@@ -3,12 +3,18 @@ package config
 import (
 	"encoding/json"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
+	"log"
 	"os"
 )
 
-func (c *AppConfig) parseJson() {
+func (c *AppConfig) parseJSON() {
 	configFile, err := os.Open(c.ConfigPath)
-	defer configFile.Close()
+	defer func() {
+		cErr := configFile.Close()
+		if cErr != nil {
+			log.Fatal("failed to close file")
+		}
+	}()
 	if err != nil {
 		logger.Log.Info("failed to read json config")
 	}

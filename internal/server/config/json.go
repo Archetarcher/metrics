@@ -7,9 +7,14 @@ import (
 	"os"
 )
 
-func (c *AppConfig) parseJson() {
+func (c *AppConfig) parseJSON() {
 	configFile, err := os.Open(c.ConfigPath)
-	defer configFile.Close()
+	defer func() {
+		cErr := configFile.Close()
+		if cErr != nil {
+			log.Fatal("failed to close file")
+		}
+	}()
 	if err != nil {
 		log.Fatal(err)
 	}
