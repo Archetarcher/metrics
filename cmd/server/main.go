@@ -3,9 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
-	"log"
-
 	"github.com/Archetarcher/metrics.git/internal/server/api/rest"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
@@ -13,6 +10,8 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
+	"go.uber.org/zap"
+	"log"
 	_ "net/http/pprof"
 )
 
@@ -57,10 +56,7 @@ func main() {
 		logger.Log.Error("failed to init api with error, finishing app", zap.String("error", err.Text), zap.Int("code", err.Code))
 		return
 	}
-
-	if err := api.Run(c); err != nil {
-		logger.Log.Error("failed with error", zap.String("error", err.Text), zap.Int("code", err.Code))
-	}
+	api.Run(c)
 }
 
 func printBuildData() {

@@ -1,13 +1,19 @@
 package rest
 
 import (
+	"context"
+	"errors"
 	"github.com/Archetarcher/metrics.git/internal/server/encryption"
 	"github.com/Archetarcher/metrics.git/internal/server/middlewares"
-	"net/http"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
@@ -52,15 +58,32 @@ func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (
 }
 
 // Run starts serving application.
-func (a MetricsAPI) Run(config *config.AppConfig) *domain.MetricsError {
+func (a MetricsAPI) Run(config *config.AppConfig) {
 
 	logger.Log.Info("Running server ", zap.String("address", config.RunAddr))
-	err := http.ListenAndServe(config.RunAddr, a.router)
-	if err != nil {
-		return &domain.MetricsError{
-			Text: err.Error(),
-			Code: http.StatusInternalServerError,
-		}
+
+	server := &http.Server{Addr: config.RunAddr, Handler: a.router}
+	configShutdown(server)
+
+	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		log.Fatal("failed to start server")
 	}
-	return nil
+}
+
+func configShutdown(srv *http.Server) {
+	idleConnsClosed := make(chan struct{})
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	go func() {
+		<-sigint
+		logger.Log.Info("got interruption signal")
+		time.Sleep(time.Duration(10) * time.Second)
+
+		if err := srv.Shutdown(context.Background()); err != nil {
+			logger.Log.Info("HTTP server Shutdown: ", zap.Error(err))
+		}
+		close(idleConnsClosed)
+	}()
+
 }

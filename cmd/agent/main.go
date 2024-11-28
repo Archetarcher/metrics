@@ -25,7 +25,6 @@ func main() {
 	conf.ParseConfig()
 	client := resty.New()
 
-	fmt.Println(conf.Session.RetryConn)
 	eErr := encryption.StartSession(conf, client, conf.Session.RetryConn)
 	if eErr != nil {
 		logger.Log.Error("failed to start secure session", zap.String("error", eErr.Text), zap.Int("code", eErr.Code))

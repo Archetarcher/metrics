@@ -1,8 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"go.uber.org/zap"
@@ -39,19 +43,29 @@ func (h *TrackingHandler) TrackMetrics() *domain.TrackingError {
 	}
 	logger.Log.Info("start tracking")
 
+	ctx, cancelFunc := context.WithCancel(context.Background())
+
 	var wg sync.WaitGroup
 	wg.Add(1)
 
 	metricsData := make(chan domain.MetricsData, h.Config.RateLimit)
 
 	for w := 1; w <= h.Config.RateLimit; w++ {
-		go reportWorker(h.Send, metricsData, h.Config.ReportInterval)
+		go reportWorker(h.Send, metricsData, h.Config.ReportInterval, w)
 	}
-	go startRuntimePoll(h.FetchRuntime, &wg, h.Config.PollInterval, metricsData)
-	go startMemoryPoll(h.FetchMemory, &wg, h.Config.PollInterval, metricsData)
+	go startRuntimePoll(h.FetchRuntime, &wg, h.Config.PollInterval, metricsData, ctx)
+	go startMemoryPoll(h.FetchMemory, &wg, h.Config.PollInterval, metricsData, ctx)
 
 	logger.Log.Info("Waiting for goroutines to finish...")
 
+	sigint := make(chan os.Signal)
+	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	<-sigint
+
+	logger.Log.Info("Shutdown signal received")
+
+	cancelFunc()
 	wg.Wait()
 	logger.Log.Info("Done!")
 
@@ -62,11 +76,13 @@ type fetchMemory func() (*domain.MetricsData, *domain.TrackingError)
 type fetchRuntime func(counterInterval int64) (*domain.MetricsData, *domain.TrackingError)
 type send func(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
 
-func reportWorker(send send, metricsData <-chan domain.MetricsData, interval int) {
+func reportWorker(send send, metricsData <-chan domain.MetricsData, interval int, index int) {
 	reportInterval := time.Duration(interval) * time.Second
 	logger.Log.Info("starting report")
 
 	for d := range metricsData {
+		logger.Log.Info("Worker started metric ", zap.Int("worker_id", index))
+
 		vals := maps.Values(d)
 		_, err := send(vals)
 		if err != nil {
@@ -74,46 +90,59 @@ func reportWorker(send send, metricsData <-chan domain.MetricsData, interval int
 
 			retry(1, 3, vals, send)
 		}
-		logger.Log.Info("send data and sleep")
+		logger.Log.Info("Worker finished processing ", zap.Int("worker_id", index))
 
 		time.Sleep(reportInterval)
 	}
 }
 
-func startRuntimePoll(fetch fetchRuntime, wg *sync.WaitGroup, interval int, pollData chan<- domain.MetricsData) {
+func startRuntimePoll(fetch fetchRuntime, wg *sync.WaitGroup, interval int, pollData chan<- domain.MetricsData, ctx context.Context) {
 	defer wg.Done()
 	pollInterval := time.Duration(interval) * time.Second
 	counterInterval := int64(1)
 	logger.Log.Info("starting runtime poll")
 	for {
-		metrics, err := fetch(counterInterval)
-		if err != nil {
-			logger.Log.Info(err.Text)
+		select {
+		case <-ctx.Done():
+			close(pollData)
+			return
+		default:
+			metrics, err := fetch(counterInterval)
+			if err != nil {
+				logger.Log.Info(err.Text)
+			}
+
+			pollData <- *metrics
+
+			counterInterval++
+
+			time.Sleep(pollInterval)
 		}
 
-		pollData <- *metrics
-
-		counterInterval++
-
-		time.Sleep(pollInterval)
 	}
 }
-func startMemoryPoll(fetch fetchMemory, wg *sync.WaitGroup, interval int, pollData chan<- domain.MetricsData) {
+func startMemoryPoll(fetch fetchMemory, wg *sync.WaitGroup, interval int, pollData chan<- domain.MetricsData, ctx context.Context) {
 	defer wg.Done()
 	pollInterval := time.Duration(interval) * time.Second
 	counterInterval := int64(1)
 	logger.Log.Info("starting memory poll")
 	for {
-		metrics, err := fetch()
-		if err != nil {
-			logger.Log.Info(err.Text)
+		select {
+		case <-ctx.Done():
+			close(pollData)
+			return
+		default:
+			metrics, err := fetch()
+			if err != nil {
+				logger.Log.Info(err.Text)
+			}
+
+			pollData <- *metrics
+
+			counterInterval++
+
+			time.Sleep(pollInterval)
 		}
-
-		pollData <- *metrics
-
-		counterInterval++
-
-		time.Sleep(pollInterval)
 	}
 }
 

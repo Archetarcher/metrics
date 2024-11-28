@@ -23,7 +23,7 @@ server-build-platforms:
 	cd cmd/server && GOARCH=amd64 GOOS=windows go build -o ${SERVER_BINARY_NAME}-windows main.go
 
 server-run: server-build
-	./cmd/server/${SERVER_BINARY_NAME}
+	./cmd/server/${SERVER_BINARY_NAME} -d=postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable
 
 
 test:
