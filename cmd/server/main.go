@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
-	"log"
-
+	"fmt"
 	"go.uber.org/zap"
+	"log"
 
 	"github.com/Archetarcher/metrics.git/internal/server/api/rest"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
@@ -19,7 +19,15 @@ import (
 	_ "net/http/pprof"
 )
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
+	printBuildData()
+
 	c := config.NewConfig(store.Config{Memory: &memory.Config{}, Pgx: &pgx.Config{}})
 	c.ParseConfig()
 
@@ -28,12 +36,12 @@ func main() {
 	}
 	ctx := context.Background()
 
-	storage, err := store.NewStore(c.Store, ctx)
+	storage, err := store.NewStore(ctx, c.Store)
 
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Error(err.Err))
 
-		ns, e := store.Retry(err, 1, 3, c.Store, ctx)
+		ns, e := store.Retry(ctx, err, 1, 3, c.Store)
 
 		if e != nil {
 			logger.Log.Error("failed to retry init storage with error, finishing app", zap.String("error", e.Text), zap.Error(e.Err))
@@ -56,4 +64,10 @@ func main() {
 	if err := api.Run(c); err != nil {
 		logger.Log.Error("failed with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 	}
+}
+
+func printBuildData() {
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
 }

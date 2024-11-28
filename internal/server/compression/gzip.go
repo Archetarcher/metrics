@@ -2,6 +2,8 @@ package compression
 
 import (
 	"compress/gzip"
+	"github.com/Archetarcher/metrics.git/internal/server/logger"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"strings"
@@ -84,7 +86,13 @@ func GzipMiddleware(next http.Handler) http.Handler {
 		if supportsGzip {
 			cw := newCompressWriter(rw)
 			ow = cw
-			defer cw.Close()
+			defer func() {
+				err := cw.Close()
+				if err != nil {
+					logger.Log.Error("failed to close compress writer", zap.Error(err))
+
+				}
+			}()
 			ow.Header().Set("Content-Encoding", "gzip")
 		}
 
@@ -98,7 +106,12 @@ func GzipMiddleware(next http.Handler) http.Handler {
 				return
 			}
 			r.Body = cr
-			defer cr.Close()
+			defer func() {
+				cErr := cr.Close()
+				if cErr != nil {
+					logger.Log.Error("failed to close compress reader", zap.Error(err))
+				}
+			}()
 		}
 		next.ServeHTTP(ow, r.WithContext(r.Context()))
 

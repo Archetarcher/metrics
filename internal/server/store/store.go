@@ -12,31 +12,31 @@ const emptyParam = ""
 
 // Store is interface that describes interaction with storage layer
 type Store interface {
-	GetValuesIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
+	GetValuesIn(ctx context.Context, keys []string) ([]domain.Metrics, *domain.MetricsError)
 	GetValues(ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
-	GetValue(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError)
-	SetValue(request *domain.Metrics, ctx context.Context) *domain.MetricsError
-	SetValues(request []domain.Metrics, ctx context.Context) *domain.MetricsError
+	GetValue(ctx context.Context, request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
+	SetValue(ctx context.Context, request *domain.Metrics) *domain.MetricsError
+	SetValues(ctx context.Context, request []domain.Metrics) *domain.MetricsError
 	CheckConnection(ctx context.Context) *domain.MetricsError
 	Close()
 }
 
 // NewStore additional function to initiate Store instance according to factory pattern
-func NewStore(conf Config, ctx context.Context) (Store, *domain.MetricsError) {
+func NewStore(ctx context.Context, conf Config) (Store, *domain.MetricsError) {
 
 	if conf.Pgx.DatabaseDsn != emptyParam {
-		return pgx.NewStore(conf.Pgx, ctx)
+		return pgx.NewStore(ctx, conf.Pgx)
 	}
 
-	return memory.NewStore(conf.Memory, ctx)
+	return memory.NewStore(ctx, conf.Memory)
 
 }
 
 // Retry retries connection to storage
-func Retry(error *domain.MetricsError, interval int, try int, conf Config, ctx context.Context) (Store, *domain.MetricsError) {
+func Retry(ctx context.Context, error *domain.MetricsError, interval int, try int, conf Config) (Store, *domain.MetricsError) {
 	if conf.Pgx.DatabaseDsn != emptyParam {
-		return pgx.RetryConnection(error, interval, try, conf.Pgx, ctx)
+		return pgx.RetryConnection(ctx, error, interval, try, conf.Pgx)
 	}
 
-	return memory.RetryConnection(error, interval, try, conf.Memory, ctx)
+	return memory.RetryConnection(ctx, error, interval, try, conf.Memory)
 }

@@ -20,10 +20,10 @@ import (
 var conf Config
 
 type Config struct {
-	once sync.Once
 	c    *config.AppConfig
 	repo *MetricRepository
 	err  error
+	once sync.Once
 }
 
 func (c *Config) setConfig() {
@@ -43,7 +43,7 @@ func init() {
 func setup() (*MetricRepository, error) {
 	ctx := context.Background()
 
-	storage, err := store.NewStore(conf.c.Store, ctx)
+	storage, err := store.NewStore(ctx, conf.c.Store)
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 		return nil, err.Err
@@ -117,8 +117,8 @@ func TestMetricRepository_Set(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
 		args    args
+		name    string
 		wantErr bool
 	}{
 		{
@@ -131,7 +131,7 @@ func TestMetricRepository_Set(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := conf.repo.Set(tt.args.request, ctx)
+			err := conf.repo.Set(ctx, tt.args.request)
 
 			assert.Equal(t, tt.wantErr, err != nil)
 		})
@@ -145,9 +145,9 @@ func TestMetricRepository_Get(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		args    args
 		want    *domain.Metrics
+		args    args
+		name    string
 		wantErr bool
 	}{
 		{
@@ -160,7 +160,7 @@ func TestMetricRepository_Get(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := conf.repo.Get(tt.args.request, ctx)
+			_, err := conf.repo.Get(ctx, tt.args.request)
 
 			assert.Equal(t, tt.wantErr, err != nil)
 
@@ -171,13 +171,12 @@ func TestMetricRepository_GetAll(t *testing.T) {
 	require.NoError(t, conf.err, "failed to init repo", conf.repo, conf.err)
 
 	type args struct {
-		request *domain.Metrics
 	}
 
 	tests := []struct {
-		name    string
-		args    args
 		want    *domain.Metrics
+		args    args
+		name    string
 		wantErr bool
 	}{
 		{
@@ -190,6 +189,33 @@ func TestMetricRepository_GetAll(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := conf.repo.GetAll(ctx)
+
+			assert.Equal(t, tt.wantErr, err != nil)
+
+		})
+	}
+}
+
+func TestMetricRepository_GetAllIn(t *testing.T) {
+	require.NoError(t, conf.err, "failed to init repo", conf.repo, conf.err)
+
+	tests := []struct {
+		want    *domain.Metrics
+		args    []string
+		name    string
+		wantErr bool
+	}{
+		{
+			name:    "positive test #1",
+			wantErr: false,
+			args:    []string{values[0].ID + values[0].MType},
+		},
+	}
+	ctx := context.Background()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := conf.repo.GetAllIn(ctx, tt.args)
 
 			assert.Equal(t, tt.wantErr, err != nil)
 
@@ -219,9 +245,26 @@ func TestMetricRepository_SetAll(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := conf.repo.SetAll(tt.args.request, ctx)
+			err := conf.repo.SetAll(ctx, tt.args.request)
 
 			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}
+}
+func TestMetricRepository_CheckConnection(t *testing.T) {
+	require.NoError(t, conf.err, "failed to init service", conf.repo, conf.err)
+
+	t.Run("test check connection", func(t *testing.T) {
+		ctx := context.Background()
+		err := conf.repo.CheckConnection(ctx)
+		assert.Nil(t, err, "CheckConnection(%v)")
+	})
+}
+
+func TestNewMetricsRepository(t *testing.T) {
+
+	t.Run("positive test", func(t *testing.T) {
+		m := NewMetricsRepository(&pgx.Store{})
+		assert.NotNil(t, m)
+	})
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
 
@@ -10,7 +11,15 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 )
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
+	printBuildData()
+
 	c := config.NewConfig()
 	c.ParseConfig()
 	service := &services.TrackingService{Client: resty.New(), Config: c}
@@ -19,4 +28,10 @@ func main() {
 	if err != nil {
 		logger.Log.Error("failed with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 	}
+}
+
+func printBuildData() {
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
 }

@@ -16,11 +16,11 @@ type MetricsService struct {
 
 // MetricRepository is an interface that describes interaction with repository layer
 type MetricRepository interface {
-	GetAllIn(keys []string, ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
+	GetAllIn(ctx context.Context, keys []string) ([]domain.Metrics, *domain.MetricsError)
 	GetAll(ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
-	Get(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError)
-	Set(request *domain.Metrics, ctx context.Context) *domain.MetricsError
-	SetAll(request []domain.Metrics, ctx context.Context) *domain.MetricsError
+	Get(ctx context.Context, request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
+	Set(ctx context.Context, request *domain.Metrics) *domain.MetricsError
+	SetAll(ctx context.Context, request []domain.Metrics) *domain.MetricsError
 	CheckConnection(ctx context.Context) *domain.MetricsError
 }
 
@@ -44,7 +44,7 @@ func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) 
 		}
 	}
 
-	metricsByKey, err := s.repo.GetAllIn(keys, ctx)
+	metricsByKey, err := s.repo.GetAllIn(ctx, keys)
 	if err != nil {
 		return nil, err
 	}
@@ -71,10 +71,10 @@ func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) 
 		}
 	}
 
-	if err := s.repo.SetAll(request, ctx); err != nil {
-		return nil, err
+	if rErr := s.repo.SetAll(ctx, request); rErr != nil {
+		return nil, rErr
 	}
-	response, err := s.repo.GetAllIn(keys, ctx)
+	response, err := s.repo.GetAllIn(ctx, keys)
 
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) 
 
 // Update creates or updates metric data
 func (s *MetricsService) Update(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
-	response, err := s.repo.Get(request, ctx)
+	response, err := s.repo.Get(ctx, request)
 	if err != nil {
 		return nil, err
 	}
@@ -94,11 +94,11 @@ func (s *MetricsService) Update(request *domain.Metrics, ctx context.Context) (*
 		request.Delta = &c
 	}
 
-	if err := s.repo.Set(request, ctx); err != nil {
-		return nil, err
+	if rErr := s.repo.Set(ctx, request); rErr != nil {
+		return nil, rErr
 	}
 
-	response, err = s.repo.Get(request, ctx)
+	response, err = s.repo.Get(ctx, request)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (s *MetricsService) Update(request *domain.Metrics, ctx context.Context) (*
 // GetValue fetches metric data by ID and MType in domain.Metrics
 func (s *MetricsService) GetValue(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
 
-	response, err := s.repo.Get(request, ctx)
+	response, err := s.repo.Get(ctx, request)
 	if err != nil {
 		return nil, err
 	}
