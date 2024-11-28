@@ -42,6 +42,7 @@ func RequestDecryptMiddleware(next http.Handler, config *config.AppConfig) http.
 	})
 }
 
+// DecryptSymmetric is a function that uses symmetric decryption to the given slice of bytes
 func DecryptSymmetric(ciphertext []byte, key string) []byte {
 	block, err := aes.NewCipher([]byte(key))
 	if err != nil {
@@ -64,6 +65,7 @@ func DecryptSymmetric(ciphertext []byte, key string) []byte {
 	return plaintext
 }
 
+// DecryptAsymmetric is a function that uses asymmetric decryption to the given slice of bytes
 func DecryptAsymmetric(ciphertext []byte, path string) ([]byte, error) {
 	privateKeyPEM, err := os.ReadFile(path)
 	if err != nil {

@@ -56,20 +56,7 @@ func StartSession(config *config.AppConfig, client *resty.Client, retryCount int
 	return nil
 }
 
-func genKey(n int) ([]byte, error) {
-	rnd := make([]byte, n)
-	nrnd, err := rand.Read(rnd)
-	if err != nil {
-		return nil, err
-	} else if nrnd != n {
-		return nil, fmt.Errorf(`nrnd %d != n %d`, nrnd, n)
-	}
-	for i := range rnd {
-		rnd[i] = 'A' + rnd[i]%26
-	}
-	return rnd, nil
-}
-
+// EncryptAsymmetric is a function that uses asymmetric encryption to the given slice of bytes
 func EncryptAsymmetric(js []byte, path string) []byte {
 
 	publicKeyPEM, err := os.ReadFile(path)
@@ -90,6 +77,7 @@ func EncryptAsymmetric(js []byte, path string) []byte {
 	return ciphertext
 }
 
+// EncryptSymmetric is a function that uses symmetric encryption to the given slice of bytes
 func EncryptSymmetric(plaintext []byte, key string) []byte {
 	block, err := aes.NewCipher([]byte(key))
 	if err != nil {
@@ -112,4 +100,17 @@ func EncryptSymmetric(plaintext []byte, key string) []byte {
 	ciphertext := gcm.Seal(nil, nonce, plaintext, nil)
 	ciphertext = append(ciphertext, nonce...)
 	return ciphertext
+}
+func genKey(n int) ([]byte, error) {
+	rnd := make([]byte, n)
+	nrnd, err := rand.Read(rnd)
+	if err != nil {
+		return nil, err
+	} else if nrnd != n {
+		return nil, fmt.Errorf(`nrnd %d != n %d`, nrnd, n)
+	}
+	for i := range rnd {
+		rnd[i] = 'A' + rnd[i]%26
+	}
+	return rnd, nil
 }
