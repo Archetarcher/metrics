@@ -2,26 +2,29 @@ package config
 
 import (
 	"sync"
-
-	"github.com/Archetarcher/metrics.git/internal/server/store"
 )
 
 // AppConfig keeps configurations of application.
 type AppConfig struct {
-	Store          store.Config
-	RunAddr        string
-	Key            string
-	Session        string
-	LogLevel       string
-	PrivateKeyPath string
-	mux            sync.Mutex
+	RunAddr         string `json:"address"`
+	Key             string
+	Session         string
+	LogLevel        string
+	MigrationsPath  string
+	PrivateKeyPath  string `json:"crypto_key"`
+	FileStoragePath string `json:"store_file"`
+	DatabaseDsn     string `json:"database_dsn"`
+	StoreInterval   int    `json:"store_interval"`
+	ConfigPath      string
+	Restore         bool `json:"restore"`
+
+	mux sync.Mutex
 }
 
 // NewConfig creates new configuration.
-func NewConfig(store store.Config) *AppConfig {
+func NewConfig() *AppConfig {
 	c := AppConfig{
-		mux:   sync.Mutex{},
-		Store: store,
+		mux: sync.Mutex{},
 	}
 	c.initFlags()
 
@@ -32,4 +35,5 @@ func NewConfig(store store.Config) *AppConfig {
 func (c *AppConfig) ParseConfig() {
 	c.parseFlags()
 	c.parseEnv()
+	c.parseJson()
 }

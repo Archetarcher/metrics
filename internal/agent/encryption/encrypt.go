@@ -18,6 +18,8 @@ import (
 	"time"
 )
 
+// StartSession generates 16 bit key, encrypts it asymmetrically and sends to server.
+// Saves key value to the config
 func StartSession(config *config.AppConfig, client *resty.Client, retryCount int) *domain.TrackingError {
 	url := "http://" + config.ServerRunAddr + "/session/"
 

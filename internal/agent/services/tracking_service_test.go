@@ -11,8 +11,6 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
-	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
-	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/require"
@@ -138,7 +136,7 @@ type Config struct {
 
 func (c *Config) setConfig() {
 	c.once.Do(func() {
-		c.c = config2.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx: &pgx.Config{}})
+		c.c = config2.NewConfig()
 
 		server, err := setupConfigServer()
 
@@ -149,7 +147,7 @@ func (c *Config) setConfig() {
 func setupConfigServer() (*httptest.Server, error) {
 	ctx := context.Background()
 
-	storage, err := store.NewStore(ctx, conf.c.Store)
+	storage, err := store.NewStore(ctx, conf.c)
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 		return nil, err.Err

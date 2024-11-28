@@ -13,6 +13,7 @@ const (
 	flagRateLimitName      = "rl"
 	flagPublicKeyPathName  = "crypto-key"
 	flagSessionRetryConn   = "rc"
+	flagConfigPathName     = "c config"
 )
 
 func (c *AppConfig) initFlags() {
@@ -22,8 +23,11 @@ func (c *AppConfig) initFlags() {
 	flag.StringVar(&c.LogLevel, flagLogLevelName, "info", "log level")
 	flag.StringVar(&c.Key, flagKeyName, "", "key")
 	flag.StringVar(&c.PublicKeyPath, flagPublicKeyPathName, "public.pem", "crypto-key")
+	flag.StringVar(&c.ConfigPath, flagConfigPathName, "agent-config.json", "config file")
+
 	flag.IntVar(&c.Session.RetryConn, flagSessionRetryConn, 5, "connection retry count")
 	flag.IntVar(&c.RateLimit, flagRateLimitName, 3, "rate limit")
+
 }
 
 func (c *AppConfig) parseFlags() {

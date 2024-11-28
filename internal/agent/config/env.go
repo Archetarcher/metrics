@@ -13,6 +13,7 @@ const (
 	envKeyName            = "KEY"
 	envRateLimitName      = "RATE_LIMIT"
 	envPublicKeyPathName  = "CRYPTO_KEY"
+	envConfigPathName     = "CONFIG"
 )
 
 func (c *AppConfig) parseEnv() {
@@ -23,6 +24,7 @@ func (c *AppConfig) parseEnv() {
 	c.Key = getEnvOrDefault(envKeyName, c.Key, 1).(string)
 	c.RateLimit = getEnvOrDefault(envRateLimitName, c.RateLimit, 2).(int)
 	c.PublicKeyPath = getEnvOrDefault(envPublicKeyPathName, c.PublicKeyPath, 1).(string)
+	c.ConfigPath = getEnvOrDefault(envConfigPathName, c.ConfigPath, 1).(string)
 }
 
 func getEnvOrDefault(env string, def any, t int) any {

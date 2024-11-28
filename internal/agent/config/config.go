@@ -2,16 +2,18 @@ package config
 
 // AppConfig keeps configurations of application.
 type AppConfig struct {
-	ServerRunAddr  string
+	ServerRunAddr  string `json:"address"`
 	LogLevel       string
 	Key            string
-	PublicKeyPath  string
+	PublicKeyPath  string `json:"crypto_key"`
+	ConfigPath     string
 	Session        Session
-	ReportInterval int
-	PollInterval   int
+	ReportInterval int `json:"report_interval"`
+	PollInterval   int `json:"poll_interval"`
 	RateLimit      int
 }
 
+// Session keeps session data
 type Session struct {
 	Key       string
 	RetryConn int

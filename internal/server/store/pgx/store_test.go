@@ -2,6 +2,7 @@ package pgx
 
 import (
 	"context"
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,7 @@ import (
 var conf TConfig
 
 type TConfig struct {
-	c     *Config
+	c     *config.AppConfig
 	store *Store
 	err   *domain.MetricsError
 	once  sync.Once
@@ -20,7 +21,7 @@ type TConfig struct {
 
 func (c *TConfig) setConfig() {
 	c.once.Do(func() {
-		c.c = &Config{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"}
+		c.c = &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"}
 
 		s, err := NewStore(context.Background(), c.c)
 
@@ -89,7 +90,7 @@ var (
 
 func TestNewStore(t *testing.T) {
 	t.Run("positive test", func(t *testing.T) {
-		s, err := NewStore(context.Background(), &Config{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"})
+		s, err := NewStore(context.Background(), &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"})
 		assert.NotNil(t, s)
 		assert.Nil(t, err)
 	})
@@ -97,7 +98,7 @@ func TestNewStore(t *testing.T) {
 
 func TestRetryConnection(t *testing.T) {
 	t.Run("positive test", func(t *testing.T) {
-		s, err := RetryConnection(context.Background(), &domain.MetricsError{}, 3, 3, &Config{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"})
+		s, err := RetryConnection(context.Background(), &domain.MetricsError{}, 3, 3, &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"})
 		assert.Nil(t, s)
 		assert.NotNil(t, err)
 	})
