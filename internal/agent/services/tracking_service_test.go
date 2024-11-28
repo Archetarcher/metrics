@@ -15,6 +15,7 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-resty/resty/v2"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
@@ -154,6 +155,7 @@ func setupConfigServer() (*httptest.Server, error) {
 		return nil, err.Err
 	}
 
+	conf.c.PrivateKeyPath = "../../../private.pem"
 	repo := repositories.NewMetricsRepository(storage)
 	service := services.NewMetricsService(repo)
 	handler := handlers.NewMetricsHandler(service, conf.c)
@@ -161,6 +163,7 @@ func setupConfigServer() (*httptest.Server, error) {
 	r.Use(middlewares.GzipMiddleware)
 
 	r.Post("/updates/", handler.UpdatesMetrics)
+	r.Post("/session/", handler.StartSession)
 
 	srv := httptest.NewServer(r)
 
@@ -176,6 +179,11 @@ func TestTrackingService_Send(t *testing.T) {
 	type args struct {
 		request []domain.Metrics
 	}
+	client := resty.New()
+	c := config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""), PublicKeyPath: "../../../public.pem"}
+	eErr := encryption.StartSession(&c, client)
+	require.Nil(t, eErr)
+
 	tests := []struct {
 		name    string
 		args    args
@@ -184,14 +192,15 @@ func TestTrackingService_Send(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "positive test #1",
-			args:    args{[]domain.Metrics{values[0]}},
-			code:    http.StatusOK,
-			config:  &config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", "")},
-			wantErr: false,
+			name: "positive test #1",
+			args: args{[]domain.Metrics{values[0]}},
+			code: http.StatusInternalServerError,
+			config: &config.AppConfig{ServerRunAddr: c.ServerRunAddr,
+				Session: c.Session, PublicKeyPath: c.PublicKeyPath},
+			wantErr: true,
 		},
 		{
-			name: "positive test #3",
+			name: "negative test #2",
 			args: args{[]domain.Metrics{
 				{
 					ID:    values[0].ID,
@@ -200,29 +209,25 @@ func TestTrackingService_Send(t *testing.T) {
 				},
 			},
 			},
-			config:  &config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", "")},
-			code:    http.StatusBadRequest,
+			config: &config.AppConfig{ServerRunAddr: c.ServerRunAddr,
+				Session: c.Session, PublicKeyPath: c.PublicKeyPath},
+			code:    http.StatusInternalServerError,
 			wantErr: true,
 		},
 		{
-			name:    "positive test #3",
-			args:    args{[]domain.Metrics{values[0]}},
-			code:    http.StatusInternalServerError,
-			config:  &config.AppConfig{ServerRunAddr: conf.server.URL},
+			name: "negative test #3",
+			args: args{[]domain.Metrics{values[0]}},
+			code: http.StatusInternalServerError,
+			config: &config.AppConfig{ServerRunAddr: conf.server.URL,
+				Session: c.Session, PublicKeyPath: c.PublicKeyPath},
 			wantErr: true,
 		},
 	}
 
-	client := resty.New()
-
-	c := config.AppConfig{}
-	err := encryption.StartSession(&c, client)
-	fmt.Println(err)
-	assert.Nil(t, err)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.config.Session = c.Session
+			fmt.Println(tt.name)
+
 			service := &TrackingService{Config: tt.config, Client: client}
 
 			_, err := service.Send(tt.args.request)

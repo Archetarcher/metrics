@@ -23,6 +23,7 @@ func RequestDecryptMiddleware(next http.Handler, config *config.AppConfig) http.
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 
 		enc := r.Header.Get("Encrypted")
+		rw.Header().Set("session", config.Session)
 
 		if config.PrivateKeyPath != emptyParam && enc != emptyParam {
 

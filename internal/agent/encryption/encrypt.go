@@ -15,13 +15,14 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"os"
+	"time"
 )
 
-func StartSession(config *config.AppConfig, client *resty.Client) *domain.TrackingError {
+func StartSession(config *config.AppConfig, client *resty.Client, retryCount int) *domain.TrackingError {
 	url := "http://" + config.ServerRunAddr + "/session/"
 
-	key, err := genKey(16)
-	if err != nil {
+	key, gErr := genKey(16)
+	if gErr != nil {
 		return &domain.TrackingError{Code: http.StatusInternalServerError, Text: "failed to generate crypto key"}
 	}
 	encryptedKey := EncryptAsymmetric(key, config.PublicKeyPath)
@@ -30,14 +31,27 @@ func StartSession(config *config.AppConfig, client *resty.Client) *domain.Tracki
 		R().
 		SetBody(domain.SessionRequest{Key: encryptedKey}).
 		Post(url)
+
+	if err != nil && retryCount > 0 {
+		time.Sleep(time.Duration(config.ReportInterval) * time.Second)
+		return StartSession(config, client, retryCount-1)
+	}
+
 	if err != nil {
 		return &domain.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err.Error()), Code: http.StatusInternalServerError}
 	}
 
-	if res.StatusCode() != http.StatusOK {
-		return &domain.TrackingError{Text: fmt.Sprintf("client: responded with error: %s\n, %s", err, url), Code: res.StatusCode()}
+	if res.StatusCode() != http.StatusOK && retryCount > 0 {
+		time.Sleep(time.Duration(config.ReportInterval) * time.Second)
+
+		return StartSession(config, client, retryCount-1)
 	}
-	config.Session = string(key)
+
+	if res.StatusCode() != http.StatusOK {
+		return &domain.TrackingError{Text: fmt.Sprintf("client: responded with error creating session: %s\n, %s, %s", err, url, string(key)), Code: res.StatusCode()}
+	}
+
+	config.Session.Key = string(key)
 
 	return nil
 }
@@ -57,6 +71,7 @@ func genKey(n int) ([]byte, error) {
 }
 
 func EncryptAsymmetric(js []byte, path string) []byte {
+
 	publicKeyPEM, err := os.ReadFile(path)
 	if err != nil {
 		logger.Log.Info("error encryption", zap.Error(err))
@@ -72,7 +87,6 @@ func EncryptAsymmetric(js []byte, path string) []byte {
 	if err != nil {
 		logger.Log.Info("error encryption", zap.Error(err))
 	}
-
 	return ciphertext
 }
 

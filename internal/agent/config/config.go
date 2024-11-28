@@ -6,10 +6,15 @@ type AppConfig struct {
 	LogLevel       string
 	Key            string
 	PublicKeyPath  string
-	Session        string
+	Session        Session
 	ReportInterval int
 	PollInterval   int
 	RateLimit      int
+}
+
+type Session struct {
+	Key       string
+	RetryConn int
 }
 
 // NewConfig creates new configuration.

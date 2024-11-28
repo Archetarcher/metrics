@@ -37,7 +37,7 @@ func GzipMiddleware(c *resty.Client, req *resty.Request, config *config.AppConfi
 		//req.SetBody(compressed)
 
 		// encryption
-		encrypted := encryption.EncryptSymmetric(compressed, config.Session)
+		encrypted := encryption.EncryptSymmetric(compressed, config.Session.Key)
 
 		req.Header.Set(
 			"Encrypted", "1")
