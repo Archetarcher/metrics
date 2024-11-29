@@ -288,3 +288,42 @@ func Test_getKey(t *testing.T) {
 		})
 	}
 }
+
+func Test_runMigrations(t *testing.T) {
+	require.Nil(t, conf.err, "failed to init store", conf.store, conf.err)
+
+	type args struct {
+		conf *config.AppConfig
+	}
+
+	tests := []struct {
+		want    *domain.Metrics
+		args    args
+		name    string
+		wantErr bool
+	}{
+		{
+			name:    "positive test #1",
+			args:    args{conf: conf.c},
+			wantErr: false,
+		},
+		{
+			name:    "negative test #2",
+			args:    args{conf: &config.AppConfig{DatabaseDsn: conf.c.DatabaseDsn, MigrationsPath: ""}},
+			wantErr: true,
+		},
+		{
+			name:    "negative test #3",
+			args:    args{conf: &config.AppConfig{MigrationsPath: conf.c.MigrationsPath, DatabaseDsn: "postgre://postgres:postgres@localhost:5432/praktikum?sslmode=disable"}},
+			wantErr: true,
+		},
+	}
+	ctx := context.Background()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cErr := runMigrations(ctx, tt.args.conf)
+			assert.Equal(t, tt.wantErr, cErr != nil)
+		})
+	}
+}

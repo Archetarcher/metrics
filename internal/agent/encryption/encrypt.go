@@ -27,7 +27,10 @@ func StartSession(config *config.AppConfig, client *resty.Client, retryCount int
 	if gErr != nil {
 		return &domain.TrackingError{Code: http.StatusInternalServerError, Text: "failed to generate crypto key"}
 	}
-	encryptedKey := EncryptAsymmetric(key, config.PublicKeyPath)
+	encryptedKey, eErr := EncryptAsymmetric(key, config.PublicKeyPath)
+	if eErr != nil {
+		return eErr
+	}
 
 	res, err := client.
 		R().
@@ -59,24 +62,25 @@ func StartSession(config *config.AppConfig, client *resty.Client, retryCount int
 }
 
 // EncryptAsymmetric is a function that uses asymmetric encryption to the given slice of bytes
-func EncryptAsymmetric(js []byte, path string) []byte {
+func EncryptAsymmetric(js []byte, path string) ([]byte, *domain.TrackingError) {
 
 	publicKeyPEM, err := os.ReadFile(path)
 	if err != nil {
 		logger.Log.Info("error encryption", zap.Error(err))
+		return nil, &domain.TrackingError{Text: err.Error(), Code: http.StatusInternalServerError}
 	}
 	publicKeyBlock, _ := pem.Decode(publicKeyPEM)
 
 	publicKey, err := x509.ParsePKIXPublicKey(publicKeyBlock.Bytes)
 	if err != nil {
-		logger.Log.Info("error encryption", zap.Error(err))
+		return nil, &domain.TrackingError{Text: err.Error(), Code: http.StatusInternalServerError}
 	}
 
 	ciphertext, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey.(*rsa.PublicKey), js)
 	if err != nil {
-		logger.Log.Info("error encryption", zap.Error(err))
+		return nil, &domain.TrackingError{Text: err.Error(), Code: http.StatusInternalServerError}
 	}
-	return ciphertext
+	return ciphertext, nil
 }
 
 // EncryptSymmetric is a function that uses symmetric encryption to the given slice of bytes

@@ -58,7 +58,7 @@ func (h *TrackingHandler) TrackMetrics() *domain.TrackingError {
 
 	logger.Log.Info("Waiting for goroutines to finish...")
 
-	sigint := make(chan os.Signal)
+	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	<-sigint

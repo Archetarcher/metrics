@@ -28,6 +28,7 @@ type MetricsAPI struct {
 
 // NewMetricsAPI registers routes, middlewares.
 func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (*MetricsAPI, *domain.MetricsError) {
+
 	r := chi.NewRouter()
 	r.Use(func(handler http.Handler) http.Handler {
 		return encryption.RequestDecryptMiddleware(handler, config)
