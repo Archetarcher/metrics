@@ -1,0 +1,340 @@
+{
+   "Alloc_gauge": {
+      "id": "Alloc",
+      "type": "gauge",
+      "value": 722000
+   },
+   "BuckHashSy_gauge": {
+      "id": "BuckHashSys",
+      "type": "gauge",
+      "vlue": 7680
+   },
+   "Frees_gauge": {
+      "id": "Frees",
+      "tpe": "gauge",
+      "value": 26
+   },
+   "GCCPUFraction_gauge": {
+      "id": "GCCPUFraction",
+      "type": "gauge",
+      "value": 0
+   },
+   "GCSys_gauge": {
+      "id": "GCSys",
+      "type": "gauge",
+      "value": 1770112
+   },
+   "GetSet106_counter": {
+      "id": "GetSet106",
+      "type": "counter",
+      "delta": 1036168334
+   },
+   "GetSet10_counter": {
+      "id": "GetSet10",
+      "type": "counter",
+      "delta": 2964329927
+   },
+   "GetSet120_gauge": {
+      "id": "GetSet120",
+      "type": "gauge",
+      "value": 767937.9288559443
+   },
+   "GetSet129_gauge": {
+      "id": "GetSet129",
+      "type": "gauge",
+      "value": 471931.95588242373
+   },
+   "GetSet13_counter": {
+      "id": "GetSet13",
+      "type": "counter",
+      "delta": 3152837608
+   },
+   "GetSet142_gauge": {
+      "id": "GetSet142",
+      "type": "gauge",
+      "value": 388184.9871971408
+   },
+   "GetSet146_gauge": {
+      "id": "GetSet146",
+      "type": "gauge",
+      "value": 7409.334785067115
+   },
+   "GetSet151_gauge": {
+      "id": "GetSet151",
+      "type": "gauge",
+      "value": 957791.3596586506
+   },
+   "GetSet156_gauge": {
+      "id": "GetSet156",
+      "type": "gauge",
+      "value": 855661.0302014565
+   },
+   "GetSet162_gauge": {
+      "id": "GetSet162",
+      "type": "gauge",
+      "value": 946981.9954315787
+   },
+   "GetSet163_counter": {
+      "id": "GetSet163",
+      "type": "counter",
+      "delta": 259344400
+   },
+   "GetSet165_counter": {
+      "id": "GetSet165",
+      "type": "counter",
+      "delta": 1488344279
+   },
+   "GetSet169_gauge": {
+      "id": "GetSet169",
+      "type": "gauge",
+      "value": 879380.2583174293
+   },
+   "GetSet172_gauge": {
+      "id": "GetSet172",
+      "type": "gauge",
+      "value": 628519.1577821922
+   },
+   "GetSet173_counter": {
+      "id": "GetSet173",
+      "type": "counter",
+      "delta": 2408900342
+   },
+   "GetSet174_counter": {
+      "id": "GetSet174",
+      "type": "counter",
+      "delta": 1727672642
+   },
+   "GetSet177_gauge": {
+      "id": "GetSet177",
+      "type": "gauge",
+      "value": 157190.1774881208
+   },
+   "GetSet179_gauge": {
+      "id": "GetSet179",
+      "type": "gauge",
+      "value": 990953.1656587246
+   },
+   "GetSet182_counter": {
+      "id": "GetSet182",
+      "type": "counter",
+      "delta": 2984412791
+   },
+   "GetSet18_counter": {
+      "id": "GetSet18",
+      "type": "counter",
+      "delta": 2477079084
+   },
+   "GetSet205_counter": {
+      "id": "GetSet205",
+      "type": "counter",
+      "delta": 1580393075
+   },
+   "GetSet20_counter": {
+      "id": "GetSet20",
+      "type": "counter",
+      "delta": 2350168112
+   },
+   "GetSet213_gauge": {
+      "id": "GetSet213",
+      "type": "gauge",
+      "value": 927523.2236225008
+   },
+   "GetSet219_gauge": {
+      "id": "GetSet219",
+      "type": "gauge",
+      "value": 494976.938076179
+   },
+   "GetSet226_gauge": {
+      "id": "GetSet226",
+      "type": "gauge",
+      "value": 485058.5402722263
+   },
+   "GetSet254_counter": {
+      "id": "GetSet254",
+      "type": "counter",
+      "delta": 2792674617
+   },
+   "GetSet26_gauge": {
+      "id": "GetSet26",
+      "type": "gauge",
+      "value": 216752.75640367888
+   },
+   "GetSet34_counter": {
+      "id": "GetSet34",
+      "type": "counter",
+      "delta": 1462850120
+   },
+   "GetSet3_gauge": {
+      "id": "GetSet3",
+      "type": "gauge",
+      "value": 729755.2033938259
+   },
+   "GetSet45_counter": {
+      "id": "GetSet45",
+      "type": "counter",
+      "delta": 3461635033
+   },
+   "GetSet46_gauge": {
+      "id": "GetSet46",
+      "type": "gauge",
+      "value": 395365.48801780783
+   },
+   "GetSet47_counter": {
+      "id": "GetSet47",
+      "type": "counter",
+      "delta": 2332726791
+   },
+   "GetSet49_counter": {
+      "id": "GetSet49",
+      "type": "counter",
+      "delta": 2427050095
+   },
+   "GetSet5_gauge": {
+      "id": "GetSet5",
+      "type": "gauge",
+      "value": 400075.7075203164
+   },
+   "GetSet60_counter": {
+      "id": "GetSet60",
+      "type": "counter",
+      "delta": 2377138545
+   },
+   "GetSet74_gauge": {
+      "id": "GetSet74",
+      "type": "gauge",
+      "value": 964020.7914509933
+   },
+   "GetSet83_gauge": {
+      "id": "GetSet83",
+      "type": "gauge",
+      "value": 412564.08949781116
+   },
+   "GetSet87_counter": {
+      "id": "GetSet87",
+      "type": "counter",
+      "delta": 3549146702
+   },
+   "HeapAlloc_gauge": {
+      "id": "HeapAlloc",
+      "type": "gauge",
+      "value": 722000
+   },
+   "HeapIdle_gauge": {
+      "id": "HeapIdle",
+      "type": "gauge",
+      "value": 2170880
+   },
+   "HeapInuse_gauge": {
+      "id": "HeapInuse",
+      "type": "gauge",
+      "value": 1597440
+   },
+   "HeapObjects_gauge": {
+      "id": "HeapObjects",
+      "type": "gauge",
+      "value": 671
+   },
+   "HeapReleased_gauge": {
+      "id": "HeapReleased",
+      "type": "gauge",
+      "value": 2170880
+   },
+   "HeapSys_gauge": {
+      "id": "HeapSys",
+      "type": "gauge",
+      "value": 3768320
+   },
+   "LastGC_gauge": {
+      "id": "LastGC",
+      "type": "gauge",
+      "value": 0
+   },
+   "Lookups_gauge": {
+      "id": "Lookups",
+      "type": "gauge",
+      "value": 0
+   },
+   "MCacheInuse_gauge": {
+      "id": "MCacheInuse",
+      "type": "gauge",
+      "value": 12000
+   },
+   "MCacheSys_gauge": {
+      "id": "MCacheSys",
+      "type": "gauge",
+      "value": 15600
+   },
+   "MSpanInuse_gauge": {
+      "id": "MSpanInuse",
+      "type": "gauge",
+      "value": 44160
+   },
+   "MSpanSys_gauge": {
+      "id": "MSpanSys",
+      "type": "gauge",
+      "value": 48960
+   },
+   "Mallocs_gauge": {
+      "id": "Mallocs",
+      "type": "gauge",
+      "value": 697
+   },
+   "NextGC_gauge": {
+      "id": "NextGC",
+      "type": "gauge",
+      "value": 4194304
+   },
+   "NumForcedGC_gauge": {
+      "id": "NumForcedGC",
+      "type": "gauge",
+      "value": 0
+   },
+   "NumGC_gauge": {
+      "id": "NumGC",
+      "type": "gauge",
+      "value": 0
+   },
+   "OtherSys_gauge": {
+      "id": "OtherSys",
+      "type": "gauge",
+      "value": 929632
+   },
+   "PauseTotalNs_gauge": {
+      "id": "PauseTotalNs",
+      "type": "gauge",
+      "value": 0
+   },
+   "PollCount_counter": {
+      "id": "PollCount",
+      "type": "counter",
+      "delta": 12
+   },
+   "RandomValue_gauge": {
+      "id": "RandomValue",
+      "type": "gauge",
+      "value": 1.0668995684887934
+   },
+   "StackInuse_gauge": {
+      "id": "StackInuse",
+      "type": "gauge",
+      "value": 425984
+   },
+   "StackSys_gauge": {
+      "id": "StackSys",
+      "type": "gauge",
+      "value": 425984
+   },
+   "Sys_gauge": {
+      "id": "Sys",
+      "type": "gauge",
+      "value": 6966288
+   },
+   "TotalAlloc_gauge": {
+      "id": "TotalAlloc",
+      "type": "gauge",
+      "value": 722000
+   },
+   "counter1_counter": {
+      "id": "counter1",
+      "type": "counter",
+      "delta": 560

@@ -50,7 +50,6 @@ func getEnvOrDefault(env string, def any, t int) any {
 	case 2:
 		if i, err := strconv.Atoi(val); err == nil {
 			return i
-
 		}
 		return def
 	case 3:

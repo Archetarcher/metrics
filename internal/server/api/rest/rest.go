@@ -8,7 +8,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -59,7 +58,7 @@ func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (
 }
 
 // Run starts serving application.
-func (a MetricsAPI) Run(config *config.AppConfig) {
+func (a MetricsAPI) Run(config *config.AppConfig) error {
 
 	logger.Log.Info("Running server ", zap.String("address", config.RunAddr))
 
@@ -67,8 +66,9 @@ func (a MetricsAPI) Run(config *config.AppConfig) {
 	configShutdown(server)
 
 	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		log.Fatal("failed to start server")
+		return err
 	}
+	return nil
 }
 
 func configShutdown(srv *http.Server) {

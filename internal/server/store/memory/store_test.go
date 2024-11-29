@@ -291,17 +291,19 @@ func Test_getKey(t *testing.T) {
 
 func TestStore_Save(t *testing.T) {
 	tests := []struct {
-		name string
-		conf *config.AppConfig
-		want string
+		name    string
+		conf    *config.AppConfig
+		wantErr bool
 	}{
 		{
-			name: "positive test #1",
-			conf: &config.AppConfig{FileStoragePath: ""},
+			name:    "positive test #1",
+			conf:    &config.AppConfig{FileStoragePath: ""},
+			wantErr: false,
 		},
 		{
-			name: "positive test #2",
-			conf: &config.AppConfig{FileStoragePath: "../../../../metrics.json"},
+			name:    "positive test #2",
+			conf:    &config.AppConfig{FileStoragePath: "../../../../metrics.json"},
+			wantErr: false,
 		},
 		{
 			name: "positive test #3",
@@ -311,33 +313,41 @@ func TestStore_Save(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := conf.store.Load(tt.conf)
-			assert.Nil(t, err)
+			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}
 }
 
 func TestStore_Load(t *testing.T) {
 	tests := []struct {
-		name string
-		conf *config.AppConfig
-		want string
+		name    string
+		conf    *config.AppConfig
+		wantErr bool
 	}{
 		{
-			name: "positive test #1",
-			conf: &config.AppConfig{FileStoragePath: ""},
+			name:    "positive test #1",
+			conf:    &config.AppConfig{FileStoragePath: ""},
+			wantErr: false,
+		}, {
+			name:    "negative test #2",
+			conf:    &config.AppConfig{FileStoragePath: "../../../../metrics.jsn"},
+			wantErr: false,
 		},
 		{
-			name: "positive test #2",
-			conf: &config.AppConfig{FileStoragePath: "../../../../m.json"},
-		}, {
-			name: "positive test #3",
-			conf: &config.AppConfig{FileStoragePath: "../../../../metrics.json"},
+			name:    "positive test #3",
+			conf:    &config.AppConfig{FileStoragePath: "../../../../metrics.json"},
+			wantErr: false,
+		},
+		{
+			name:    "positive test #3",
+			conf:    &config.AppConfig{FileStoragePath: "../../../../metrics2.json"},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := conf.store.Load(tt.conf)
-			assert.Nil(t, err)
+			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}
 }

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"github.com/Archetarcher/metrics.git/internal/agent/encryption"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -50,6 +51,7 @@ func setupConfigServer() (*httptest.Server, error) {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 		return nil, err.Err
 	}
+	conf.c.PrivateKeyPath = "../../../private.pem"
 
 	repo := repositories.NewMetricsRepository(storage)
 	service := services.NewMetricsService(repo)
@@ -64,6 +66,7 @@ func setupConfigServer() (*httptest.Server, error) {
 	r.Post("/update/", handler.UpdateMetricsJSON)
 	r.Post("/updates/", handler.UpdatesMetrics)
 	r.Post("/value/", handler.GetMetricsJSON)
+	r.Post("/session/", handler.StartSession)
 
 	srv := httptest.NewServer(r)
 
@@ -743,6 +746,76 @@ func TestMetricsHandler_GetPing(t *testing.T) {
 			assert.NoError(t, err, "error making HTTP request")
 
 			assert.Equal(t, tt.want.code, resp.StatusCode(), "Код ответа не совпадает с ожидаемым", req.PathParams, req.URL, resp.String())
+		})
+	}
+}
+
+func TestMetricsHandler_StartSession(t *testing.T) {
+	require.NoError(t, conf.err, "failed to init server", conf.server, conf.err)
+	type request struct {
+		params map[string][]byte
+		query  string
+		method string
+	}
+	type want struct {
+		code int
+	}
+
+	key := "xsaxsaxsa"
+	encryptedKey, eErr := encryption.EncryptAsymmetric([]byte(key), "../../../public.pem")
+	require.Nil(t, eErr)
+	tests := []struct {
+		request request
+		name    string
+		want    want
+	}{
+		{
+			name: "positive test  #1",
+			request: request{
+				query:  "/session/",
+				method: http.MethodPost,
+				params: map[string][]byte{"key": encryptedKey},
+			},
+			want: want{
+				code: http.StatusOK,
+			},
+		},
+		{
+			name: "negative test  #2",
+			request: request{
+				query:  "/session/",
+				method: http.MethodPost,
+				params: map[string][]byte{"key": []byte("wrong text")},
+			},
+			want: want{
+				code: http.StatusUnauthorized,
+			},
+		},
+		{
+			name: "negative test  #3",
+			request: request{
+				query:  "/session/",
+				method: http.MethodGet,
+				params: map[string][]byte{"key": encryptedKey},
+			},
+			want: want{
+				code: http.StatusMethodNotAllowed,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := resty.New().R()
+			req.Method = tt.request.method
+			req.URL = conf.server.URL + tt.request.query
+			req.SetBody(tt.request.params)
+
+			resp, err := req.Send()
+
+			assert.NoError(t, err, "error making HTTP request")
+
+			assert.Equal(t, tt.want.code, resp.StatusCode(), "Код ответа не совпадает с ожидаемым", req.PathParams, req.URL)
 		})
 	}
 }

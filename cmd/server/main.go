@@ -56,7 +56,11 @@ func main() {
 		logger.Log.Error("failed to init api with error, finishing app", zap.String("error", err.Text), zap.Int("code", err.Code))
 		return
 	}
-	api.Run(c)
+	aErr := api.Run(c)
+	if aErr != nil {
+		logger.Log.Error("failed to start server with error, finishing app", zap.Error(aErr))
+		return
+	}
 }
 
 func printBuildData() {

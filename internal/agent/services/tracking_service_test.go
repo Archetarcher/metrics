@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/agent/encryption"
 	config2 "github.com/Archetarcher/metrics.git/internal/server/config"
+	encryption2 "github.com/Archetarcher/metrics.git/internal/server/encryption"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/middlewares"
@@ -158,6 +159,9 @@ func setupConfigServer() (*httptest.Server, error) {
 	service := services.NewMetricsService(repo)
 	handler := handlers.NewMetricsHandler(service, conf.c)
 	r := chi.NewRouter()
+	r.Use(func(handler http.Handler) http.Handler {
+		return encryption2.RequestDecryptMiddleware(handler, conf.c)
+	})
 	r.Use(middlewares.GzipMiddleware)
 
 	r.Post("/updates/", handler.UpdatesMetrics)
@@ -180,6 +184,7 @@ func TestTrackingService_Send(t *testing.T) {
 	client := resty.New()
 	c := config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""), PublicKeyPath: "../../../public.pem", Session: config.Session{RetryConn: 3}}
 	eErr := encryption.StartSession(&c, client, c.Session.RetryConn)
+
 	require.Nil(t, eErr)
 
 	tests := []struct {
@@ -191,11 +196,11 @@ func TestTrackingService_Send(t *testing.T) {
 	}{
 		{
 			name: "positive test #1",
-			args: args{[]domain.Metrics{values[0]}},
-			code: http.StatusInternalServerError,
-			config: &config.AppConfig{ServerRunAddr: c.ServerRunAddr,
+			args: args{[]domain.Metrics{values[0], values[1]}},
+			code: http.StatusOK,
+			config: &config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""),
 				Session: c.Session, PublicKeyPath: c.PublicKeyPath},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "negative test #2",
@@ -209,7 +214,7 @@ func TestTrackingService_Send(t *testing.T) {
 			},
 			config: &config.AppConfig{ServerRunAddr: c.ServerRunAddr,
 				Session: c.Session, PublicKeyPath: c.PublicKeyPath},
-			code:    http.StatusInternalServerError,
+			code:    http.StatusBadRequest,
 			wantErr: true,
 		},
 		{
@@ -228,7 +233,8 @@ func TestTrackingService_Send(t *testing.T) {
 
 			service := &TrackingService{Config: tt.config, Client: client}
 
-			_, err := service.Send(tt.args.request)
+			r, err := service.Send(tt.args.request)
+			fmt.Println(r)
 			assert.Equal(t, tt.wantErr, err != nil, err)
 
 			if err != nil {

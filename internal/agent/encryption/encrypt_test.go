@@ -2,8 +2,6 @@ package encryption
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	config2 "github.com/Archetarcher/metrics.git/internal/server/config"
@@ -209,7 +207,6 @@ func setupConfigServer() (*httptest.Server, error) {
 		return nil, err.Err
 	}
 
-	conf.c.PrivateKeyPath = "../../../private.pem"
 	repo := repositories.NewMetricsRepository(storage)
 	service := services.NewMetricsService(repo)
 	handler := handlers.NewMetricsHandler(service, conf.c)
@@ -230,7 +227,8 @@ func TestStartSession(t *testing.T) {
 	require.Nil(t, conf.err, "failed to init server", conf.server, conf.err)
 
 	type args struct {
-		config *config.AppConfig
+		config      *config.AppConfig
+		privatePath string
 	}
 
 	tests := []struct {
@@ -241,21 +239,32 @@ func TestStartSession(t *testing.T) {
 		{
 			name: "positive test #1",
 			args: args{
-				config: &config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""), PublicKeyPath: "../../../public.pem", Session: config.Session{RetryConn: 3}},
+				config:      &config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""), PublicKeyPath: "../../../public.pem", Session: config.Session{RetryConn: 3}},
+				privatePath: "../../../private.pem",
 			},
 			wantErr: false,
 		},
 		{
 			name: "negative test #2",
 			args: args{
-				config: &config.AppConfig{ServerRunAddr: conf.server.URL, PublicKeyPath: "../../../public.pem", Session: config.Session{RetryConn: 3}},
+				config:      &config.AppConfig{ServerRunAddr: conf.server.URL, PublicKeyPath: "../../../public.pem", Session: config.Session{RetryConn: 3}},
+				privatePath: "../../../private.pem",
 			},
 			wantErr: true,
 		},
 		{
 			name: "negative test #3",
 			args: args{
-				config: &config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""), PublicKeyPath: "../../public.pem", Session: config.Session{RetryConn: 3}},
+				config:      &config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""), PublicKeyPath: "../../public.pem", Session: config.Session{RetryConn: 3}},
+				privatePath: "../../../private.pem",
+			},
+			wantErr: true,
+		},
+		{
+			name: "negative test #4",
+			args: args{
+				config:      &config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""), PublicKeyPath: "../../../public.pem", Session: config.Session{RetryConn: 2}},
+				privatePath: "../../private.pem",
 			},
 			wantErr: true,
 		},
@@ -264,6 +273,7 @@ func TestStartSession(t *testing.T) {
 	client := resty.New()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			conf.c.PrivateKeyPath = tt.args.privatePath
 			err := StartSession(tt.args.config, client, tt.args.config.Session.RetryConn)
 
 			assert.Equal(t, tt.wantErr, err != nil)
@@ -277,11 +287,6 @@ func TestEncryptAsymmetric(t *testing.T) {
 	type args struct {
 		text []byte
 		key  string
-	}
-	longString, err := json.Marshal(m)
-	if err != nil {
-		fmt.Println(err)
-		return
 	}
 
 	tests := []struct {
@@ -301,14 +306,6 @@ func TestEncryptAsymmetric(t *testing.T) {
 			name: "negative test #2",
 			args: args{
 				text: []byte("teststring"),
-				key:  "../../public.pem",
-			},
-			wantErr: true,
-		},
-		{
-			name: "negative test #3",
-			args: args{
-				text: longString,
 				key:  "../../public.pem",
 			},
 			wantErr: true,

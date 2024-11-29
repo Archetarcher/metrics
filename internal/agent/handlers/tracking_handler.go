@@ -2,6 +2,9 @@ package handlers
 
 import (
 	"context"
+	"github.com/Archetarcher/metrics.git/internal/agent/encryption"
+	"github.com/Archetarcher/metrics.git/internal/agent/services"
+	"github.com/go-resty/resty/v2"
 	"net/http"
 	"os"
 	"os/signal"
@@ -28,6 +31,21 @@ type TrackingService interface {
 	FetchMemory() (*domain.MetricsData, *domain.TrackingError)
 	FetchRuntime(counterInterval int64) (*domain.MetricsData, *domain.TrackingError)
 	Send(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
+}
+
+// NewTrackingHandler creates and sets up tracking handler
+func NewTrackingHandler() (*TrackingHandler, *domain.TrackingError) {
+	conf := config.NewConfig()
+	conf.ParseConfig()
+	client := resty.New()
+
+	eErr := encryption.StartSession(conf, client, conf.Session.RetryConn)
+	if eErr != nil {
+		logger.Log.Error("failed to start secure session", zap.String("error", eErr.Text), zap.Int("code", eErr.Code))
+		return nil, &domain.TrackingError{Text: "failed to start secure session"}
+	}
+	service := &services.TrackingService{Client: client, Config: conf}
+	return &TrackingHandler{TrackingService: service, Config: conf}, nil
 }
 
 // TrackMetrics starts metrics tracking.
