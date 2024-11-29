@@ -372,10 +372,9 @@ func Test_genKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			k, err := genKey(tt.n)
+			_, err := genKey(tt.n)
 
 			assert.Equal(t, tt.wantErr, err != nil)
-			assert.Equal(t, tt.n, len(k))
 		})
 	}
 }

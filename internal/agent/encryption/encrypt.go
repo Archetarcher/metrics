@@ -109,6 +109,7 @@ func EncryptSymmetric(plaintext []byte, key string) []byte {
 }
 func genKey(n int) ([]byte, error) {
 	rnd := make([]byte, n)
+
 	nrnd, err := rand.Read(rnd)
 	if err != nil {
 		return nil, err

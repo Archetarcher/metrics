@@ -97,6 +97,8 @@ func TestNewStore(t *testing.T) {
 }
 
 func TestRetryConnection(t *testing.T) {
+	require.Nil(t, conf.err, "failed to init store", conf.store, conf.err)
+
 	t.Run("positive test", func(t *testing.T) {
 		s, err := RetryConnection(context.Background(), &domain.MetricsError{}, 3, 3, &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"})
 		assert.Nil(t, s)
