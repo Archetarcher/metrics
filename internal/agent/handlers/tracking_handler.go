@@ -69,7 +69,7 @@ func (h *TrackingHandler) TrackMetrics() *domain.TrackingError {
 	metricsData := make(chan domain.MetricsData, h.Config.RateLimit)
 
 	for w := 1; w <= h.Config.RateLimit; w++ {
-		go reportWorker(h.Send, metricsData, h.Config.ReportInterval, w)
+		go reportWorker(h.Send, metricsData, time.Duration(h.Config.ReportInterval)*time.Second, w)
 	}
 	go startRuntimePoll(h.FetchRuntime, &wg, h.Config.PollInterval, metricsData, ctx)
 	go startMemoryPoll(h.FetchMemory, &wg, h.Config.PollInterval, metricsData, ctx)
@@ -94,8 +94,8 @@ type fetchMemory func() (*domain.MetricsData, *domain.TrackingError)
 type fetchRuntime func(counterInterval int64) (*domain.MetricsData, *domain.TrackingError)
 type send func(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
 
-func reportWorker(send send, metricsData <-chan domain.MetricsData, interval int, index int) {
-	reportInterval := time.Duration(interval) * time.Second
+func reportWorker(send send, metricsData <-chan domain.MetricsData, reportInterval time.Duration, index int) {
+
 	logger.Log.Info("starting report")
 
 	for d := range metricsData {

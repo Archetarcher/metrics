@@ -75,13 +75,15 @@ func configShutdown(srv *http.Server) {
 	idleConnsClosed := make(chan struct{})
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 
 	go func() {
 		<-sigint
 		logger.Log.Info("got interruption signal")
 		time.Sleep(time.Duration(10) * time.Second)
 
-		if err := srv.Shutdown(context.Background()); err != nil {
+		if err := srv.Shutdown(ctx); err != nil {
 			logger.Log.Info("HTTP server Shutdown: ", zap.Error(err))
 		}
 		close(idleConnsClosed)
