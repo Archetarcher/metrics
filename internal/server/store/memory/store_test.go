@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,7 @@ import (
 var conf TConfig
 
 type TConfig struct {
-	c     *Config
+	c     *config.AppConfig
 	store *Store
 	err   *domain.MetricsError
 	once  sync.Once
@@ -20,7 +21,7 @@ type TConfig struct {
 
 func (c *TConfig) setConfig() {
 	c.once.Do(func() {
-		c.c = &Config{}
+		c.c = &config.AppConfig{}
 
 		s, err := NewStore(context.Background(), c.c)
 
@@ -89,7 +90,7 @@ var (
 
 func TestNewStore(t *testing.T) {
 	t.Run("positive test", func(t *testing.T) {
-		s, err := NewStore(context.Background(), &Config{})
+		s, err := NewStore(context.Background(), &config.AppConfig{})
 		assert.NotNil(t, s)
 		assert.Nil(t, err)
 	})
@@ -97,7 +98,7 @@ func TestNewStore(t *testing.T) {
 
 func TestRetryConnection(t *testing.T) {
 	t.Run("positive test", func(t *testing.T) {
-		s, err := RetryConnection(context.Background(), &domain.MetricsError{}, 3, 3, &Config{})
+		s, err := RetryConnection(context.Background(), &domain.MetricsError{}, 3, 3, &config.AppConfig{})
 		assert.Nil(t, s)
 		assert.NotNil(t, err)
 	})
@@ -290,53 +291,63 @@ func Test_getKey(t *testing.T) {
 
 func TestStore_Save(t *testing.T) {
 	tests := []struct {
-		name string
-		conf *Config
-		want string
+		name    string
+		conf    *config.AppConfig
+		wantErr bool
 	}{
 		{
-			name: "positive test #1",
-			conf: &Config{FileStoragePath: ""},
+			name:    "positive test #1",
+			conf:    &config.AppConfig{FileStoragePath: ""},
+			wantErr: false,
 		},
 		{
-			name: "positive test #2",
-			conf: &Config{FileStoragePath: "../../../../metrics.json"},
+			name:    "positive test #2",
+			conf:    &config.AppConfig{FileStoragePath: "../../../../metrics.json"},
+			wantErr: false,
 		},
 		{
 			name: "positive test #3",
-			conf: &Config{FileStoragePath: "../../../../m.json"},
+			conf: &config.AppConfig{FileStoragePath: "../../../../m.json"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := conf.store.Load(tt.conf)
-			assert.Nil(t, err)
+			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}
 }
 
 func TestStore_Load(t *testing.T) {
 	tests := []struct {
-		name string
-		conf *Config
-		want string
+		name    string
+		conf    *config.AppConfig
+		wantErr bool
 	}{
 		{
-			name: "positive test #1",
-			conf: &Config{FileStoragePath: ""},
+			name:    "positive test #1",
+			conf:    &config.AppConfig{FileStoragePath: ""},
+			wantErr: false,
+		}, {
+			name:    "negative test #2",
+			conf:    &config.AppConfig{FileStoragePath: "../../../../metrics.jsn"},
+			wantErr: false,
 		},
 		{
-			name: "positive test #2",
-			conf: &Config{FileStoragePath: "../../../../m.json"},
-		}, {
-			name: "positive test #3",
-			conf: &Config{FileStoragePath: "../../../../metrics.json"},
+			name:    "positive test #3",
+			conf:    &config.AppConfig{FileStoragePath: "../../../../metrics.json"},
+			wantErr: false,
+		},
+		{
+			name:    "positive test #3",
+			conf:    &config.AppConfig{FileStoragePath: "../../../../metrics2.json"},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := conf.store.Load(tt.conf)
-			assert.Nil(t, err)
+			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}
 }

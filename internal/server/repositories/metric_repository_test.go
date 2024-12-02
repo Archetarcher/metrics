@@ -13,7 +13,6 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
-	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
 	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
 )
 
@@ -28,7 +27,7 @@ type Config struct {
 
 func (c *Config) setConfig() {
 	c.once.Do(func() {
-		c.c = config.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx: &pgx.Config{}})
+		c.c = config.NewConfig()
 
 		repo, err := setup()
 
@@ -43,7 +42,7 @@ func init() {
 func setup() (*MetricRepository, error) {
 	ctx := context.Background()
 
-	storage, err := store.NewStore(ctx, conf.c.Store)
+	storage, err := store.NewStore(ctx, conf.c)
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 		return nil, err.Err

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"log"
 	"time"
 
@@ -26,11 +27,11 @@ var (
 // Store is a struct for pgx storage, keeps configurations and sqlx.DB instance
 type Store struct {
 	db     *sqlx.DB
-	config *Config
+	config *config.AppConfig
 }
 
 // NewStore creates pgx storage instance, runs migrations
-func NewStore(ctx context.Context, config *Config) (*Store, *domain.MetricsError) {
+func NewStore(ctx context.Context, config *config.AppConfig) (*Store, *domain.MetricsError) {
 
 	db := sqlx.MustOpen("pgx", config.DatabaseDsn)
 
@@ -53,7 +54,7 @@ func NewStore(ctx context.Context, config *Config) (*Store, *domain.MetricsError
 }
 
 // RetryConnection retries connection
-func RetryConnection(ctx context.Context, error *domain.MetricsError, interval int, try int, config *Config) (*Store, *domain.MetricsError) {
+func RetryConnection(ctx context.Context, error *domain.MetricsError, interval int, try int, config *config.AppConfig) (*Store, *domain.MetricsError) {
 	logger.Log.Info("retrying db connection", zap.Int("interval", interval), zap.Int("try", try))
 
 	time.Sleep(time.Duration(interval) * time.Second)
@@ -226,7 +227,7 @@ func getKey(request domain.Metrics) string {
 
 }
 
-func runMigrations(ctx context.Context, config *Config) *domain.MetricsError {
+func runMigrations(ctx context.Context, config *config.AppConfig) *domain.MetricsError {
 	db, err := goose.OpenDBWithDriver("pgx", config.DatabaseDsn)
 	if err != nil {
 		log.Fatalf("goose: failed to open DB: %v\n", err)

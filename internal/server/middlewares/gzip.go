@@ -1,4 +1,4 @@
-package compression
+package middlewares
 
 import (
 	"compress/gzip"
@@ -76,7 +76,7 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
-// GzipMiddleware encodes and decodes body according to gzip encoding.
+// GzipMiddleware encodes and decodes body according to gzip encryption.
 func GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		ow := rw
@@ -99,13 +99,16 @@ func GzipMiddleware(next http.Handler) http.Handler {
 		contentEncoding := r.Header.Get("Content-Encoding")
 		sendsGzip := strings.Contains(contentEncoding, "gzip")
 		if sendsGzip {
-
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
+				logger.Log.Error("failed to create reader", zap.Error(err))
+
 				rw.WriteHeader(http.StatusInternalServerError)
+
 				return
 			}
 			r.Body = cr
+
 			defer func() {
 				cErr := cr.Close()
 				if cErr != nil {

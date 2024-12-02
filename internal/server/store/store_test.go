@@ -2,9 +2,8 @@ package store
 
 import (
 	"context"
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
-	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -12,16 +11,16 @@ import (
 func TestNewStore(t *testing.T) {
 	tests := []struct {
 		name string
-		conf Config
+		conf *config.AppConfig
 		want string
 	}{
 		{
 			name: "positive test #1",
-			conf: Config{Memory: &memory.Config{}, Pgx: &pgx.Config{DatabaseDsn: ""}},
+			conf: &config.AppConfig{},
 		},
 		{
 			name: "positive test #2",
-			conf: Config{Pgx: &pgx.Config{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../migrations"}},
+			conf: &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../migrations"},
 		},
 	}
 	for _, tt := range tests {
@@ -37,16 +36,16 @@ func TestRetry(t *testing.T) {
 
 	tests := []struct {
 		name string
-		conf Config
+		conf *config.AppConfig
 		want string
 	}{
 		{
 			name: "positive test #1",
-			conf: Config{Memory: &memory.Config{}, Pgx: &pgx.Config{DatabaseDsn: ""}},
+			conf: &config.AppConfig{},
 		},
 		{
 			name: "positive test #2",
-			conf: Config{Pgx: &pgx.Config{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../migrations"}},
+			conf: &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../migrations"},
 		},
 	}
 	for _, tt := range tests {

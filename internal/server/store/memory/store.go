@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"os"
 	"sync"
 	"time"
@@ -23,7 +24,7 @@ type Store struct {
 }
 
 // NewStore creates new storage, restores data from file
-func NewStore(ctx context.Context, config *Config) (*Store, *domain.MetricsError) {
+func NewStore(ctx context.Context, config *config.AppConfig) (*Store, *domain.MetricsError) {
 	storage := &Store{
 		mux:  sync.Mutex{},
 		data: make(map[string]domain.Metrics),
@@ -56,7 +57,7 @@ func NewStore(ctx context.Context, config *Config) (*Store, *domain.MetricsError
 }
 
 // RetryConnection retries connection to storage, not implemented for in memory storage
-func RetryConnection(ctx context.Context, error *domain.MetricsError, interval int, try int, config *Config) (*Store, *domain.MetricsError) {
+func RetryConnection(ctx context.Context, error *domain.MetricsError, interval int, try int, config *config.AppConfig) (*Store, *domain.MetricsError) {
 	return nil, &domain.MetricsError{}
 }
 
@@ -127,7 +128,7 @@ func (s *Store) SetValues(ctx context.Context, request []domain.Metrics) *domain
 }
 
 // Save saves metrics data to file
-func (s *Store) Save(config *Config) error {
+func (s *Store) Save(config *config.AppConfig) error {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
@@ -143,7 +144,7 @@ func (s *Store) Save(config *Config) error {
 }
 
 // Load loads metrics data from file
-func (s *Store) Load(config *Config) error {
+func (s *Store) Load(config *config.AppConfig) error {
 	if config.FileStoragePath == emptyParam {
 		return nil
 	}

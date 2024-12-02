@@ -1,0 +1,8 @@
+{
+  "address": ":8080",
+  "restore": true,
+  "store_interval": "1s",
+  "store_file": "/tmp/metrics-pgx.json",
+  "database_dsn": "",
+  "crypto_key": "private.pem"
+}
