@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/Archetarcher/metrics.git/internal/agent/handlers"
+	"github.com/Archetarcher/metrics.git/internal/agent/client/grpc"
+	"github.com/Archetarcher/metrics.git/internal/agent/client/rest"
+	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/logger"
 	"go.uber.org/zap"
 )
@@ -15,18 +17,23 @@ var (
 
 func main() {
 	printBuildData()
+	conf := config.NewConfig()
+	conf.ParseConfig()
 
-	h, err := handlers.NewTrackingHandler()
-	if err != nil {
-		logger.Log.Info("failed to create tracking handler with error", zap.String("error", err.Text), zap.Int("code", err.Code))
-		return
+	if conf.EnableGRPC {
+		err := grpc.Run(conf)
+		if err != nil {
+			logger.Log.Error("failed to start grpc client with error, finishing app", zap.Error(err))
+			return
+		}
+	} else {
+		err := rest.Run(conf)
+		if err != nil {
+			logger.Log.Error("failed to start rest client with error, finishing app", zap.Error(err))
+			return
+		}
 	}
 
-	hErr := h.TrackMetrics()
-	if hErr != nil {
-		logger.Log.Info("failed with error", zap.String("error", hErr.Text), zap.Int("code", hErr.Code))
-		return
-	}
 }
 
 func printBuildData() {

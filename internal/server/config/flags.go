@@ -6,15 +6,18 @@ import (
 
 const (
 	flagRunAddrName                = "a"
+	flagGRPCRunAddrName            = "ga"
 	flagLogLevelName               = "l"
 	flagKeyName                    = "k"
 	flagFileStoragePathName        = "f"
 	flagStoreIntervalName          = "i"
 	flagRestoreName                = "r"
+	flagEnableGRPCName             = "eg"
 	flagDatabaseDsnName            = "d"
 	flagDatabaseMigrationsPathName = "m"
 	flagPrivateKeyPathName         = "crypto-key"
 	flagConfigPathName             = "c config"
+	flagTrustedSubnetName          = "t"
 )
 
 func (c *AppConfig) initFlags() {
@@ -33,7 +36,12 @@ func (c *AppConfig) initFlags() {
 	flag.StringVar(&c.MigrationsPath, flagDatabaseMigrationsPathName, "internal/server/migrations", "migrations")
 
 	flag.StringVar(&c.PrivateKeyPath, flagPrivateKeyPathName, "private.pem", "crypto-key")
+	flag.StringVar(&c.TrustedSubnet, flagTrustedSubnetName, "", "allowed ip address")
+
 	flag.StringVar(&c.ConfigPath, flagConfigPathName, "server-config.json", "config file")
+
+	flag.BoolVar(&c.EnableGRPC, flagEnableGRPCName, true, "run grpc server or not")
+	flag.StringVar(&c.GRPCRunAddr, flagGRPCRunAddrName, ":3200", "address and port to run grpc server")
 
 }
 

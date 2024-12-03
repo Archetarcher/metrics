@@ -5,6 +5,8 @@ import (
 	"errors"
 	"github.com/Archetarcher/metrics.git/internal/server/encryption"
 	"github.com/Archetarcher/metrics.git/internal/server/middlewares"
+	"github.com/Archetarcher/metrics.git/internal/server/repositories"
+	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
@@ -57,16 +59,26 @@ func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (
 	}, nil
 }
 
-// Run starts serving application.
-func (a MetricsAPI) Run(config *config.AppConfig) error {
+// RunRestServer starts serving application.
+func RunRestServer(config *config.AppConfig, repo *repositories.MetricRepository) error {
+	service := services.NewMetricsService(repo)
+	handler := handlers.NewMetricsHandler(service, config)
 
-	logger.Log.Info("Running server ", zap.String("address", config.RunAddr))
+	api, err := NewMetricsAPI(handler, config)
 
-	server := &http.Server{Addr: config.RunAddr, Handler: a.router}
+	if err != nil {
+		logger.Log.Error("failed to init api with error, finishing app", zap.String("error", err.Text), zap.Int("code", err.Code))
+		return err.Err
+	}
+
+	logger.Log.Info("Running rest server ", zap.String("address", config.RunAddr))
+
+	server := &http.Server{Addr: config.RunAddr, Handler: api.router}
 	configShutdown(server)
 
-	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		return err
+	if lErr := server.ListenAndServe(); !errors.Is(lErr, http.ErrServerClosed) {
+		logger.Log.Error("failed to serve rest server", zap.String("error", err.Text), zap.Int("code", err.Code))
+		return lErr
 	}
 	return nil
 }

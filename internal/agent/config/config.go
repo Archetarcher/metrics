@@ -3,6 +3,7 @@ package config
 // AppConfig keeps configurations of application.
 type AppConfig struct {
 	ServerRunAddr  string `json:"address"`
+	GRPCRunAddr    string `json:"grpc_address"`
 	LogLevel       string
 	Key            string
 	PublicKeyPath  string `json:"crypto_key"`
@@ -11,6 +12,7 @@ type AppConfig struct {
 	ReportInterval int `json:"report_interval"`
 	PollInterval   int `json:"poll_interval"`
 	RateLimit      int
+	EnableGRPC     bool `json:"enable_grpc"`
 }
 
 // Session keeps session data

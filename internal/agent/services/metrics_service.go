@@ -3,10 +3,12 @@ package services
 import (
 	"context"
 	"fmt"
+	"github.com/Archetarcher/metrics.git/internal/agent/encryption"
 	"github.com/Archetarcher/metrics.git/internal/agent/middlewares"
 	"math/rand"
 	"net/http"
 	"runtime"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -50,20 +52,20 @@ const (
 	totalAlloc    = "TotalAlloc"
 )
 
-// TrackingService is a service for gathering and sending metrics to server.
-type TrackingService struct {
+// MetricsService is a service for gathering and sending metrics to server.
+type MetricsService struct {
 	Client *resty.Client
 	Config *config.AppConfig
 }
 
 // FetchMemory fetches memory and gauge metrics.
-func (s *TrackingService) FetchMemory() (*domain.MetricsData, *domain.TrackingError) {
+func (s *MetricsService) FetchMemory() (*domain.MetricsData, *domain.MetricsError) {
 	metrics := mapGaugeMetrics(gatherMemoryValues)
 	return &metrics, nil
 }
 
 // FetchRuntime fetches runtime gauge an nd counter metrics.
-func (s *TrackingService) FetchRuntime(counterInterval int64) (*domain.MetricsData, *domain.TrackingError) {
+func (s *MetricsService) FetchRuntime(counterInterval int64) (*domain.MetricsData, *domain.MetricsError) {
 	metrics := mapGaugeMetrics(gatherRuntimeValues)
 	metrics[pollCount] = metricsValue(pollCount, counterType, &counterInterval, nil)
 
@@ -71,7 +73,7 @@ func (s *TrackingService) FetchRuntime(counterInterval int64) (*domain.MetricsDa
 }
 
 // Send sends prepared metrics data to server
-func (s *TrackingService) Send(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError) {
+func (s *MetricsService) Send(request []domain.Metrics) (*domain.SendResponse, *domain.MetricsError) {
 
 	url := "http://" + s.Config.ServerRunAddr + "/updates/"
 
@@ -83,16 +85,54 @@ func (s *TrackingService) Send(request []domain.Metrics) (*domain.SendResponse, 
 			return middlewares.GzipMiddleware(client, request, s.Config)
 		}).
 		R().
+		SetHeader("X-Real-IP", config.GetLocalIP().String()).
 		SetBody(request).
 		Post(url)
 	if err != nil {
-		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: could not create request: %s\n", err.Error()), Code: http.StatusInternalServerError}
+		return nil, &domain.MetricsError{Text: fmt.Sprintf("client: could not create request: %s\n", err.Error()), Code: http.StatusInternalServerError}
 	}
 
 	if res.StatusCode() != http.StatusOK {
-		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: responded with error: %s\n, %s, ", err, url), Code: res.StatusCode()}
+		return nil, &domain.MetricsError{Text: fmt.Sprintf("client: responded with error: %s\n, %s, ", err, url), Code: res.StatusCode()}
 	}
 	return &domain.SendResponse{Status: http.StatusOK}, nil
+}
+
+// StartSession generates 16 bit key, encrypts it asymmetrically and sends to server.
+// Saves key value to the config
+func (s *MetricsService) StartSession(retryCount int) *domain.MetricsError {
+	url := "http://" + s.Config.ServerRunAddr + "/session/"
+
+	key, gErr := encryption.GenKey(16)
+	if gErr != nil {
+		return &domain.MetricsError{Code: http.StatusInternalServerError, Text: "failed to generate crypto key"}
+	}
+	encryptedKey, eErr := encryption.EncryptAsymmetric(key, s.Config.PublicKeyPath)
+	if eErr != nil {
+		return eErr
+	}
+
+	res, err := s.Client.
+		R().
+		SetBody(domain.SessionRequest{Key: encryptedKey}).
+		SetHeader("X-Real-IP", config.GetLocalIP().String()).
+		Post(url)
+
+	if (err != nil || res.StatusCode() != http.StatusOK) && retryCount > 0 {
+		time.Sleep(time.Duration(s.Config.ReportInterval) * time.Second)
+		return s.StartSession(retryCount - 1)
+	}
+
+	if err != nil {
+		return &domain.MetricsError{Text: fmt.Sprintf("client: could not create request: %s\n", err.Error()), Code: http.StatusInternalServerError}
+	}
+
+	if res.StatusCode() != http.StatusOK {
+		return &domain.MetricsError{Text: fmt.Sprintf("client: responded with error creating session: %s\n, %s, %s", err, url, string(key)), Code: res.StatusCode()}
+	}
+
+	s.Config.Session.Key = string(key)
+	return nil
 }
 
 func metricsValue(name string, mtype string, delta *int64, value *float64) domain.Metrics {

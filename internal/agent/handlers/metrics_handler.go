@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"github.com/Archetarcher/metrics.git/internal/agent/encryption"
 	"github.com/Archetarcher/metrics.git/internal/agent/services"
 	"github.com/go-resty/resty/v2"
 	"net/http"
@@ -20,41 +19,39 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/agent/logger"
 )
 
-// TrackingHandler is a handler for tracking metrics, has service and configuration.
-type TrackingHandler struct {
-	TrackingService
-	Config *config.AppConfig
+// MetricsHandler is a handler for tracking metrics, has service and configuration.
+type MetricsHandler struct {
+	service MetricsService
+	Config  *config.AppConfig
 }
 
-// TrackingService is an interface for tracking metrics, sends and fetch memory and runtime metrics.
-type TrackingService interface {
-	FetchMemory() (*domain.MetricsData, *domain.TrackingError)
-	FetchRuntime(counterInterval int64) (*domain.MetricsData, *domain.TrackingError)
-	Send(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
+// MetricsService is an interface for tracking metrics, sends and fetch memory and runtime metrics.
+type MetricsService interface {
+	FetchMemory() (*domain.MetricsData, *domain.MetricsError)
+	FetchRuntime(counterInterval int64) (*domain.MetricsData, *domain.MetricsError)
+	Send(request []domain.Metrics) (*domain.SendResponse, *domain.MetricsError)
+	StartSession(retryCount int) *domain.MetricsError
 }
 
-// NewTrackingHandler creates and sets up tracking handler
-func NewTrackingHandler() (*TrackingHandler, *domain.TrackingError) {
-	conf := config.NewConfig()
-	conf.ParseConfig()
+// NewMetricsHandler creates and sets up tracking handler
+func NewMetricsHandler(conf *config.AppConfig) (*MetricsHandler, *domain.MetricsError) {
 	client := resty.New()
+	service := &services.MetricsService{Client: client, Config: conf}
+	return &MetricsHandler{service: service, Config: conf}, nil
+}
 
-	eErr := encryption.StartSession(conf, client, conf.Session.RetryConn)
-	if eErr != nil {
-		logger.Log.Error("failed to start secure session", zap.String("error", eErr.Text), zap.Int("code", eErr.Code))
-		return nil, &domain.TrackingError{Text: "failed to start secure session"}
-	}
-	service := &services.TrackingService{Client: client, Config: conf}
-	return &TrackingHandler{TrackingService: service, Config: conf}, nil
+// StartSession is a handler that generates session
+func (h *MetricsHandler) StartSession() *domain.MetricsError {
+	return h.service.StartSession(h.Config.Session.RetryConn)
 }
 
 // TrackMetrics starts metrics tracking.
 // Runs worker pool reportWorker with domain.MetricsData chanel, each worker sends data to server.
 // Runs two goroutines for runtime and memory metrics, each goroutine pulls data to domain.MetricsData chanel.
-func (h *TrackingHandler) TrackMetrics() *domain.TrackingError {
+func (h *MetricsHandler) TrackMetrics() *domain.MetricsError {
 
 	if err := logger.Initialize(h.Config.LogLevel); err != nil {
-		return &domain.TrackingError{
+		return &domain.MetricsError{
 			Text: err.Error(),
 			Code: http.StatusInternalServerError,
 		}
@@ -69,10 +66,10 @@ func (h *TrackingHandler) TrackMetrics() *domain.TrackingError {
 	metricsData := make(chan domain.MetricsData, h.Config.RateLimit)
 
 	for w := 1; w <= h.Config.RateLimit; w++ {
-		go reportWorker(h.Send, metricsData, time.Duration(h.Config.ReportInterval)*time.Second, w)
+		go reportWorker(h.service.Send, metricsData, time.Duration(h.Config.ReportInterval)*time.Second, w)
 	}
-	go startRuntimePoll(h.FetchRuntime, &wg, h.Config.PollInterval, metricsData, ctx)
-	go startMemoryPoll(h.FetchMemory, &wg, h.Config.PollInterval, metricsData, ctx)
+	go startRuntimePoll(h.service.FetchRuntime, &wg, h.Config.PollInterval, metricsData, ctx)
+	go startMemoryPoll(h.service.FetchMemory, &wg, h.Config.PollInterval, metricsData, ctx)
 
 	logger.Log.Info("Waiting for goroutines to finish...")
 
@@ -90,9 +87,9 @@ func (h *TrackingHandler) TrackMetrics() *domain.TrackingError {
 	return nil
 }
 
-type fetchMemory func() (*domain.MetricsData, *domain.TrackingError)
-type fetchRuntime func(counterInterval int64) (*domain.MetricsData, *domain.TrackingError)
-type send func(request []domain.Metrics) (*domain.SendResponse, *domain.TrackingError)
+type fetchMemory func() (*domain.MetricsData, *domain.MetricsError)
+type fetchRuntime func(counterInterval int64) (*domain.MetricsData, *domain.MetricsError)
+type send func(request []domain.Metrics) (*domain.SendResponse, *domain.MetricsError)
 
 func reportWorker(send send, metricsData <-chan domain.MetricsData, reportInterval time.Duration, index int) {
 

@@ -3,12 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/Archetarcher/metrics.git/internal/server/api/grpc"
 	"github.com/Archetarcher/metrics.git/internal/server/api/rest"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
-	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
-	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"go.uber.org/zap"
 	"log"
@@ -47,20 +46,21 @@ func main() {
 	}
 
 	repo := repositories.NewMetricsRepository(storage)
-	service := services.NewMetricsService(repo)
-	handler := handlers.NewMetricsHandler(service, c)
 
-	api, err := rest.NewMetricsAPI(handler, c)
+	if c.EnableGRPC {
+		gErr := grpc.RunGRPCServer(c, repo)
+		if gErr != nil {
+			logger.Log.Error("failed to start grpc server with error, finishing app", zap.Error(gErr))
+			return
+		}
+	} else {
+		aErr := rest.RunRestServer(c, repo)
+		if aErr != nil {
+			logger.Log.Error("failed to start rest server with error, finishing app", zap.Error(aErr))
+			return
+		}
+	}
 
-	if err != nil {
-		logger.Log.Error("failed to init api with error, finishing app", zap.String("error", err.Text), zap.Int("code", err.Code))
-		return
-	}
-	aErr := api.Run(c)
-	if aErr != nil {
-		logger.Log.Error("failed to start server with error, finishing app", zap.Error(aErr))
-		return
-	}
 }
 
 func printBuildData() {

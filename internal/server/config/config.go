@@ -7,16 +7,19 @@ import (
 // AppConfig keeps configurations of application.
 type AppConfig struct {
 	RunAddr         string `json:"address"`
+	GRPCRunAddr     string `json:"grpc_address"`
 	Key             string
 	Session         string
 	LogLevel        string
 	MigrationsPath  string
+	TrustedSubnet   string
 	PrivateKeyPath  string `json:"crypto_key"`
 	FileStoragePath string `json:"store_file"`
 	DatabaseDsn     string `json:"database_dsn"`
 	StoreInterval   int    `json:"store_interval"`
 	ConfigPath      string
 	Restore         bool `json:"restore"`
+	EnableGRPC      bool `json:"enable_grpc"`
 
 	mux sync.Mutex
 }

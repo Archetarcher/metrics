@@ -14,6 +14,8 @@ const (
 	flagPublicKeyPathName  = "crypto-key"
 	flagSessionRetryConn   = "rc"
 	flagConfigPathName     = "c config"
+	flagGRPCRunAddrName    = "ga"
+	flagEnableGRPCName     = "eg"
 )
 
 func (c *AppConfig) initFlags() {
@@ -27,6 +29,9 @@ func (c *AppConfig) initFlags() {
 
 	flag.IntVar(&c.Session.RetryConn, flagSessionRetryConn, 5, "connection retry count")
 	flag.IntVar(&c.RateLimit, flagRateLimitName, 3, "rate limit")
+
+	flag.BoolVar(&c.EnableGRPC, flagEnableGRPCName, true, "run grpc server or not")
+	flag.StringVar(&c.GRPCRunAddr, flagGRPCRunAddrName, ":3200", "address and port to run grpc server")
 
 }
 
