@@ -5,12 +5,17 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/handlers"
 	"github.com/Archetarcher/metrics.git/internal/agent/logger"
+	"github.com/Archetarcher/metrics.git/internal/agent/provider"
+	"github.com/Archetarcher/metrics.git/internal/agent/services"
 	"go.uber.org/zap"
 )
 
 // Run starts metric tracking by rest handler
 func Run(conf *config.AppConfig) error {
-	h, err := handlers.NewMetricsHandler(conf)
+	service := services.NewMetricsService(conf)
+	p := provider.NewMetricsProvider(conf)
+
+	h, err := handlers.NewMetricsHandler(conf, p, service)
 	if err != nil {
 		logger.Log.Info("failed to create tracking handler with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 		return errors.New(err.Text)

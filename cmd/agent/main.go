@@ -7,6 +7,7 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/logger"
 	"go.uber.org/zap"
+	"log"
 )
 
 var (
@@ -20,6 +21,9 @@ func main() {
 	conf := config.NewConfig()
 	conf.ParseConfig()
 
+	if err := logger.Initialize(conf.LogLevel); err != nil {
+		log.Fatal("failed to init logger")
+	}
 	if conf.EnableGRPC {
 		err := grpc.Run(conf)
 		if err != nil {

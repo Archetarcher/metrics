@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
-	"github.com/Archetarcher/metrics.git/internal/server/encryption"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	pb "github.com/Archetarcher/metrics.git/proto"
 	"go.uber.org/zap"
@@ -85,18 +84,6 @@ func (s *MetricsServer) UpdateMetrics(ctx context.Context, in *pb.UpdateMetricsR
 		return nil, status.Errorf(codes.Internal, rErr.Text, rErr.Code)
 	}
 
-	return &pb.Empty{}, nil
-
-}
-
-func (s *MetricsServer) StartSession(ctx context.Context, in *pb.StartSessionRequest) (*pb.Empty, error) {
-
-	key, eErr := encryption.DecryptAsymmetric(in.Key, s.config.PrivateKeyPath)
-	if eErr != nil {
-		return nil, status.Errorf(codes.Unauthenticated, eErr.Error())
-	}
-
-	s.config.Session = string(key)
 	return &pb.Empty{}, nil
 
 }

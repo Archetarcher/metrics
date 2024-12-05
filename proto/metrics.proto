@@ -17,13 +17,8 @@ message UpdateMetricsRequest {
 
 message Empty {}
 
-message StartSessionRequest {
-  bytes  key = 1;
-}
-
 
 
 service Metrics {
-  rpc StartSession(StartSessionRequest) returns (Empty);
   rpc UpdateMetrics(UpdateMetricsRequest) returns (Empty);
 }
