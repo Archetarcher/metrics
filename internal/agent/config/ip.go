@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"net"
 )
@@ -15,6 +14,5 @@ func GetLocalIP() net.IP {
 
 	localAddress := conn.LocalAddr().(*net.UDPAddr)
 
-	fmt.Println(localAddress.IP)
 	return localAddress.IP
 }

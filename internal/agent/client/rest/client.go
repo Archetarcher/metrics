@@ -11,11 +11,10 @@ import (
 )
 
 // Run starts metric tracking by rest handler
-func Run(conf *config.AppConfig) error {
-	service := services.NewMetricsService(conf)
+func Run(conf *config.AppConfig, s *services.MetricsService) error {
 	p := provider.NewMetricsProvider(conf)
 
-	h, err := handlers.NewMetricsHandler(conf, p, service)
+	h, err := handlers.NewMetricsHandler(conf, p, s)
 	if err != nil {
 		logger.Log.Info("failed to create tracking handler with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 		return errors.New(err.Text)
@@ -27,10 +26,7 @@ func Run(conf *config.AppConfig) error {
 		return errors.New(eErr.Text)
 	}
 
-	hErr := h.TrackMetrics()
-	if hErr != nil {
-		logger.Log.Info("failed with error", zap.String("error", hErr.Text), zap.Int("code", hErr.Code))
-		return errors.New(hErr.Text)
-	}
+	h.TrackMetrics()
+
 	return nil
 }

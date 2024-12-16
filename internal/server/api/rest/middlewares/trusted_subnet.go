@@ -13,15 +13,11 @@ func RequestTrustedSubnet(next http.Handler, config *config.AppConfig) http.Hand
 		if config.TrustedSubnet != emptyParam {
 			ipStr := r.Header.Get("X-Real-IP")
 
-			if ipStr == emptyParam {
+			if ipStr == emptyParam || ipStr != config.TrustedSubnet {
 				rw.WriteHeader(http.StatusForbidden)
 				return
 			}
 
-			if ipStr != config.TrustedSubnet {
-				rw.WriteHeader(http.StatusForbidden)
-				return
-			}
 		}
 
 		next.ServeHTTP(rw, r.WithContext(r.Context()))

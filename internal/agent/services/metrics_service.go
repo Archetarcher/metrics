@@ -91,7 +91,7 @@ func reportWorker(send types.UpdateMetrics, metricsData <-chan domain.MetricsDat
 	}
 }
 
-func startRuntimePoll(wg *sync.WaitGroup, interval int, pollData chan<- domain.MetricsData, ctx context.Context) {
+func startRuntimePoll(wg *sync.WaitGroup, interval int, pollData chan domain.MetricsData, ctx context.Context) {
 	defer wg.Done()
 	pollInterval := time.Duration(interval) * time.Second
 	counterInterval := int64(1)
@@ -99,7 +99,9 @@ func startRuntimePoll(wg *sync.WaitGroup, interval int, pollData chan<- domain.M
 	for {
 		select {
 		case <-ctx.Done():
-			close(pollData)
+			if !isClosed(pollData) {
+				close(pollData)
+			}
 			return
 		default:
 			metrics, err := fetchRuntime(counterInterval)
@@ -116,7 +118,7 @@ func startRuntimePoll(wg *sync.WaitGroup, interval int, pollData chan<- domain.M
 
 	}
 }
-func startMemoryPoll(wg *sync.WaitGroup, interval int, pollData chan<- domain.MetricsData, ctx context.Context) {
+func startMemoryPoll(wg *sync.WaitGroup, interval int, pollData chan domain.MetricsData, ctx context.Context) {
 	defer wg.Done()
 	pollInterval := time.Duration(interval) * time.Second
 	counterInterval := int64(1)
@@ -124,7 +126,9 @@ func startMemoryPoll(wg *sync.WaitGroup, interval int, pollData chan<- domain.Me
 	for {
 		select {
 		case <-ctx.Done():
-			close(pollData)
+			if !isClosed(pollData) {
+				close(pollData)
+			}
 			return
 		default:
 			metrics, err := fetchMemory()
@@ -266,3 +270,13 @@ func gatherMemoryValues() domain.Gauge {
 }
 
 type gatherGaugeValue func() domain.Gauge
+
+func isClosed(ch <-chan domain.MetricsData) bool {
+	select {
+	case <-ch:
+		return true
+	default:
+	}
+
+	return false
+}

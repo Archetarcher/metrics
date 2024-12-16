@@ -1,46 +1,18 @@
 package encryption
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"go.uber.org/zap"
-	"io"
-	"net/http"
 	"os"
 )
 
 const emptyParam = ""
-
-// RequestDecryptMiddleware — decryption middleware for incoming http requests.
-func RequestDecryptMiddleware(next http.Handler, config *config.AppConfig) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-
-		enc := r.Header.Get("Encrypted")
-		rw.Header().Set("session", config.Session)
-
-		if config.PrivateKeyPath != emptyParam && enc != emptyParam {
-
-			c, err := io.ReadAll(r.Body)
-			if err != nil {
-				rw.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-			decrypted := DecryptSymmetric(c, config.Session)
-			r.Body = io.NopCloser(bytes.NewReader(decrypted))
-		}
-
-		next.ServeHTTP(rw, r.WithContext(r.Context()))
-
-	})
-}
 
 // DecryptSymmetric is a function that uses symmetric decryption to the given slice of bytes
 func DecryptSymmetric(ciphertext []byte, key string) []byte {

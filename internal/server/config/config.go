@@ -36,7 +36,7 @@ func NewConfig() *AppConfig {
 
 // ParseConfig parses existing configuration.
 func (c *AppConfig) ParseConfig() {
-	c.parseFlags()
-	c.parseEnv()
 	c.parseJSON()
+	c.parseEnv()
+	c.parseFlags()
 }

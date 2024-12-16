@@ -2,10 +2,10 @@ package provider
 
 import (
 	"fmt"
+	middlewares "github.com/Archetarcher/metrics.git/internal/agent/client/rest/middlewares"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/Archetarcher/metrics.git/internal/agent/encryption"
-	"github.com/Archetarcher/metrics.git/internal/agent/middlewares"
 	"github.com/go-resty/resty/v2"
 	"net/http"
 	"time"

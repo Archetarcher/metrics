@@ -3,9 +3,7 @@ package rest
 import (
 	"context"
 	"errors"
-	"github.com/Archetarcher/metrics.git/internal/server/encryption"
-	"github.com/Archetarcher/metrics.git/internal/server/middlewares"
-	"github.com/Archetarcher/metrics.git/internal/server/repositories"
+	middlewares "github.com/Archetarcher/metrics.git/internal/server/api/rest/middlewares"
 	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -31,13 +29,15 @@ type MetricsAPI struct {
 func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (*MetricsAPI, *domain.MetricsError) {
 
 	r := chi.NewRouter()
+
 	r.Use(func(handler http.Handler) http.Handler {
-		return encryption.RequestDecryptMiddleware(handler, config)
+		return middlewares.RequestTrustedSubnet(handler, config)
+	})
+	r.Use(func(handler http.Handler) http.Handler {
+		return middlewares.RequestDecryptMiddleware(handler, config)
 	})
 	r.Use(middlewares.GzipMiddleware)
-
-	r.Use(logger.RequestLoggerMiddleware)
-
+	r.Use(middlewares.RequestLoggerMiddleware)
 	r.Use(func(handler http.Handler) http.Handler {
 		return middlewares.RequestHashesMiddleware(handler, config)
 	})
@@ -59,9 +59,8 @@ func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (
 	}, nil
 }
 
-// RunRestServer starts serving application.
-func RunRestServer(config *config.AppConfig, repo *repositories.MetricRepository) error {
-	service := services.NewMetricsService(repo)
+// Run starts serving application.
+func Run(config *config.AppConfig, service *services.MetricsService) error {
 	handler := handlers.NewMetricsHandler(service, config)
 
 	api, err := NewMetricsAPI(handler, config)

@@ -14,6 +14,9 @@ message Metric {
 message UpdateMetricsRequest {
   repeated Metric metrics = 1;
 }
+message StartSessionRequest {
+  bytes key = 1;
+}
 
 message Empty {}
 
@@ -21,4 +24,5 @@ message Empty {}
 
 service Metrics {
   rpc UpdateMetrics(UpdateMetricsRequest) returns (Empty);
+  rpc StartSession(StartSessionRequest) returns (Empty);
 }

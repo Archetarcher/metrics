@@ -35,7 +35,7 @@ func (s *MetricsService) CheckConnection(ctx context.Context) *domain.MetricsErr
 }
 
 // Updates creates or updates batch of metrics data
-func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) ([]domain.Metrics, *domain.MetricsError) {
+func (s *MetricsService) Updates(ctx context.Context, request []domain.Metrics) ([]domain.Metrics, *domain.MetricsError) {
 	keys := make([]string, len(request))
 
 	for _, m := range request {
@@ -47,19 +47,6 @@ func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) 
 	metricsByKey, err := s.repo.GetAllIn(ctx, keys)
 	if err != nil {
 		return nil, err
-	}
-
-	existingKeys := make(map[string]int64)
-	for k, m := range request {
-		if m.MType == domain.CounterType {
-			if existingKeys[getKey(m)] != 0 {
-				c := *m.Delta + existingKeys[getKey(m)]
-				(request)[k].Delta = &c
-				continue
-			}
-			existingKeys[getKey(m)] = *m.Delta
-		}
-
 	}
 
 	for _, mbk := range metricsByKey {
@@ -83,7 +70,7 @@ func (s *MetricsService) Updates(request []domain.Metrics, ctx context.Context) 
 }
 
 // Update creates or updates metric data
-func (s *MetricsService) Update(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
+func (s *MetricsService) Update(ctx context.Context, request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
 	response, err := s.repo.Get(ctx, request)
 	if err != nil {
 		return nil, err
@@ -106,7 +93,7 @@ func (s *MetricsService) Update(request *domain.Metrics, ctx context.Context) (*
 }
 
 // GetValue fetches metric data by ID and MType in domain.Metrics
-func (s *MetricsService) GetValue(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError) {
+func (s *MetricsService) GetValue(ctx context.Context, request *domain.Metrics) (*domain.Metrics, *domain.MetricsError) {
 
 	response, err := s.repo.Get(ctx, request)
 	if err != nil {

@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	Metrics_UpdateMetrics_FullMethodName = "/metrics.Metrics/UpdateMetrics"
+	Metrics_StartSession_FullMethodName  = "/metrics.Metrics/StartSession"
 )
 
 // MetricsClient is the client API for Metrics service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsClient interface {
 	UpdateMetrics(ctx context.Context, in *UpdateMetricsRequest, opts ...grpc.CallOption) (*Empty, error)
+	StartSession(ctx context.Context, in *StartSessionRequest, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type metricsClient struct {
@@ -47,11 +49,22 @@ func (c *metricsClient) UpdateMetrics(ctx context.Context, in *UpdateMetricsRequ
 	return out, nil
 }
 
+func (c *metricsClient) StartSession(ctx context.Context, in *StartSessionRequest, opts ...grpc.CallOption) (*Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, Metrics_StartSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MetricsServer is the server API for Metrics service.
 // All implementations must embed UnimplementedMetricsServer
 // for forward compatibility.
 type MetricsServer interface {
 	UpdateMetrics(context.Context, *UpdateMetricsRequest) (*Empty, error)
+	StartSession(context.Context, *StartSessionRequest) (*Empty, error)
 	mustEmbedUnimplementedMetricsServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedMetricsServer struct{}
 
 func (UnimplementedMetricsServer) UpdateMetrics(context.Context, *UpdateMetricsRequest) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateMetrics not implemented")
+}
+func (UnimplementedMetricsServer) StartSession(context.Context, *StartSessionRequest) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartSession not implemented")
 }
 func (UnimplementedMetricsServer) mustEmbedUnimplementedMetricsServer() {}
 func (UnimplementedMetricsServer) testEmbeddedByValue()                 {}
@@ -104,6 +120,24 @@ func _Metrics_UpdateMetrics_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Metrics_StartSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricsServer).StartSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Metrics_StartSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricsServer).StartSession(ctx, req.(*StartSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Metrics_ServiceDesc is the grpc.ServiceDesc for Metrics service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var Metrics_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateMetrics",
 			Handler:    _Metrics_UpdateMetrics_Handler,
+		},
+		{
+			MethodName: "StartSession",
+			Handler:    _Metrics_StartSession_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

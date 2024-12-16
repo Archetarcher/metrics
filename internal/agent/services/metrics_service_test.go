@@ -6,9 +6,9 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/agent/encryption"
 	config2 "github.com/Archetarcher/metrics.git/internal/server/config"
 	encryption2 "github.com/Archetarcher/metrics.git/internal/server/encryption"
+	"github.com/Archetarcher/metrics.git/internal/server/gzip"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
-	"github.com/Archetarcher/metrics.git/internal/server/middlewares"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
@@ -162,7 +162,7 @@ func setupConfigServer() (*httptest.Server, error) {
 	r.Use(func(handler http.Handler) http.Handler {
 		return encryption2.RequestDecryptMiddleware(handler, conf.c)
 	})
-	r.Use(middlewares.GzipMiddleware)
+	r.Use(gzip.GzipMiddleware)
 
 	r.Post("/updates/", handler.UpdatesMetrics)
 	r.Post("/session/", handler.StartSession)

@@ -8,6 +8,7 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
+	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
 	"go.uber.org/zap"
 	"log"
@@ -32,7 +33,6 @@ func main() {
 	ctx := context.Background()
 
 	storage, err := store.NewStore(ctx, c)
-
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Error(err.Err))
 
@@ -46,15 +46,16 @@ func main() {
 	}
 
 	repo := repositories.NewMetricsRepository(storage)
+	service := services.NewMetricsService(repo)
 
 	if c.EnableGRPC {
-		gErr := grpc.RunGRPCServer(c, repo)
+		gErr := grpc.Run(c, service)
 		if gErr != nil {
 			logger.Log.Error("failed to start grpc server with error, finishing app", zap.Error(gErr))
 			return
 		}
 	} else {
-		aErr := rest.RunRestServer(c, repo)
+		aErr := rest.Run(c, service)
 		if aErr != nil {
 			logger.Log.Error("failed to start rest server with error, finishing app", zap.Error(aErr))
 			return
