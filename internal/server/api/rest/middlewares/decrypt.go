@@ -22,7 +22,11 @@ func RequestDecryptMiddleware(next http.Handler, config *config.AppConfig) http.
 				return
 			}
 
-			decrypted := encryption.DecryptSymmetric(c, config.Session)
+			decrypted, eErr := encryption.DecryptSymmetric(c, config.Session)
+			if eErr != nil {
+				rw.WriteHeader(http.StatusBadRequest)
+				return
+			}
 			r.Body = io.NopCloser(bytes.NewReader(decrypted))
 		}
 

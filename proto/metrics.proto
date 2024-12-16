@@ -12,7 +12,7 @@ message Metric {
 }
 
 message UpdateMetricsRequest {
-  repeated Metric metrics = 1;
+  bytes metrics = 1;
 }
 message StartSessionRequest {
   bytes key = 1;

@@ -26,7 +26,7 @@ func (c *AppConfig) initFlags() {
 
 	flag.StringVar(&c.RunAddr, flagRunAddrName, ":8080", "address and port to run server")
 	flag.StringVar(&c.LogLevel, flagLogLevelName, "info", "log level")
-	flag.StringVar(&c.Key, flagKeyName, "", "key")
+	flag.StringVar(&c.Key, flagKeyName, "key", "key")
 
 	flag.StringVar(&c.FileStoragePath, flagFileStoragePathName, "/tmp/metrics-pgx.json", "file storage path")
 	flag.IntVar(&c.StoreInterval, flagStoreIntervalName, 300, "seconds to save data to file")
@@ -40,7 +40,7 @@ func (c *AppConfig) initFlags() {
 
 	flag.StringVar(&c.ConfigPath, flagConfigPathName, "server-config.json", "config file")
 
-	flag.BoolVar(&c.EnableGRPC, flagEnableGRPCName, true, "run grpc server or not")
+	flag.BoolVar(&c.EnableGRPC, flagEnableGRPCName, false, "run grpc server or not")
 	flag.StringVar(&c.GRPCRunAddr, flagGRPCRunAddrName, ":3200", "address and port to run grpc server")
 
 }

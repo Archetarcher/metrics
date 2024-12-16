@@ -192,7 +192,7 @@ func (s *Store) SetValues(ctx context.Context, request []domain.Metrics) *domain
 	defer func() {
 		tErr := tx.Rollback()
 		if tErr != nil {
-			logger.Log.Error("failed to rollback transaction")
+			logger.Log.Info("failed to rollback transaction")
 		}
 	}()
 
@@ -204,7 +204,7 @@ func (s *Store) SetValues(ctx context.Context, request []domain.Metrics) *domain
 	defer func() {
 		sErr := stmt.Close()
 		if sErr != nil {
-			logger.Log.Error("failed to close statement", zap.Error(sErr))
+			logger.Log.Info("failed to close statement")
 		}
 	}()
 

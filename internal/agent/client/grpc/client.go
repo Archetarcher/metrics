@@ -2,9 +2,9 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Archetarcher/metrics.git/internal/agent/client/grpc/interceptors"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/Archetarcher/metrics.git/internal/agent/encryption"
@@ -43,15 +43,12 @@ type MetricsService interface {
 
 // Run starts grpc client
 func Run(c *config.AppConfig, s MetricsService) error {
-
+	interceptor := NewMetricsInterceptor(c)
 	conn, err := grpc.NewClient(c.GRPCRunAddr, grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(
-			func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-				return interceptors.HashInterceptor(ctx, method, req, reply, cc, invoker, c)
-			},
-			func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-				return interceptors.EncryptInterceptor(ctx, method, req, reply, cc, invoker, c)
-			},
+			interceptor.HashInterceptor,
+			interceptor.TrustedSubnetInterceptor,
+			interceptor.EncryptInterceptor,
 		))
 	if err != nil {
 		logger.Log.Error("failed to init grpc connection with server", zap.Error(err))
@@ -78,7 +75,6 @@ func (c *MetricsClient) StartSession() *domain.MetricsError {
 	if gErr != nil {
 		return &domain.MetricsError{Text: "failed to generate crypto key"}
 	}
-	logger.Log.Info("starting session:", zap.String("key", string(key)))
 
 	encryptedKey, eErr := encryption.EncryptAsymmetric(key, c.config.PublicKeyPath)
 	if eErr != nil {
@@ -89,6 +85,8 @@ func (c *MetricsClient) StartSession() *domain.MetricsError {
 	if err != nil {
 		return &domain.MetricsError{Text: fmt.Sprintf("client: responded with error: %s\n, %s, ", err)}
 	}
+	c.config.Session.Key = string(key)
+
 	return nil
 }
 
@@ -106,30 +104,15 @@ func (c *MetricsClient) TrackMetrics() {
 
 func (c *MetricsClient) update(request []domain.Metrics) (*domain.SendResponse, *domain.MetricsError) {
 
-	var pbRequest pb.UpdateMetricsRequest
-	for _, v := range request {
-		var delta int64
-		var value float64
+	js, err := json.Marshal(request)
 
-		if v.Value != nil {
-			value = *v.Value
-		}
-
-		if v.Delta != nil {
-			delta = *v.Delta
-		}
-
-		pbRequest.Metrics = append(pbRequest.Metrics, &pb.Metric{
-			ID:    v.ID,
-			MType: v.MType,
-			Value: value,
-			Delta: delta,
-		})
+	if err != nil {
+		return nil, &domain.MetricsError{Text: fmt.Sprintf("failed to marshal request %s\n", err)}
 	}
 
-	_, err := c.client.UpdateMetrics(context.Background(), &pbRequest, grpc.UseCompressor(gzip.Name))
-	if err != nil {
-		return nil, &domain.MetricsError{Text: fmt.Sprintf("client: responded with error: %s\n, %s, ", err)}
+	_, cErr := c.client.UpdateMetrics(context.Background(), &pb.UpdateMetricsRequest{Metrics: js}, grpc.UseCompressor(gzip.Name))
+	if cErr != nil {
+		return nil, &domain.MetricsError{Text: fmt.Sprintf("client: responded with error: %s\n", cErr)}
 	}
 	return &domain.SendResponse{}, nil
 }

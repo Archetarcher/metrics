@@ -1,8 +1,9 @@
 package grpc
 
 import (
+	"bytes"
 	"context"
-	"github.com/Archetarcher/metrics.git/internal/server/api/grpc/interceptors"
+	"encoding/json"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/encryption"
@@ -13,6 +14,7 @@ import (
 	"google.golang.org/grpc/codes"
 	_ "google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/status"
+	"io"
 	"net"
 )
 
@@ -30,18 +32,14 @@ func Run(c *config.AppConfig, s MetricsService) error {
 		return err
 	}
 
+	interceptors := NewMetricsInterceptor(c)
+
 	server := grpc.NewServer(grpc.ChainUnaryInterceptor(
 		interceptors.LoggerInterceptor,
-		func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-			return interceptors.TrustedSubnetInterceptor(ctx, req, info, handler, c)
-		},
-		func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-			return interceptors.HashInterceptor(ctx, req, info, handler, c)
-		},
-		func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-			return interceptors.DecryptInterceptor(ctx, req, info, handler, c)
-		}),
-	)
+		interceptors.HashInterceptor,
+		interceptors.TrustedSubnetInterceptor,
+		interceptors.DecryptInterceptor,
+	))
 	pb.RegisterMetricsServer(server, &MetricsServer{config: c, service: s})
 
 	logger.Log.Info("Running grpc server ", zap.String("address", c.GRPCRunAddr))
@@ -62,14 +60,12 @@ func (s *MetricsServer) UpdateMetrics(ctx context.Context, in *pb.UpdateMetricsR
 
 	var metrics []domain.Metrics
 
-	for _, m := range in.Metrics {
-		metrics = append(metrics, domain.Metrics{
-			Delta: &m.Delta,
-			Value: &m.Value,
-			ID:    m.ID,
-			MType: m.MType,
-		})
+	dec := json.NewDecoder(io.NopCloser(bytes.NewReader(in.Metrics)))
+
+	if err := dec.Decode(&metrics); err != nil {
+		return nil, status.Errorf(codes.Internal, "cannot decode request JSON body", codes.Internal)
 	}
+
 	_, err := s.service.Updates(ctx, metrics)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Text, err.Code)
@@ -84,7 +80,6 @@ func (s *MetricsServer) StartSession(ctx context.Context, in *pb.StartSessionReq
 	if eErr != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "failed")
 	}
-	logger.Log.Info("got session request:", zap.String("key", string(key)))
 
 	s.config.Session = string(key)
 

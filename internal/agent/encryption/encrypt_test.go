@@ -2,10 +2,10 @@ package encryption
 
 import (
 	"context"
+	"github.com/Archetarcher/metrics.git/internal/agent/client/rest/middlewares"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	config2 "github.com/Archetarcher/metrics.git/internal/server/config"
-	"github.com/Archetarcher/metrics.git/internal/server/gzip"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
@@ -186,7 +186,8 @@ var m = []domain.Metrics{
 		MType: "gauge",
 		Delta: nil,
 		Value: &gauge,
-	}}
+	},
+}
 
 func (c *Config) setConfig() {
 	c.once.Do(func() {
@@ -211,7 +212,7 @@ func setupConfigServer() (*httptest.Server, error) {
 	service := services.NewMetricsService(repo)
 	handler := handlers.NewMetricsHandler(service, conf.c)
 	r := chi.NewRouter()
-	r.Use(gzip.GzipMiddleware)
+	r.Use(middlewares.GzipMiddleware)
 
 	r.Post("/session/", handler.StartSession)
 

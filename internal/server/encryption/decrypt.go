@@ -12,29 +12,27 @@ import (
 	"os"
 )
 
-const emptyParam = ""
-
 // DecryptSymmetric is a function that uses symmetric decryption to the given slice of bytes
-func DecryptSymmetric(ciphertext []byte, key string) []byte {
+func DecryptSymmetric(ciphertext []byte, key string) ([]byte, error) {
 	block, err := aes.NewCipher([]byte(key))
 	if err != nil {
 		logger.Log.Info("error decryption", zap.Error(err))
-		return nil
+		return nil, err
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		logger.Log.Info("error decryption", zap.Error(err))
-		return nil
+		return nil, err
 	}
 
 	plaintext, err := gcm.Open(nil, ciphertext[len(ciphertext)-12:], ciphertext[:len(ciphertext)-12], nil)
 	if err != nil {
 		logger.Log.Info("error decryption", zap.Error(err))
-		return nil
+		return nil, err
 	}
 
-	return plaintext
+	return plaintext, nil
 }
 
 // DecryptAsymmetric is a function that uses asymmetric decryption to the given slice of bytes
