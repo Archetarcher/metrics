@@ -24,6 +24,12 @@ func (p *MetricsProvider) Update(request []domain.Metrics) (*domain.SendResponse
 	url := "http://" + p.config.ServerRunAddr + "/updates/"
 
 	res, err := p.client.
+		OnBeforeRequest(func(client *resty.Client, request *resty.Request) error {
+			return HashMiddleware(client, request, p.config)
+		}).
+		OnBeforeRequest(func(client *resty.Client, request *resty.Request) error {
+			return GzipMiddleware(client, request, p.config)
+		}).
 		R().
 		SetHeader("X-Real-IP", config.GetLocalIP().String()).
 		SetBody(request).

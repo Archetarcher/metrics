@@ -22,13 +22,7 @@ func NewMetricsClient(config *config.AppConfig, service *services.MetricsService
 
 // Run starts metric tracking by rest handler
 func (c *MetricsClient) Run() error {
-	client := resty.New().
-		OnBeforeRequest(func(client *resty.Client, request *resty.Request) error {
-			return HashMiddleware(client, request, c.config)
-		}).
-		OnBeforeRequest(func(client *resty.Client, request *resty.Request) error {
-			return GzipMiddleware(client, request, c.config)
-		})
+	client := resty.New()
 
 	p := provider.NewMetricsProvider(c.config, client)
 	h, err := handlers.NewMetricsHandler(c.config, p, c.service)
