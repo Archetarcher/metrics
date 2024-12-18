@@ -2,7 +2,7 @@ package provider
 
 import (
 	"fmt"
-	middlewares "github.com/Archetarcher/metrics.git/internal/agent/client/rest/middlewares"
+	"github.com/Archetarcher/metrics.git/internal/agent/client/rest"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/Archetarcher/metrics.git/internal/agent/encryption"
@@ -16,8 +16,8 @@ type MetricsProvider struct {
 	client *resty.Client
 }
 
-func NewMetricsProvider(appConfig *config.AppConfig) *MetricsProvider {
-	return &MetricsProvider{config: appConfig, client: resty.New()}
+func NewMetricsProvider(appConfig *config.AppConfig, client *resty.Client) *MetricsProvider {
+	return &MetricsProvider{config: appConfig, client: client}
 }
 
 func (p *MetricsProvider) Update(request []domain.Metrics) (*domain.SendResponse, *domain.MetricsError) {
@@ -26,10 +26,10 @@ func (p *MetricsProvider) Update(request []domain.Metrics) (*domain.SendResponse
 
 	res, err := p.client.
 		OnBeforeRequest(func(client *resty.Client, request *resty.Request) error {
-			return middlewares.HashMiddleware(client, request, p.config)
+			return rest.HashMiddleware(client, request, p.config)
 		}).
 		OnBeforeRequest(func(client *resty.Client, request *resty.Request) error {
-			return middlewares.GzipMiddleware(client, request, p.config)
+			return rest.GzipMiddleware(client, request, p.config)
 		}).
 		R().
 		SetHeader("X-Real-IP", config.GetLocalIP().String()).
@@ -52,7 +52,7 @@ func (p *MetricsProvider) StartSession(retryCount int) *domain.MetricsError {
 	if gErr != nil {
 		return &domain.MetricsError{Code: http.StatusInternalServerError, Text: "failed to generate crypto key"}
 	}
-	encryptedKey, eErr := encryption.EncryptAsymmetric(key, p.config.PublicKeyPath)
+	encryptedKey, eErr := encryption.NewAsymmetric(p.config.PublicKeyPath).Encrypt(key)
 	if eErr != nil {
 		return eErr
 	}

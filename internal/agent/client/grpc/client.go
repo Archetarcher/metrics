@@ -28,9 +28,8 @@ type MetricsClient struct {
 	config  *config.AppConfig
 }
 
-func newMetricsClient(config *config.AppConfig, service MetricsService, client pb.MetricsClient) *MetricsClient {
+func NewMetricsClient(config *config.AppConfig, service MetricsService) *MetricsClient {
 	return &MetricsClient{
-		client:  client,
 		config:  config,
 		service: service,
 	}
@@ -42,31 +41,30 @@ type MetricsService interface {
 }
 
 // Run starts grpc client
-func Run(c *config.AppConfig, s MetricsService) error {
-	interceptor := NewMetricsInterceptor(c)
-	conn, err := grpc.NewClient(c.GRPCRunAddr, grpc.WithTransportCredentials(insecure.NewCredentials()),
+func (c *MetricsClient) Run() error {
+	interceptor := newMetricsInterceptor(c.config)
+	conn, err := grpc.NewClient(c.config.GRPCRunAddr, grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(
-			interceptor.HashInterceptor,
-			interceptor.TrustedSubnetInterceptor,
-			interceptor.EncryptInterceptor,
+			interceptor.hashInterceptor,
+			interceptor.trustedSubnetInterceptor,
+			interceptor.encryptInterceptor,
 		))
+
 	if err != nil {
 		logger.Log.Error("failed to init grpc connection with server", zap.Error(err))
 		return err
 	}
 	defer conn.Close()
 
-	client := pb.NewMetricsClient(conn)
-	mc := newMetricsClient(c, s, client)
+	c.client = pb.NewMetricsClient(conn)
 
-	sErr := mc.StartSession()
+	sErr := c.StartSession()
 	if sErr != nil {
 		logger.Log.Error("failed to start secure session", zap.String("error", sErr.Text), zap.Int("code", sErr.Code))
 		return errors.New(sErr.Text)
 	}
 
-	mc.TrackMetrics()
-
+	c.TrackMetrics()
 	return nil
 }
 
@@ -76,7 +74,7 @@ func (c *MetricsClient) StartSession() *domain.MetricsError {
 		return &domain.MetricsError{Text: "failed to generate crypto key"}
 	}
 
-	encryptedKey, eErr := encryption.EncryptAsymmetric(key, c.config.PublicKeyPath)
+	encryptedKey, eErr := encryption.NewAsymmetric(c.config.PublicKeyPath).Encrypt(key)
 	if eErr != nil {
 		return eErr
 	}

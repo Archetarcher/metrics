@@ -1,8 +1,6 @@
 package encryption
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -15,10 +13,20 @@ import (
 	"os"
 )
 
-// EncryptAsymmetric is a function that uses asymmetric encryption to the given slice of bytes
-func EncryptAsymmetric(js []byte, path string) ([]byte, *domain.MetricsError) {
+type AsymmetricEncryption interface {
+	Encrypt(text []byte) ([]byte, *domain.MetricsError)
+}
+type Asymmetric struct {
+	keyPath string
+}
 
-	publicKeyPEM, err := os.ReadFile(path)
+func NewAsymmetric(path string) *Asymmetric {
+	return &Asymmetric{keyPath: path}
+}
+
+// Encrypt is a function that uses asymmetric encryption to the given slice of bytes
+func (a *Asymmetric) Encrypt(js []byte) ([]byte, *domain.MetricsError) {
+	publicKeyPEM, err := os.ReadFile(a.keyPath)
 	if err != nil {
 		logger.Log.Info("error encryption", zap.Error(err))
 		return nil, &domain.MetricsError{Text: err.Error(), Code: http.StatusInternalServerError}
@@ -35,31 +43,6 @@ func EncryptAsymmetric(js []byte, path string) ([]byte, *domain.MetricsError) {
 		return nil, &domain.MetricsError{Text: err.Error(), Code: http.StatusInternalServerError}
 	}
 	return ciphertext, nil
-}
-
-// EncryptSymmetric is a function that uses symmetric encryption to the given slice of bytes
-func EncryptSymmetric(plaintext []byte, key string) []byte {
-	block, err := aes.NewCipher([]byte(key))
-	if err != nil {
-		logger.Log.Info("error encryption", zap.Error(err))
-		return nil
-	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		logger.Log.Info("error encryption", zap.Error(err))
-		return nil
-	}
-
-	nonce := make([]byte, 12)
-	if _, err := rand.Read(nonce); err != nil {
-		logger.Log.Info("error encryption", zap.Error(err))
-		return nil
-	}
-
-	ciphertext := gcm.Seal(nil, nonce, plaintext, nil)
-	ciphertext = append(ciphertext, nonce...)
-	return ciphertext
 }
 
 // GenKey generates crypto key

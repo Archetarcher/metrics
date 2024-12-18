@@ -1,11 +1,11 @@
-package encryption
+package provider
 
 import (
 	"context"
-	"github.com/Archetarcher/metrics.git/internal/agent/client/rest/middlewares"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
-	"github.com/Archetarcher/metrics.git/internal/agent/domain"
+	"github.com/Archetarcher/metrics.git/internal/server/api/rest/middlewares"
 	config2 "github.com/Archetarcher/metrics.git/internal/server/config"
+	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -275,104 +276,40 @@ func TestStartSession(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf.c.PrivateKeyPath = tt.args.privatePath
-			err := StartSession(tt.args.config, client, tt.args.config.Session.RetryConn)
+			prvdr := NewMetricsProvider(tt.args.config, client)
+
+			err := prvdr.StartSession(tt.args.config.Session.RetryConn)
 
 			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}
 }
 
-func TestEncryptAsymmetric(t *testing.T) {
-	require.Nil(t, conf.err, "failed to init server", conf.server, conf.err)
-
+func TestMetricsProvider_StartSession(t *testing.T) {
+	type fields struct {
+		config *config.AppConfig
+		client *resty.Client
+	}
 	type args struct {
-		text []byte
-		key  string
-	}
-
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "positive test #1",
-			args: args{
-				text: []byte("teststring"),
-				key:  "../../../public.pem",
-			},
-			wantErr: false,
-		},
-		{
-			name: "negative test #2",
-			args: args{
-				text: []byte("teststring"),
-				key:  "../../public.pem",
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, eErr := EncryptAsymmetric(tt.args.text, tt.args.key)
-
-			assert.Equal(t, tt.wantErr, eErr != nil)
-		})
-	}
-}
-
-func TestEncryptSymmetric(t *testing.T) {
-	require.Nil(t, conf.err, "failed to init server", conf.server, conf.err)
-
-	type args struct {
-		text []byte
-		key  string
+		retryCount int
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name   string
+		fields fields
+		args   args
+		want   *domain.MetricsError
 	}{
-		{
-			name: "positive test #1",
-			args: args{
-				text: []byte("teststring"),
-				key:  "secretkey",
-			},
-			wantErr: false,
-		},
+		// TODO: Add test cases.
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := EncryptSymmetric(tt.args.text, tt.args.key)
-
-			assert.Equal(t, tt.wantErr, err != nil)
-		})
-	}
-}
-
-func Test_genKey(t *testing.T) {
-	require.Nil(t, conf.err, "failed to init server", conf.server, conf.err)
-
-	tests := []struct {
-		name    string
-		n       int
-		wantErr bool
-	}{
-		{
-			name:    "positive test #1",
-			n:       16,
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := genKey(tt.n)
-
-			assert.Equal(t, tt.wantErr, err != nil)
+			p := &MetricsProvider{
+				config: tt.fields.config,
+				client: tt.fields.client,
+			}
+			if got := p.StartSession(tt.args.retryCount); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("StartSession() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

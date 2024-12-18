@@ -762,7 +762,7 @@ func TestMetricsHandler_StartSession(t *testing.T) {
 	}
 
 	key := "xsaxsaxsa"
-	encryptedKey, eErr := encryption.EncryptAsymmetric([]byte(key), "../../../public.pem")
+	encryptedKey, eErr := encryption.NewAsymmetric("../../../public.pem").Encrypt([]byte(key))
 	require.Nil(t, eErr)
 	tests := []struct {
 		request request

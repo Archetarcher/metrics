@@ -28,13 +28,14 @@ func main() {
 	s := services.NewMetricsService(conf)
 
 	if conf.EnableGRPC {
-		err := grpc.Run(conf, s)
+
+		err := grpc.NewMetricsClient(conf, s).Run()
 		if err != nil {
 			logger.Log.Error("failed to start grpc client with error, finishing app", zap.Error(err))
 			return
 		}
 	} else {
-		err := rest.Run(conf, s)
+		err := rest.NewMetricsClient(conf, s).Run()
 		if err != nil {
 			logger.Log.Error("failed to start rest client with error, finishing app", zap.Error(err))
 			return

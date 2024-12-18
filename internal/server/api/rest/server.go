@@ -3,7 +3,7 @@ package rest
 import (
 	"context"
 	"errors"
-	middlewares "github.com/Archetarcher/metrics.git/internal/server/api/rest/middlewares"
+	"github.com/Archetarcher/metrics.git/internal/server/api/rest/middlewares"
 	"github.com/Archetarcher/metrics.git/internal/server/services"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -15,71 +15,70 @@ import (
 	"time"
 
 	"github.com/Archetarcher/metrics.git/internal/server/config"
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 )
 
-// MetricsAPI is an api struct, keeps router.
-type MetricsAPI struct {
-	router chi.Router
+// MetricsServer is an api struct, keeps router.
+type MetricsServer struct {
+	router  chi.Router
+	handler *handlers.MetricsHandler
+	config  *config.AppConfig
 }
 
-// NewMetricsAPI registers routes, middlewares.
-func NewMetricsAPI(handler *handlers.MetricsHandler, config *config.AppConfig) (*MetricsAPI, *domain.MetricsError) {
+func NewMetricsServer(service *services.MetricsService, config *config.AppConfig) *MetricsServer {
+	handler := handlers.NewMetricsHandler(service, config)
 
-	r := chi.NewRouter()
-
-	r.Use(func(handler http.Handler) http.Handler {
-		return middlewares.RequestTrustedSubnet(handler, config)
-	})
-	r.Use(func(handler http.Handler) http.Handler {
-		return middlewares.RequestDecryptMiddleware(handler, config)
-	})
-	r.Use(middlewares.GzipMiddleware)
-	r.Use(middlewares.RequestLoggerMiddleware)
-	r.Use(func(handler http.Handler) http.Handler {
-		return middlewares.RequestHashesMiddleware(handler, config)
-	})
-
-	r.Mount("/debug", middleware.Profiler())
-
-	r.Post("/update/{type}/{name}/{value}", handler.UpdateMetrics)
-	r.Get("/value/{type}/{name}", handler.GetMetrics)
-	r.Get("/", handler.GetMetricsPage)
-
-	r.Post("/update/", handler.UpdateMetricsJSON)
-	r.Post("/updates/", handler.UpdatesMetrics)
-	r.Post("/value/", handler.GetMetricsJSON)
-	r.Post("/session/", handler.StartSession)
-
-	r.Get("/ping", handler.GetPing)
-	return &MetricsAPI{
-		router: r,
-	}, nil
+	return &MetricsServer{
+		router:  chi.NewRouter(),
+		config:  config,
+		handler: handler,
+	}
 }
 
 // Run starts serving application.
-func Run(config *config.AppConfig, service *services.MetricsService) error {
-	handler := handlers.NewMetricsHandler(service, config)
+func (a *MetricsServer) Run() error {
+	logger.Log.Info("Running rest server ", zap.String("address", a.config.RunAddr))
+	a.mountMiddleware()
+	a.mountRoutes()
 
-	api, err := NewMetricsAPI(handler, config)
-
-	if err != nil {
-		logger.Log.Error("failed to init api with error, finishing app", zap.String("error", err.Text), zap.Int("code", err.Code))
-		return err.Err
-	}
-
-	logger.Log.Info("Running rest server ", zap.String("address", config.RunAddr))
-
-	server := &http.Server{Addr: config.RunAddr, Handler: api.router}
+	server := &http.Server{Addr: a.config.RunAddr, Handler: a.router}
 	configShutdown(server)
 
-	if lErr := server.ListenAndServe(); !errors.Is(lErr, http.ErrServerClosed) {
-		logger.Log.Error("failed to serve rest server", zap.String("error", err.Text), zap.Int("code", err.Code))
-		return lErr
+	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		logger.Log.Error("failed to serve rest server")
+		return err
 	}
 	return nil
+}
+func (a *MetricsServer) mountRoutes() {
+	a.router.Mount("/debug", middleware.Profiler())
+
+	a.router.Post("/update/{type}/{name}/{value}", a.handler.UpdateMetrics)
+	a.router.Get("/value/{type}/{name}", a.handler.GetMetrics)
+	a.router.Get("/", a.handler.GetMetricsPage)
+
+	a.router.Post("/update/", a.handler.UpdateMetricsJSON)
+	a.router.Post("/updates/", a.handler.UpdatesMetrics)
+	a.router.Post("/value/", a.handler.GetMetricsJSON)
+	a.router.Post("/session/", a.handler.StartSession)
+
+	a.router.Get("/ping", a.handler.GetPing)
+}
+
+func (a *MetricsServer) mountMiddleware() {
+	a.router.Use(func(handler http.Handler) http.Handler {
+		return middlewares.RequestTrustedSubnet(handler, a.config)
+	})
+	a.router.Use(func(handler http.Handler) http.Handler {
+		return middlewares.RequestDecryptMiddleware(handler, a.config)
+	})
+	a.router.Use(middlewares.GzipMiddleware)
+	a.router.Use(middlewares.RequestLoggerMiddleware)
+	a.router.Use(func(handler http.Handler) http.Handler {
+		return middlewares.RequestHashesMiddleware(handler, a.config)
+	})
+
 }
 
 func configShutdown(srv *http.Server) {

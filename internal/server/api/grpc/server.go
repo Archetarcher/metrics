@@ -25,14 +25,21 @@ type MetricsServer struct {
 	config  *config.AppConfig
 }
 
-func Run(c *config.AppConfig, s MetricsService) error {
-	listen, err := net.Listen("tcp", c.GRPCRunAddr)
+func NewMetricsServer(c *config.AppConfig, s MetricsService) *MetricsServer {
+	return &MetricsServer{
+		service: s,
+		config:  c,
+	}
+}
+
+func (s *MetricsServer) Run() error {
+	listen, err := net.Listen("tcp", s.config.GRPCRunAddr)
 	if err != nil {
 		logger.Log.Error("failed to define grpc port server", zap.Error(err))
 		return err
 	}
 
-	interceptors := NewMetricsInterceptor(c)
+	interceptors := NewMetricsInterceptor(s.config)
 
 	server := grpc.NewServer(grpc.ChainUnaryInterceptor(
 		interceptors.LoggerInterceptor,
@@ -40,9 +47,9 @@ func Run(c *config.AppConfig, s MetricsService) error {
 		interceptors.TrustedSubnetInterceptor,
 		interceptors.DecryptInterceptor,
 	))
-	pb.RegisterMetricsServer(server, &MetricsServer{config: c, service: s})
+	pb.RegisterMetricsServer(server, &MetricsServer{config: s.config, service: s.service})
 
-	logger.Log.Info("Running grpc server ", zap.String("address", c.GRPCRunAddr))
+	logger.Log.Info("Running grpc server ", zap.String("address", s.config.GRPCRunAddr))
 
 	if sErr := server.Serve(listen); sErr != nil {
 		logger.Log.Error("failed to serve grpc server", zap.Error(sErr))
@@ -63,7 +70,7 @@ func (s *MetricsServer) UpdateMetrics(ctx context.Context, in *pb.UpdateMetricsR
 	dec := json.NewDecoder(io.NopCloser(bytes.NewReader(in.Metrics)))
 
 	if err := dec.Decode(&metrics); err != nil {
-		return nil, status.Errorf(codes.Internal, "cannot decode request JSON body", codes.Internal)
+		return nil, status.Error(codes.Internal, "cannot decode request JSON body")
 	}
 
 	_, err := s.service.Updates(ctx, metrics)

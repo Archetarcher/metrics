@@ -14,15 +14,15 @@ import (
 	"strings"
 )
 
-type MetricsInterceptor struct {
+type metricsInterceptor struct {
 	config *config.AppConfig
 }
 
-func NewMetricsInterceptor(appConfig *config.AppConfig) *MetricsInterceptor {
-	return &MetricsInterceptor{config: appConfig}
+func newMetricsInterceptor(appConfig *config.AppConfig) *metricsInterceptor {
+	return &metricsInterceptor{config: appConfig}
 }
 
-func (i *MetricsInterceptor) HashInterceptor(ctx context.Context, method string, req interface{},
+func (i *metricsInterceptor) hashInterceptor(ctx context.Context, method string, req interface{},
 	reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker,
 	opts ...grpc.CallOption) error {
 
@@ -45,7 +45,7 @@ func (i *MetricsInterceptor) HashInterceptor(ctx context.Context, method string,
 	return invoker(ctx, method, req, reply, cc, opts...)
 }
 
-func (i *MetricsInterceptor) TrustedSubnetInterceptor(ctx context.Context, method string, req interface{},
+func (i *metricsInterceptor) trustedSubnetInterceptor(ctx context.Context, method string, req interface{},
 	reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker,
 	opts ...grpc.CallOption) error {
 
@@ -55,7 +55,7 @@ func (i *MetricsInterceptor) TrustedSubnetInterceptor(ctx context.Context, metho
 	return invoker(ctx, method, req, reply, cc, opts...)
 }
 
-func (i *MetricsInterceptor) EncryptInterceptor(ctx context.Context, method string, req interface{},
+func (i *metricsInterceptor) encryptInterceptor(ctx context.Context, method string, req interface{},
 	reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker,
 	opts ...grpc.CallOption) error {
 
@@ -65,7 +65,7 @@ func (i *MetricsInterceptor) EncryptInterceptor(ctx context.Context, method stri
 
 	m := req.(*proto.UpdateMetricsRequest)
 
-	encrypted := encryption.EncryptSymmetric(m.Metrics, i.config.Session.Key)
+	encrypted := encryption.NewSymmetric(i.config.Session.Key).Encrypt(m.Metrics)
 
 	req = &proto.UpdateMetricsRequest{Metrics: encrypted}
 

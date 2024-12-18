@@ -49,13 +49,13 @@ func main() {
 	service := services.NewMetricsService(repo)
 
 	if c.EnableGRPC {
-		gErr := grpc.Run(c, service)
+		gErr := grpc.NewMetricsServer(c, service).Run()
 		if gErr != nil {
 			logger.Log.Error("failed to start grpc server with error, finishing app", zap.Error(gErr))
 			return
 		}
 	} else {
-		aErr := rest.Run(c, service)
+		aErr := rest.NewMetricsServer(service, c).Run()
 		if aErr != nil {
 			logger.Log.Error("failed to start rest server with error, finishing app", zap.Error(aErr))
 			return
