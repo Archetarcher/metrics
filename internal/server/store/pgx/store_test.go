@@ -2,6 +2,7 @@ package pgx
 
 import (
 	"context"
+	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,7 @@ import (
 var conf TConfig
 
 type TConfig struct {
-	c     *Config
+	c     *config.AppConfig
 	store *Store
 	err   *domain.MetricsError
 	once  sync.Once
@@ -20,7 +21,7 @@ type TConfig struct {
 
 func (c *TConfig) setConfig() {
 	c.once.Do(func() {
-		c.c = &Config{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"}
+		c.c = &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"}
 
 		s, err := NewStore(context.Background(), c.c)
 
@@ -89,15 +90,17 @@ var (
 
 func TestNewStore(t *testing.T) {
 	t.Run("positive test", func(t *testing.T) {
-		s, err := NewStore(context.Background(), &Config{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"})
+		s, err := NewStore(context.Background(), &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"})
 		assert.NotNil(t, s)
 		assert.Nil(t, err)
 	})
 }
 
 func TestRetryConnection(t *testing.T) {
+	require.Nil(t, conf.err, "failed to init store", conf.store, conf.err)
+
 	t.Run("positive test", func(t *testing.T) {
-		s, err := RetryConnection(context.Background(), &domain.MetricsError{}, 3, 3, &Config{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"})
+		s, err := RetryConnection(context.Background(), &domain.MetricsError{}, 3, 3, &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"})
 		assert.Nil(t, s)
 		assert.NotNil(t, err)
 	})
@@ -284,6 +287,45 @@ func Test_getKey(t *testing.T) {
 			if got := getKey(tt.args.request); got != tt.want {
 				t.Errorf("getKey() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_runMigrations(t *testing.T) {
+	require.Nil(t, conf.err, "failed to init store", conf.store, conf.err)
+
+	type args struct {
+		conf *config.AppConfig
+	}
+
+	tests := []struct {
+		want    *domain.Metrics
+		args    args
+		name    string
+		wantErr bool
+	}{
+		{
+			name:    "positive test #1",
+			args:    args{conf: conf.c},
+			wantErr: false,
+		},
+		{
+			name:    "negative test #2",
+			args:    args{conf: &config.AppConfig{DatabaseDsn: conf.c.DatabaseDsn, MigrationsPath: ""}},
+			wantErr: true,
+		},
+		{
+			name:    "negative test #3",
+			args:    args{conf: &config.AppConfig{MigrationsPath: conf.c.MigrationsPath, DatabaseDsn: "postgre://postgres:postgres@localhost:5432/praktikum?sslmode=disable"}},
+			wantErr: true,
+		},
+	}
+	ctx := context.Background()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cErr := runMigrations(ctx, tt.args.conf)
+			assert.Equal(t, tt.wantErr, cErr != nil)
 		})
 	}
 }

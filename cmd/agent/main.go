@@ -2,13 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-resty/resty/v2"
-	"go.uber.org/zap"
-
-	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/handlers"
-	"github.com/Archetarcher/metrics.git/internal/agent/services"
-	"github.com/Archetarcher/metrics.git/internal/server/logger"
+	"github.com/Archetarcher/metrics.git/internal/agent/logger"
+	"go.uber.org/zap"
 )
 
 var (
@@ -20,13 +16,16 @@ var (
 func main() {
 	printBuildData()
 
-	c := config.NewConfig()
-	c.ParseConfig()
-	service := &services.TrackingService{Client: resty.New(), Config: c}
-	handler := handlers.TrackingHandler{TrackingService: service, Config: c}
-	err := handler.TrackMetrics()
+	h, err := handlers.NewTrackingHandler()
 	if err != nil {
-		logger.Log.Error("failed with error", zap.String("error", err.Text), zap.Int("code", err.Code))
+		logger.Log.Info("failed to create tracking handler with error", zap.String("error", err.Text), zap.Int("code", err.Code))
+		return
+	}
+
+	hErr := h.TrackMetrics()
+	if hErr != nil {
+		logger.Log.Info("failed with error", zap.String("error", hErr.Text), zap.Int("code", hErr.Code))
+		return
 	}
 }
 

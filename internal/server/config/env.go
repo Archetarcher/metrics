@@ -14,6 +14,8 @@ const (
 	envRestoreName                = "RESTORE"
 	envDatabaseDsnName            = "DATABASE_DSN"
 	envDatabaseMigrationsPathName = "DATABASE_MIGRATIONS_PATH"
+	envPrivateKeyPathName         = "CRYPTO_KEY"
+	envConfigPathName             = "CONFIG"
 )
 
 func (c *AppConfig) parseEnv() {
@@ -24,12 +26,15 @@ func (c *AppConfig) parseEnv() {
 	c.LogLevel = getEnvOrDefault(envLogLevelName, c.LogLevel, 1).(string)
 	c.Key = getEnvOrDefault(envKeyName, c.Key, 1).(string)
 
-	c.Store.Memory.FileStoragePath = getEnvOrDefault(envFileStoragePathName, c.Store.Memory.FileStoragePath, 1).(string)
-	c.Store.Memory.StoreInterval = getEnvOrDefault(envStoreIntervalName, c.Store.Memory.StoreInterval, 2).(int)
-	c.Store.Memory.Restore = getEnvOrDefault(envRestoreName, c.Store.Memory.Restore, 3).(bool)
+	c.FileStoragePath = getEnvOrDefault(envFileStoragePathName, c.FileStoragePath, 1).(string)
+	c.StoreInterval = getEnvOrDefault(envStoreIntervalName, c.StoreInterval, 2).(int)
+	c.Restore = getEnvOrDefault(envRestoreName, c.Restore, 3).(bool)
 
-	c.Store.Pgx.DatabaseDsn = getEnvOrDefault(envDatabaseDsnName, c.Store.Pgx.DatabaseDsn, 1).(string)
-	c.Store.Pgx.MigrationsPath = getEnvOrDefault(envDatabaseMigrationsPathName, c.Store.Pgx.MigrationsPath, 1).(string)
+	c.DatabaseDsn = getEnvOrDefault(envDatabaseDsnName, c.DatabaseDsn, 1).(string)
+	c.MigrationsPath = getEnvOrDefault(envDatabaseMigrationsPathName, c.MigrationsPath, 1).(string)
+
+	c.PrivateKeyPath = getEnvOrDefault(envPrivateKeyPathName, c.PrivateKeyPath, 1).(string)
+	c.ConfigPath = getEnvOrDefault(envConfigPathName, c.ConfigPath, 1).(string)
 
 }
 
@@ -45,7 +50,6 @@ func getEnvOrDefault(env string, def any, t int) any {
 	case 2:
 		if i, err := strconv.Atoi(val); err == nil {
 			return i
-
 		}
 		return def
 	case 3:

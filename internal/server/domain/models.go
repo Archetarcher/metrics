@@ -7,3 +7,8 @@ type Metrics struct {
 	ID    string   `json:"id" db:"id"`                           // metrics name
 	MType string   `json:"type" db:"type"`                       // metrics type, accepts value gauge or counter.
 }
+
+// SessionRequest is a session struct keeps encrypted key
+type SessionRequest struct {
+	Key []byte `json:"key"`
+}

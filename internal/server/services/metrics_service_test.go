@@ -14,8 +14,6 @@ import (
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
 	"github.com/Archetarcher/metrics.git/internal/server/store"
-	"github.com/Archetarcher/metrics.git/internal/server/store/memory"
-	"github.com/Archetarcher/metrics.git/internal/server/store/pgx"
 )
 
 var conf Config
@@ -29,7 +27,7 @@ type Config struct {
 
 func (c *Config) setConfig() {
 	c.once.Do(func() {
-		c.c = config.NewConfig(store.Config{Memory: &memory.Config{Active: true}, Pgx: &pgx.Config{}})
+		c.c = config.NewConfig()
 
 		service, err := setup()
 
@@ -43,7 +41,7 @@ func init() {
 
 func setup() (*MetricsService, error) {
 	ctx := context.Background()
-	storage, err := store.NewStore(ctx, conf.c.Store)
+	storage, err := store.NewStore(ctx, conf.c)
 	if err != nil {
 		logger.Log.Error("failed to init storage with error", zap.String("error", err.Text), zap.Int("code", err.Code))
 		return nil, err.Err
@@ -182,6 +180,15 @@ func TestMetricsService_GetValue(t *testing.T) {
 			name:    "positive test #1",
 			args:    args{request: &values[0]},
 			wantErr: false,
+		}, {
+			name: "negative test #2",
+			args: args{request: &domain.Metrics{
+				Delta: nil,
+				Value: nil,
+				ID:    "randomid",
+				MType: "counter",
+			}},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -239,5 +246,41 @@ func BenchmarkMetricsService_Updates(b *testing.B) {
 	metrics := []domain.Metrics{values[0], values[1], values[2], values[3]}
 	for i := 0; i < b.N; i++ {
 		conf.service.Updates(metrics, ctx)
+	}
+}
+
+func Test_handleError(t *testing.T) {
+	t.Run("positive test", func(t *testing.T) {
+		err := handleError(500, "error text")
+		assert.NotNil(t, err)
+	})
+}
+func Test_getKey(t *testing.T) {
+	type args struct {
+		request domain.Metrics
+	}
+	c := int64(10)
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "positive test #1",
+			args: args{domain.Metrics{
+				Delta: &c,
+				Value: nil,
+				ID:    "value",
+				MType: "counter",
+			}},
+			want: "value_counter",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getKey(tt.args.request); got != tt.want {
+				t.Errorf("getKey() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

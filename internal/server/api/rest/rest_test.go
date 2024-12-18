@@ -40,7 +40,6 @@ func TestMetricsAPI_Run(t *testing.T) {
 	type fields struct {
 		conf *config.AppConfig
 	}
-	addr := "8080"
 
 	tests := []struct {
 		fields  fields
@@ -48,18 +47,19 @@ func TestMetricsAPI_Run(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "With no config defined",
-			fields:  fields{conf: &config.AppConfig{RunAddr: addr}},
+			name:    "Negative test #2",
+			fields:  fields{conf: &config.AppConfig{RunAddr: "8080"}},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			api, err := NewMetricsAPI(&handlers.MetricsHandler{}, tt.fields.conf)
+			h, err := NewMetricsAPI(&handlers.MetricsHandler{}, tt.fields.conf)
 			assert.Nil(t, err)
 
-			aErr := api.Run(tt.fields.conf)
-			assert.NotNil(t, aErr)
+			hErr := h.Run(tt.fields.conf)
+			assert.Equal(t, tt.wantErr, hErr != nil, hErr)
+
 		})
 	}
 }

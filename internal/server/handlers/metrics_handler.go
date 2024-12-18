@@ -3,13 +3,13 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"github.com/Archetarcher/metrics.git/internal/server/encryption"
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"slices"
 	"strconv"
-
-	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap"
 
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
@@ -36,6 +36,28 @@ type MetricsService interface {
 // NewMetricsHandler creates new handler
 func NewMetricsHandler(service MetricsService, appConfig *config.AppConfig) *MetricsHandler {
 	return &MetricsHandler{service: service, config: appConfig}
+}
+
+// StartSession handler that accepts and saves session key.
+func (h *MetricsHandler) StartSession(w http.ResponseWriter, r *http.Request) {
+	// validate
+	request, err := validateSessionRequest(r)
+
+	enc := json.NewEncoder(w)
+
+	if err != nil {
+		sendResponse(enc, err.Text, err.Code, w)
+		return
+	}
+
+	key, eErr := encryption.DecryptAsymmetric(request.Key, h.config.PrivateKeyPath)
+	if eErr != nil {
+		sendResponse(enc, eErr, http.StatusUnauthorized, w)
+		return
+	}
+
+	h.config.Session = string(key)
+	sendResponse(enc, "", http.StatusOK, w)
 }
 
 // UpdateMetrics handler that creates or updates existing metric.
@@ -92,10 +114,11 @@ func (h *MetricsHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 // UpdatesMetrics handler that creates or updates existing batch of metrics.
 // Data provided in body json.
 func (h *MetricsHandler) UpdatesMetrics(w http.ResponseWriter, r *http.Request) {
+	enc := json.NewEncoder(w)
+
 	// validate
 	request, err := validateUpdatesRequest(r)
 
-	enc := json.NewEncoder(w)
 	w.Header().Set("Content-Type", "application/json")
 
 	if err != nil {
@@ -227,6 +250,29 @@ func validateGetRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError)
 
 	return &metrics, nil
 }
+func validateSessionRequest(r *http.Request) (*domain.SessionRequest, *domain.MetricsError) {
+	// validate method
+	if r.Method != http.MethodPost {
+
+		return nil, &domain.MetricsError{
+			Text: "method not allowed",
+			Code: http.StatusMethodNotAllowed,
+		}
+	}
+
+	// validate params
+	var session domain.SessionRequest
+
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&session); err != nil {
+		return nil, &domain.MetricsError{
+			Text: "cannot decode request JSON body",
+			Code: http.StatusInternalServerError,
+		}
+	}
+
+	return &session, nil
+}
 func validateRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
 	// validate method
 	if r.Method != http.MethodPost {
@@ -344,7 +390,7 @@ func sendResponse(enc *json.Encoder, data interface{}, code int, w http.Response
 		logger.Log.Info("failed with error", zap.Any("error", data), zap.Int("code", code))
 	}
 	if err := enc.Encode(data); err != nil {
-		logger.Log.Debug("error encoding response", zap.Error(err))
+		logger.Log.Debug("error encryption response", zap.Error(err))
 	}
 
 }

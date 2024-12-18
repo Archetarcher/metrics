@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"github.com/Archetarcher/metrics.git/internal/agent/middlewares"
 	"math/rand"
 	"net/http"
 	"runtime"
@@ -11,10 +12,8 @@ import (
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
 
-	"github.com/Archetarcher/metrics.git/internal/agent/compression"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
-	"github.com/Archetarcher/metrics.git/internal/agent/encoding"
 )
 
 const (
@@ -77,9 +76,11 @@ func (s *TrackingService) Send(request []domain.Metrics) (*domain.SendResponse, 
 	url := "http://" + s.Config.ServerRunAddr + "/updates/"
 
 	res, err := s.Client.
-		OnBeforeRequest(compression.GzipMiddleware).
 		OnBeforeRequest(func(client *resty.Client, request *resty.Request) error {
-			return encoding.HashMiddleware(client, request, s.Config)
+			return middlewares.HashMiddleware(client, request, s.Config)
+		}).
+		OnBeforeRequest(func(client *resty.Client, request *resty.Request) error {
+			return middlewares.GzipMiddleware(client, request, s.Config)
 		}).
 		R().
 		SetBody(request).
@@ -89,7 +90,7 @@ func (s *TrackingService) Send(request []domain.Metrics) (*domain.SendResponse, 
 	}
 
 	if res.StatusCode() != http.StatusOK {
-		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: responded with error: %s\n, %s", err, url), Code: res.StatusCode()}
+		return nil, &domain.TrackingError{Text: fmt.Sprintf("client: responded with error: %s\n, %s, ", err, url), Code: res.StatusCode()}
 	}
 	return &domain.SendResponse{Status: http.StatusOK}, nil
 }
