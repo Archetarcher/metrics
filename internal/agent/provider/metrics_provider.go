@@ -2,7 +2,6 @@ package provider
 
 import (
 	"fmt"
-	"github.com/Archetarcher/metrics.git/internal/agent/client/rest"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/Archetarcher/metrics.git/internal/agent/encryption"
@@ -25,12 +24,6 @@ func (p *MetricsProvider) Update(request []domain.Metrics) (*domain.SendResponse
 	url := "http://" + p.config.ServerRunAddr + "/updates/"
 
 	res, err := p.client.
-		OnBeforeRequest(func(client *resty.Client, request *resty.Request) error {
-			return rest.HashMiddleware(client, request, p.config)
-		}).
-		OnBeforeRequest(func(client *resty.Client, request *resty.Request) error {
-			return rest.GzipMiddleware(client, request, p.config)
-		}).
 		R().
 		SetHeader("X-Real-IP", config.GetLocalIP().String()).
 		SetBody(request).

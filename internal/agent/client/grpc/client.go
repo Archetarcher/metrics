@@ -81,7 +81,7 @@ func (c *MetricsClient) StartSession() *domain.MetricsError {
 
 	_, err := c.client.StartSession(context.Background(), &pb.StartSessionRequest{Key: encryptedKey})
 	if err != nil {
-		return &domain.MetricsError{Text: fmt.Sprintf("client: responded with error: %s\n, %s, ", err)}
+		return &domain.MetricsError{Text: fmt.Sprintf("client: responded with error: %s\n ", err)}
 	}
 	c.config.Session.Key = string(key)
 
