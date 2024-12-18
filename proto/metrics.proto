@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package metrics;
+
+option go_package = "metrics/proto";
+
+message Metric {
+  string ID = 1;
+  string MType = 2;
+  double value = 3;
+  int64 delta = 4;
+}
+
+message UpdateMetricsRequest {
+  bytes metrics = 1;
+}
+message StartSessionRequest {
+  bytes key = 1;
+}
+
+message Empty {}
+
+
+
+service Metrics {
+  rpc UpdateMetrics(UpdateMetricsRequest) returns (Empty);
+  rpc StartSession(StartSessionRequest) returns (Empty);
+}

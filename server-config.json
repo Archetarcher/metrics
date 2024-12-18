@@ -4,5 +4,6 @@
   "store_interval": "1s",
   "store_file": "/tmp/metrics-pgx.json",
   "database_dsn": "",
-  "crypto_key": "private.pem"
+  "crypto_key": "private.pem",
+  "trusted_subnet": "172.20.10.5"
 }

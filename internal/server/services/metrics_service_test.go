@@ -128,7 +128,7 @@ func TestMetricsService_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := conf.service.Update(tt.args.request, ctx)
+			_, err := conf.service.Update(ctx, tt.args.request)
 			assert.Equal(t, tt.wantErr, err != nil)
 
 		})
@@ -156,7 +156,7 @@ func TestMetricsService_Updates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := conf.service.Updates(tt.args.request, ctx)
+			_, err := conf.service.Updates(ctx, tt.args.request)
 			assert.Equal(t, tt.wantErr, err != nil)
 
 		})
@@ -193,7 +193,7 @@ func TestMetricsService_GetValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := conf.service.GetValue(tt.args.request, ctx)
+			_, err := conf.service.GetValue(ctx, tt.args.request)
 			assert.Equal(t, tt.wantErr, err != nil)
 
 		})
@@ -245,7 +245,7 @@ func BenchmarkMetricsService_Updates(b *testing.B) {
 	ctx := context.Background()
 	metrics := []domain.Metrics{values[0], values[1], values[2], values[3]}
 	for i := 0; i < b.N; i++ {
-		conf.service.Updates(metrics, ctx)
+		conf.service.Updates(ctx, metrics)
 	}
 }
 

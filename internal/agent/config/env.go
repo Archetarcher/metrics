@@ -14,6 +14,8 @@ const (
 	envRateLimitName      = "RATE_LIMIT"
 	envPublicKeyPathName  = "CRYPTO_KEY"
 	envConfigPathName     = "CONFIG"
+	envGRPCRunAddrName    = "GRPC_ADDRESS"
+	envEnableGRPCName     = "ENABLE_GRPC"
 )
 
 func (c *AppConfig) parseEnv() {
@@ -25,6 +27,10 @@ func (c *AppConfig) parseEnv() {
 	c.RateLimit = getEnvOrDefault(envRateLimitName, c.RateLimit, 2).(int)
 	c.PublicKeyPath = getEnvOrDefault(envPublicKeyPathName, c.PublicKeyPath, 1).(string)
 	c.ConfigPath = getEnvOrDefault(envConfigPathName, c.ConfigPath, 1).(string)
+
+	c.EnableGRPC = getEnvOrDefault(envEnableGRPCName, c.EnableGRPC, 3).(bool)
+	c.GRPCRunAddr = getEnvOrDefault(envGRPCRunAddrName, c.GRPCRunAddr, 1).(string)
+
 }
 
 func getEnvOrDefault(env string, def any, t int) any {
