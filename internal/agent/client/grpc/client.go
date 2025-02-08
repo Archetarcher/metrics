@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
+	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -54,7 +55,12 @@ func (c *MetricsClient) Run() error {
 		logger.Log.Error("failed to init grpc connection with server", zap.Error(err))
 		return err
 	}
-	defer conn.Close()
+	defer func() {
+		cErr := conn.Close()
+		if cErr != nil {
+			log.Fatal("failed to close grpc connection")
+		}
+	}()
 
 	c.client = pb.NewMetricsClient(conn)
 

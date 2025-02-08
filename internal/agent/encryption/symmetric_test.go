@@ -8,8 +8,8 @@ import (
 func TestEncryptSymmetric(t *testing.T) {
 
 	type args struct {
-		text []byte
 		key  string
+		text []byte
 	}
 	tests := []struct {
 		name    string

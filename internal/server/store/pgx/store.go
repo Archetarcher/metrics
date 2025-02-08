@@ -94,14 +94,6 @@ func (s *Store) CheckConnection(ctx context.Context) *domain.MetricsError {
 	return nil
 }
 
-// Close closes connection
-func (s *Store) Close() {
-	err := s.db.Close()
-	if err != nil {
-		logger.Log.Info("Error close db", zap.Error(err))
-	}
-}
-
 // GetValuesIn fetches metrics by keys in slice
 func (s *Store) GetValuesIn(ctx context.Context, keys []string) ([]domain.Metrics, *domain.MetricsError) {
 	var metrics []domain.Metrics
@@ -112,7 +104,6 @@ func (s *Store) GetValuesIn(ctx context.Context, keys []string) ([]domain.Metric
 	}
 	q = sqlx.Rebind(sqlx.DOLLAR, q)
 	err = s.db.SelectContext(ctx, &metrics, q, args...)
-
 	if err != nil {
 		return nil, handleDBError(err, dbError)
 	}

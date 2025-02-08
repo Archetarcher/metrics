@@ -214,7 +214,6 @@ func (h *MetricsHandler) GetPing(w http.ResponseWriter, r *http.Request) {
 }
 
 func validateGetRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
-
 	// validate params
 	var metrics domain.Metrics
 
@@ -251,15 +250,6 @@ func validateGetRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError)
 	return &metrics, nil
 }
 func validateSessionRequest(r *http.Request) (*domain.SessionRequest, *domain.MetricsError) {
-	// validate method
-	if r.Method != http.MethodPost {
-
-		return nil, &domain.MetricsError{
-			Text: "method not allowed",
-			Code: http.StatusMethodNotAllowed,
-		}
-	}
-
 	// validate params
 	var session domain.SessionRequest
 
@@ -274,15 +264,6 @@ func validateSessionRequest(r *http.Request) (*domain.SessionRequest, *domain.Me
 	return &session, nil
 }
 func validateRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
-	// validate method
-	if r.Method != http.MethodPost {
-
-		return nil, &domain.MetricsError{
-			Text: "method not allowed",
-			Code: http.StatusMethodNotAllowed,
-		}
-	}
-
 	// validate params
 	var metrics domain.Metrics
 
@@ -342,15 +323,6 @@ func validateRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
 	return &metrics, nil
 }
 func validateUpdatesRequest(r *http.Request) ([]domain.Metrics, *domain.MetricsError) {
-	// validate method
-	if r.Method != http.MethodPost {
-
-		return nil, &domain.MetricsError{
-			Text: "method not allowed",
-			Code: http.StatusMethodNotAllowed,
-		}
-	}
-
 	// validate params
 	body, err := io.ReadAll(r.Body)
 	if err != nil {

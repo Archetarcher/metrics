@@ -19,7 +19,6 @@ type Store interface {
 	SetValue(ctx context.Context, request *domain.Metrics) *domain.MetricsError
 	SetValues(ctx context.Context, request []domain.Metrics) *domain.MetricsError
 	CheckConnection(ctx context.Context) *domain.MetricsError
-	Close()
 }
 
 // NewStore additional function to initiate Store instance according to factory pattern

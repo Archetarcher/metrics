@@ -166,6 +166,24 @@ func TestMetricsService_Updates(t *testing.T) {
 func TestMetricsService_GetValue(t *testing.T) {
 	require.NoError(t, conf.err, "failed to init service", conf.service, conf.err)
 
+	// ctrl := gomock.NewController(t)
+	// defer ctrl.Finish()
+	//
+	//value := domain.Metrics{
+	//	ID:    "counter_value",
+	//	MType: "counter",
+	//	Delta: &counter,
+	//	Value: nil,
+	//}
+	//
+	//m := mocks.NewMockStore(ctrl)
+	//m.EXPECT().
+	//	GetValue(gomock.Any(), gomock.Any()).
+	//	Return(&value, nil).
+	//	MaxTimes(5)
+
+	// repo := repositories.NewMetricsRepository(m)
+	// service := NewMetricsService(repo)
 	type args struct {
 		request *domain.Metrics
 	}

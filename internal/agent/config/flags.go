@@ -13,7 +13,7 @@ const (
 	flagRateLimitName      = "rl"
 	flagPublicKeyPathName  = "crypto-key"
 	flagSessionRetryConn   = "rc"
-	flagConfigPathName     = "c config"
+	flagConfigPathName     = "c-config"
 	flagGRPCRunAddrName    = "ga"
 	flagEnableGRPCName     = "eg"
 )

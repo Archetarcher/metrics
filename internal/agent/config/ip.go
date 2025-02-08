@@ -10,7 +10,12 @@ func GetLocalIP() net.IP {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer conn.Close()
+	defer func() {
+		cErr := conn.Close()
+		if cErr != nil {
+			log.Fatal("failed to close ip connection")
+		}
+	}()
 
 	localAddress := conn.LocalAddr().(*net.UDPAddr)
 

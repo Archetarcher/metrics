@@ -68,11 +68,6 @@ func (s *Store) CheckConnection(ctx context.Context) *domain.MetricsError {
 	return nil
 }
 
-// Close closes connection to storage, not implemented for in memory storage
-func (s *Store) Close() {
-
-}
-
 // GetValuesIn fetches metrics by keys in slices
 func (s *Store) GetValuesIn(ctx context.Context, keys []string) ([]domain.Metrics, *domain.MetricsError) {
 	s.mux.Lock()

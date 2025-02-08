@@ -31,8 +31,8 @@ type MetricsProvider interface {
 }
 
 // NewMetricsHandler creates and sets up tracking handler
-func NewMetricsHandler(conf *config.AppConfig, provider MetricsProvider, service MetricsService) (*MetricsHandler, *domain.MetricsError) {
-	return &MetricsHandler{service: service, config: conf, provider: provider}, nil
+func NewMetricsHandler(conf *config.AppConfig, provider MetricsProvider, service MetricsService) *MetricsHandler {
+	return &MetricsHandler{service: service, config: conf, provider: provider}
 }
 
 // StartSession is a handler that generates session

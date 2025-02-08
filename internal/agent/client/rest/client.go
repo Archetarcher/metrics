@@ -25,11 +25,7 @@ func (c *MetricsClient) Run() error {
 	client := resty.New()
 
 	p := provider.NewMetricsProvider(c.config, client)
-	h, err := handlers.NewMetricsHandler(c.config, p, c.service)
-	if err != nil {
-		logger.Log.Info("failed to create tracking handler with error", zap.String("error", err.Text), zap.Int("code", err.Code))
-		return errors.New(err.Text)
-	}
+	h := handlers.NewMetricsHandler(c.config, p, c.service)
 
 	eErr := h.StartSession()
 	if eErr != nil {

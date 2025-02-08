@@ -16,8 +16,8 @@ type AppConfig struct {
 	PrivateKeyPath  string `json:"crypto_key"`
 	FileStoragePath string `json:"store_file"`
 	DatabaseDsn     string `json:"database_dsn"`
-	StoreInterval   int    `json:"store_interval"`
 	ConfigPath      string
+	StoreInterval   int  `json:"store_interval"`
 	Restore         bool `json:"restore"`
 	EnableGRPC      bool `json:"enable_grpc"`
 

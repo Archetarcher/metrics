@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -281,35 +280,6 @@ func TestStartSession(t *testing.T) {
 			err := prvdr.StartSession(tt.args.config.Session.RetryConn)
 
 			assert.Equal(t, tt.wantErr, err != nil)
-		})
-	}
-}
-
-func TestMetricsProvider_StartSession(t *testing.T) {
-	type fields struct {
-		config *config.AppConfig
-		client *resty.Client
-	}
-	type args struct {
-		retryCount int
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   *domain.MetricsError
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &MetricsProvider{
-				config: tt.fields.config,
-				client: tt.fields.client,
-			}
-			if got := p.StartSession(tt.args.retryCount); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("StartSession() = %v, want %v", got, tt.want)
-			}
 		})
 	}
 }

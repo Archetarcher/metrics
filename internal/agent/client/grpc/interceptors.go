@@ -50,7 +50,7 @@ func (i *metricsInterceptor) trustedSubnetInterceptor(ctx context.Context, metho
 	opts ...grpc.CallOption) error {
 
 	md := metadata.New(map[string]string{"X-Real-IP": config.GetLocalIP().String()})
-	ctx = metadata.NewOutgoingContext(context.Background(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	return invoker(ctx, method, req, reply, cc, opts...)
 }

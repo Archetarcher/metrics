@@ -291,8 +291,8 @@ func Test_getKey(t *testing.T) {
 
 func TestStore_Save(t *testing.T) {
 	tests := []struct {
-		name    string
 		conf    *config.AppConfig
+		name    string
 		wantErr bool
 	}{
 		{
@@ -320,8 +320,8 @@ func TestStore_Save(t *testing.T) {
 
 func TestStore_Load(t *testing.T) {
 	tests := []struct {
-		name    string
 		conf    *config.AppConfig
+		name    string
 		wantErr bool
 	}{
 		{
