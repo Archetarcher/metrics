@@ -21,7 +21,6 @@ func TestAppConfig_initFlags(t *testing.T) {
 		StoreInterval   int
 		Restore         bool
 		EnableGRPC      bool
-		mux             sync.Mutex
 	}
 	tests := []struct {
 		name   string

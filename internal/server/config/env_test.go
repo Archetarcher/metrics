@@ -21,7 +21,6 @@ func TestAppConfig_parseEnv(t *testing.T) {
 		StoreInterval   int
 		Restore         bool
 		EnableGRPC      bool
-		mux             sync.Mutex
 	}
 	tests := []struct {
 		name   string
@@ -44,7 +43,6 @@ func TestAppConfig_parseEnv(t *testing.T) {
 				StoreInterval:   0,
 				Restore:         false,
 				EnableGRPC:      false,
-				mux:             sync.Mutex{},
 			},
 		},
 	}
@@ -65,7 +63,7 @@ func TestAppConfig_parseEnv(t *testing.T) {
 				StoreInterval:   tt.fields.StoreInterval,
 				Restore:         tt.fields.Restore,
 				EnableGRPC:      tt.fields.EnableGRPC,
-				mux:             tt.fields.mux,
+				mux:             sync.Mutex{},
 			}
 			c.parseEnv()
 		})
