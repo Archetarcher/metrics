@@ -10,15 +10,18 @@ import (
 	"time"
 )
 
+// MetricsProvider is a struct for provider.
 type MetricsProvider struct {
 	config *config.AppConfig
 	client *resty.Client
 }
 
+// NewMetricsProvider creates instance of MetricsProvider.
 func NewMetricsProvider(appConfig *config.AppConfig, client *resty.Client) *MetricsProvider {
 	return &MetricsProvider{config: appConfig, client: client}
 }
 
+// Update sends update metrics request.
 func (p *MetricsProvider) Update(request []domain.Metrics) (*domain.SendResponse, *domain.MetricsError) {
 
 	url := "http://" + p.config.ServerRunAddr + "/updates/"
@@ -44,6 +47,7 @@ func (p *MetricsProvider) Update(request []domain.Metrics) (*domain.SendResponse
 	return &domain.SendResponse{Status: http.StatusOK}, nil
 }
 
+// StartSession starts encrypted session.
 func (p *MetricsProvider) StartSession(retryCount int) *domain.MetricsError {
 	url := "http://" + p.config.ServerRunAddr + "/session/"
 

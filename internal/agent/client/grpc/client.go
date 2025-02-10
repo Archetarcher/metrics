@@ -22,6 +22,7 @@ import (
 	"syscall"
 )
 
+// MetricsClient is a struct for grpc client.
 type MetricsClient struct {
 	client pb.MetricsClient
 
@@ -29,6 +30,7 @@ type MetricsClient struct {
 	config  *config.AppConfig
 }
 
+// NewMetricsClient creates instance of MetricsClient.
 func NewMetricsClient(config *config.AppConfig, service MetricsService) *MetricsClient {
 	return &MetricsClient{
 		config:  config,
@@ -74,6 +76,7 @@ func (c *MetricsClient) Run() error {
 	return nil
 }
 
+// StartSession starts encrypted session for data exchange.
 func (c *MetricsClient) StartSession() *domain.MetricsError {
 	key, gErr := encryption.GenKey(16)
 	if gErr != nil {
@@ -94,6 +97,7 @@ func (c *MetricsClient) StartSession() *domain.MetricsError {
 	return nil
 }
 
+// TrackMetrics starts metrics tracking.
 func (c *MetricsClient) TrackMetrics() {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 

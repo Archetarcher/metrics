@@ -13,13 +13,17 @@ import (
 	"os"
 )
 
+// AsymmetricEncryption is an interface that defines asymmetric encryption.
 type AsymmetricEncryption interface {
 	Encrypt(text []byte) ([]byte, *domain.MetricsError)
 }
+
+// Asymmetric is a struct for asymmetric encryption.
 type Asymmetric struct {
 	keyPath string
 }
 
+// NewAsymmetric creates instance of Asymmetric.
 func NewAsymmetric(path string) *Asymmetric {
 	return &Asymmetric{keyPath: path}
 }

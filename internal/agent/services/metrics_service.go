@@ -55,6 +55,7 @@ type MetricsService struct {
 	config *config.AppConfig
 }
 
+// NewMetricsService creates instance of MetricsService.
 func NewMetricsService(appConfig *config.AppConfig) *MetricsService {
 	return &MetricsService{config: appConfig}
 }

@@ -5,6 +5,7 @@ import (
 	"net"
 )
 
+// GetLocalIP returns ip address.
 func GetLocalIP() net.IP {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {

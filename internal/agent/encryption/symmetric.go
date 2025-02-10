@@ -8,14 +8,17 @@ import (
 	"go.uber.org/zap"
 )
 
+// SymmetricEncryption is interface that defines symmetric encryption.
 type SymmetricEncryption interface {
 	Encrypt(text []byte) []byte
 }
 
+// Symmetric is struct for symmetric encryption.
 type Symmetric struct {
 	key string
 }
 
+// NewSymmetric creates instance of Symmetric, use key for encryption.
 func NewSymmetric(key string) *Symmetric {
 	return &Symmetric{key: key}
 }

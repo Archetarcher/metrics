@@ -18,6 +18,7 @@ import (
 	"net"
 )
 
+// MetricsServer is a struct for grpc server.
 type MetricsServer struct {
 	pb.UnimplementedMetricsServer
 
@@ -25,6 +26,7 @@ type MetricsServer struct {
 	config  *config.AppConfig
 }
 
+// NewMetricsServer creates instance of MetricsServer.
 func NewMetricsServer(c *config.AppConfig, s MetricsService) *MetricsServer {
 	return &MetricsServer{
 		service: s,
@@ -32,6 +34,7 @@ func NewMetricsServer(c *config.AppConfig, s MetricsService) *MetricsServer {
 	}
 }
 
+// Run starts grpc server.
 func (s *MetricsServer) Run() error {
 	listen, err := net.Listen("tcp", s.config.GRPCRunAddr)
 	if err != nil {
@@ -63,6 +66,7 @@ type MetricsService interface {
 	Updates(ctx context.Context, request []domain.Metrics) ([]domain.Metrics, *domain.MetricsError)
 }
 
+// UpdateMetrics grpc handler for update metrics request.
 func (s *MetricsServer) UpdateMetrics(ctx context.Context, in *pb.UpdateMetricsRequest) (*pb.Empty, error) {
 
 	var metrics []domain.Metrics
@@ -81,6 +85,8 @@ func (s *MetricsServer) UpdateMetrics(ctx context.Context, in *pb.UpdateMetricsR
 	return &pb.Empty{}, nil
 
 }
+
+// StartSession grpc handler for start session request.
 func (s *MetricsServer) StartSession(ctx context.Context, in *pb.StartSessionRequest) (*pb.Empty, error) {
 
 	key, eErr := encryption.DecryptAsymmetric(in.Key, s.config.PrivateKeyPath)

@@ -3,9 +3,9 @@ package provider
 import (
 	"context"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
+	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/api/rest/middlewares"
 	config2 "github.com/Archetarcher/metrics.git/internal/server/config"
-	"github.com/Archetarcher/metrics.git/internal/server/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/handlers"
 	"github.com/Archetarcher/metrics.git/internal/server/logger"
 	"github.com/Archetarcher/metrics.git/internal/server/repositories"
@@ -33,161 +33,6 @@ type Config struct {
 
 var counter = int64(2896127014)
 var gauge = 0.31167763133187076
-var m = []domain.Metrics{
-	{
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	},
-	{
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	}, {
-		ID:    "counter_value",
-		MType: "counter",
-		Delta: &counter,
-		Value: nil,
-	},
-	{
-		ID:    "gauge_value",
-		MType: "gauge",
-		Delta: nil,
-		Value: &gauge,
-	},
-}
 
 func (c *Config) setConfig() {
 	c.once.Do(func() {
@@ -215,6 +60,7 @@ func setupConfigServer() (*httptest.Server, error) {
 	r.Use(middlewares.GzipMiddleware)
 
 	r.Post("/session/", handler.StartSession)
+	r.Post("/updates/", handler.UpdatesMetrics)
 
 	srv := httptest.NewServer(r)
 
@@ -224,6 +70,9 @@ func setupConfigServer() (*httptest.Server, error) {
 func init() {
 	conf.setConfig()
 }
+
+var confClient *config.AppConfig
+
 func TestStartSession(t *testing.T) {
 	require.Nil(t, conf.err, "failed to init server", conf.server, conf.err)
 
@@ -278,8 +127,123 @@ func TestStartSession(t *testing.T) {
 			prvdr := NewMetricsProvider(tt.args.config, client)
 
 			err := prvdr.StartSession(tt.args.config.Session.RetryConn)
-
+			if err == nil {
+				confClient = tt.args.config
+			}
 			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}
 }
+
+var (
+	values = [8]domain.Metrics{
+		{
+			ID:    "counter_value",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+		{
+			ID:    "counter_value_2",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value_2",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+		{
+			ID:    "counter_value_3",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value_3",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+		{
+			ID:    "counter_value_4",
+			MType: "counter",
+			Delta: &counter,
+			Value: nil,
+		},
+		{
+			ID:    "gauge_value_4",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gauge,
+		},
+	}
+)
+
+//func TestUpdate(t *testing.T) {
+//
+//	require.Nil(t, conf.err, "failed to init server", conf.server, conf.err)
+//
+//	type args struct {
+//		request []domain.Metrics
+//	}
+//
+//	tests := []struct {
+//		name    string
+//		args    args
+//		code    int
+//		config  *config.AppConfig
+//		wantErr bool
+//	}{
+//		{
+//			name: "positive test #1",
+//			args: args{[]domain.Metrics{values[0], values[1]}},
+//			code: http.StatusOK,
+//			config: &config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""),
+//				Session: confClient.Session, PublicKeyPath: confClient.PublicKeyPath},
+//			wantErr: false,
+//		},
+//		{
+//			name: "negative test #2",
+//			args: args{[]domain.Metrics{
+//				{
+//					ID:    values[0].ID,
+//					MType: "gauged",
+//					Value: nil,
+//				},
+//			},
+//			},
+//			config: &config.AppConfig{ServerRunAddr: confClient.ServerRunAddr,
+//				Session: confClient.Session, PublicKeyPath: confClient.PublicKeyPath},
+//			code:    http.StatusBadRequest,
+//			wantErr: true,
+//		},
+//		{
+//			name: "negative test #3",
+//			args: args{[]domain.Metrics{values[0]}},
+//			code: http.StatusInternalServerError,
+//			config: &config.AppConfig{ServerRunAddr: conf.server.URL,
+//				Session: confClient.Session, PublicKeyPath: confClient.PublicKeyPath},
+//			wantErr: true,
+//		},
+//	}
+//	client := resty.New()
+//
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			prvdr := NewMetricsProvider(confClient, client)
+//
+//			_, pErr := prvdr.Update(tt.args.request)
+//
+//			assert.Equal(t, tt.wantErr, pErr != nil)
+//		})
+//	}
+//}

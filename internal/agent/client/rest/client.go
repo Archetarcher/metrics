@@ -11,11 +11,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// MetricsClient is a struct for rest client.
 type MetricsClient struct {
 	config  *config.AppConfig
 	service *services.MetricsService
 }
 
+// NewMetricsClient creates instance of MetricsClient.
 func NewMetricsClient(config *config.AppConfig, service *services.MetricsService) *MetricsClient {
 	return &MetricsClient{config: config, service: service}
 }

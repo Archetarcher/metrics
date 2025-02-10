@@ -26,6 +26,7 @@ type MetricsServer struct {
 	config  *config.AppConfig
 }
 
+// NewMetricsServer creates instance of MetricsServer.
 func NewMetricsServer(service *services.MetricsService, config *config.AppConfig) *MetricsServer {
 	handler := handlers.NewMetricsHandler(service, config)
 

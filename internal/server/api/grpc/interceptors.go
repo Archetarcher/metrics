@@ -19,14 +19,17 @@ import (
 	"time"
 )
 
+// MetricsInterceptor interceptor for grpc client.
 type MetricsInterceptor struct {
 	config *config.AppConfig
 }
 
+// NewMetricsInterceptor creates instance of MetricsInterceptor.
 func NewMetricsInterceptor(appConfig *config.AppConfig) *MetricsInterceptor {
 	return &MetricsInterceptor{config: appConfig}
 }
 
+// LoggerInterceptor logs requests.
 func (i *MetricsInterceptor) LoggerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 
 	start := time.Now()
@@ -42,6 +45,7 @@ func (i *MetricsInterceptor) LoggerInterceptor(ctx context.Context, req interfac
 	return response, err
 }
 
+// HashInterceptor hashes request.
 func (i *MetricsInterceptor) HashInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 
 	var hash string
@@ -76,6 +80,7 @@ func (i *MetricsInterceptor) HashInterceptor(ctx context.Context, req interface{
 	return handler(ctx, req)
 }
 
+// TrustedSubnetInterceptor allows only trusted ip addresses.
 func (i *MetricsInterceptor) TrustedSubnetInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	var ip string
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
@@ -95,6 +100,7 @@ func (i *MetricsInterceptor) TrustedSubnetInterceptor(ctx context.Context, req i
 	return handler(ctx, req)
 }
 
+// DecryptInterceptor decrypts request body.
 func (i *MetricsInterceptor) DecryptInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 
 	if strings.Contains(info.FullMethod, "StartSession") {
