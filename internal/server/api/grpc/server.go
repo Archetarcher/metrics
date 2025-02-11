@@ -89,7 +89,7 @@ func (s *MetricsServer) UpdateMetrics(ctx context.Context, in *pb.UpdateMetricsR
 // StartSession grpc handler for start session request.
 func (s *MetricsServer) StartSession(ctx context.Context, in *pb.StartSessionRequest) (*pb.Empty, error) {
 
-	key, eErr := encryption.DecryptAsymmetric(in.Key, s.config.PrivateKeyPath)
+	key, eErr := encryption.NewAsymmetric(s.config.PrivateKeyPath).Decrypt(in.Key)
 	if eErr != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "failed")
 	}

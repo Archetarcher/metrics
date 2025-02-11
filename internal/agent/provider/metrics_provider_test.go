@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/agent/config"
 	"github.com/Archetarcher/metrics.git/internal/agent/domain"
 	"github.com/Archetarcher/metrics.git/internal/server/api/rest/middlewares"
@@ -16,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
@@ -57,6 +59,9 @@ func setupConfigServer() (*httptest.Server, error) {
 	service := services.NewMetricsService(repo)
 	handler := handlers.NewMetricsHandler(service, conf.c)
 	r := chi.NewRouter()
+	r.Use(func(handler http.Handler) http.Handler {
+		return middlewares.RequestDecryptMiddleware(handler, conf.c)
+	})
 	r.Use(middlewares.GzipMiddleware)
 
 	r.Post("/session/", handler.StartSession)
@@ -188,62 +193,59 @@ var (
 	}
 )
 
-//func TestUpdate(t *testing.T) {
-//
-//	require.Nil(t, conf.err, "failed to init server", conf.server, conf.err)
-//
-//	type args struct {
-//		request []domain.Metrics
-//	}
-//
-//	tests := []struct {
-//		name    string
-//		args    args
-//		code    int
-//		config  *config.AppConfig
-//		wantErr bool
-//	}{
-//		{
-//			name: "positive test #1",
-//			args: args{[]domain.Metrics{values[0], values[1]}},
-//			code: http.StatusOK,
-//			config: &config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""),
-//				Session: confClient.Session, PublicKeyPath: confClient.PublicKeyPath},
-//			wantErr: false,
-//		},
-//		{
-//			name: "negative test #2",
-//			args: args{[]domain.Metrics{
-//				{
-//					ID:    values[0].ID,
-//					MType: "gauged",
-//					Value: nil,
-//				},
-//			},
-//			},
-//			config: &config.AppConfig{ServerRunAddr: confClient.ServerRunAddr,
-//				Session: confClient.Session, PublicKeyPath: confClient.PublicKeyPath},
-//			code:    http.StatusBadRequest,
-//			wantErr: true,
-//		},
-//		{
-//			name: "negative test #3",
-//			args: args{[]domain.Metrics{values[0]}},
-//			code: http.StatusInternalServerError,
-//			config: &config.AppConfig{ServerRunAddr: conf.server.URL,
-//				Session: confClient.Session, PublicKeyPath: confClient.PublicKeyPath},
-//			wantErr: true,
-//		},
-//	}
-//	client := resty.New()
-//
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			prvdr := NewMetricsProvider(confClient, client)
-//
-//			_, pErr := prvdr.Update(tt.args.request)
-//
-//			assert.Equal(t, tt.wantErr, pErr != nil)
-//		})
-//	}
-//}
+func TestUpdate(t *testing.T) {
+
+	require.Nil(t, conf.err, "failed to init server", conf.server, conf.err)
+	fmt.Println(confClient)
+	type args struct {
+		request []domain.Metrics
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		code    int
+		config  *config.AppConfig
+		wantErr bool
+	}{
+		{
+			name: "positive test #1",
+			args: args{[]domain.Metrics{values[0], values[1]}},
+			code: http.StatusOK,
+			config: &config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""),
+				Session: confClient.Session, PublicKeyPath: confClient.PublicKeyPath},
+			wantErr: false,
+		},
+		{
+			name: "negative test #2",
+			args: args{[]domain.Metrics{
+				{
+					ID:    values[0].ID,
+					MType: "gauged",
+					Value: nil,
+				},
+			},
+			},
+			config: &config.AppConfig{ServerRunAddr: strings.ReplaceAll(conf.server.URL, "http://", ""),
+				Session: confClient.Session, PublicKeyPath: confClient.PublicKeyPath},
+			code:    http.StatusBadRequest,
+			wantErr: true,
+		},
+	}
+	client := resty.New()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prvdr := NewMetricsProvider(confClient, client)
+
+			_, pErr := prvdr.Update(tt.args.request)
+
+			assert.Equal(t, tt.wantErr, pErr != nil)
+
+			if pErr != nil {
+				assert.Equal(t, tt.code, pErr.Code, pErr)
+
+			}
+		})
+	}
+}

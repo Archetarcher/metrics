@@ -16,13 +16,13 @@ func RequestDecryptMiddleware(next http.Handler, config *config.AppConfig) http.
 
 		if config.PrivateKeyPath != emptyParam && enc != emptyParam {
 
-			c, err := io.ReadAll(r.Body)
+			b, err := io.ReadAll(r.Body)
 			if err != nil {
 				rw.WriteHeader(http.StatusBadRequest)
 				return
 			}
 
-			decrypted, eErr := encryption.DecryptSymmetric(c, config.Session)
+			decrypted, eErr := encryption.NewSymmetric(config.Session).Decrypt(b)
 			if eErr != nil {
 				rw.WriteHeader(http.StatusBadRequest)
 				return

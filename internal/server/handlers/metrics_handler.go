@@ -50,7 +50,7 @@ func (h *MetricsHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key, eErr := encryption.DecryptAsymmetric(request.Key, h.config.PrivateKeyPath)
+	key, eErr := encryption.NewAsymmetric(h.config.PrivateKeyPath).Decrypt(request.Key)
 	if eErr != nil {
 		sendResponse(enc, eErr, http.StatusUnauthorized, w)
 		return

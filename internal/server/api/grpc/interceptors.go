@@ -110,7 +110,7 @@ func (i *MetricsInterceptor) DecryptInterceptor(ctx context.Context, req interfa
 	if i.config.PrivateKeyPath != "" {
 		m := req.(*proto.UpdateMetricsRequest)
 
-		decrypted, eErr := encryption.DecryptSymmetric(m.Metrics, i.config.Session)
+		decrypted, eErr := encryption.NewSymmetric(i.config.Session).Decrypt(m.Metrics)
 		if eErr != nil {
 			return nil, status.Error(codes.Unauthenticated, "failed to decrypt")
 		}
