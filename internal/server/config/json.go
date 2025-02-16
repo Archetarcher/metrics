@@ -16,7 +16,8 @@ func (c *AppConfig) parseJSON() {
 		}
 	}()
 	if err != nil {
-		log.Fatal(err)
+		logger.Log.Info("failed to open json config")
+		return
 	}
 	jsonParser := json.NewDecoder(configFile)
 	jErr := jsonParser.Decode(c)

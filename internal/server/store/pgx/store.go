@@ -32,6 +32,7 @@ type Store struct {
 
 // NewStore creates pgx storage instance, runs migrations
 func NewStore(ctx context.Context, config *config.AppConfig) (*Store, *domain.MetricsError) {
+	logger.Log.Info("starting pgx connection")
 
 	db := sqlx.MustOpen("pgx", config.DatabaseDsn)
 
@@ -93,14 +94,6 @@ func (s *Store) CheckConnection(ctx context.Context) *domain.MetricsError {
 	return nil
 }
 
-// Close closes connection
-func (s *Store) Close() {
-	err := s.db.Close()
-	if err != nil {
-		logger.Log.Info("Error close db", zap.Error(err))
-	}
-}
-
 // GetValuesIn fetches metrics by keys in slice
 func (s *Store) GetValuesIn(ctx context.Context, keys []string) ([]domain.Metrics, *domain.MetricsError) {
 	var metrics []domain.Metrics
@@ -111,7 +104,6 @@ func (s *Store) GetValuesIn(ctx context.Context, keys []string) ([]domain.Metric
 	}
 	q = sqlx.Rebind(sqlx.DOLLAR, q)
 	err = s.db.SelectContext(ctx, &metrics, q, args...)
-
 	if err != nil {
 		return nil, handleDBError(err, dbError)
 	}
@@ -184,7 +176,6 @@ func (s *Store) SetValue(ctx context.Context, request *domain.Metrics) *domain.M
 
 // SetValues inserts or updates batch of metrics data
 func (s *Store) SetValues(ctx context.Context, request []domain.Metrics) *domain.MetricsError {
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return handleDBError(err, dbError)
@@ -192,7 +183,7 @@ func (s *Store) SetValues(ctx context.Context, request []domain.Metrics) *domain
 	defer func() {
 		tErr := tx.Rollback()
 		if tErr != nil {
-			logger.Log.Info("failed to rollback transaction", zap.Error(tErr))
+			logger.Log.Info("failed to rollback transaction")
 		}
 	}()
 
@@ -204,7 +195,7 @@ func (s *Store) SetValues(ctx context.Context, request []domain.Metrics) *domain
 	defer func() {
 		sErr := stmt.Close()
 		if sErr != nil {
-			logger.Log.Info("failed to close statement", zap.Error(sErr))
+			logger.Log.Info("failed to close statement")
 		}
 	}()
 
@@ -216,10 +207,10 @@ func (s *Store) SetValues(ctx context.Context, request []domain.Metrics) *domain
 		}
 	}
 	err = tx.Commit()
-
 	if err != nil {
 		return handleDBError(err, dbError)
 	}
+
 	return nil
 }
 func getKey(request domain.Metrics) string {

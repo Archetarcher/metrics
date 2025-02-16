@@ -20,7 +20,6 @@ type Store interface {
 	SetValue(ctx context.Context, request *domain.Metrics) *domain.MetricsError
 	SetValues(ctx context.Context, request []domain.Metrics) *domain.MetricsError
 	CheckConnection(ctx context.Context) *domain.MetricsError
-	Close()
 }
 
 // NewMetricsRepository creates MetricRepository

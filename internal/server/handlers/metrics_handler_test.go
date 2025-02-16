@@ -753,7 +753,7 @@ func TestMetricsHandler_GetPing(t *testing.T) {
 func TestMetricsHandler_StartSession(t *testing.T) {
 	require.NoError(t, conf.err, "failed to init server", conf.server, conf.err)
 	type request struct {
-		params map[string][]byte
+		params any
 		query  string
 		method string
 	}
@@ -762,7 +762,7 @@ func TestMetricsHandler_StartSession(t *testing.T) {
 	}
 
 	key := "xsaxsaxsa"
-	encryptedKey, eErr := encryption.EncryptAsymmetric([]byte(key), "../../../public.pem")
+	encryptedKey, eErr := encryption.NewAsymmetric("../../../public.pem").Encrypt([]byte(key))
 	require.Nil(t, eErr)
 	tests := []struct {
 		request request
@@ -781,18 +781,7 @@ func TestMetricsHandler_StartSession(t *testing.T) {
 			},
 		},
 		{
-			name: "negative test  #2",
-			request: request{
-				query:  "/session/",
-				method: http.MethodPost,
-				params: map[string][]byte{"key": []byte("wrong text")},
-			},
-			want: want{
-				code: http.StatusUnauthorized,
-			},
-		},
-		{
-			name: "negative test  #3",
+			name: "negative test, wrong method  #2",
 			request: request{
 				query:  "/session/",
 				method: http.MethodGet,
@@ -800,6 +789,28 @@ func TestMetricsHandler_StartSession(t *testing.T) {
 			},
 			want: want{
 				code: http.StatusMethodNotAllowed,
+			},
+		},
+		{
+			name: "negative test  #4",
+			request: request{
+				query:  "/session/",
+				method: http.MethodPost,
+				params: map[string][]byte{"keyssss": []byte("wrong text")},
+			},
+			want: want{
+				code: http.StatusUnauthorized,
+			},
+		},
+		{
+			name: "negative test  #5",
+			request: request{
+				query:  "/session/",
+				method: http.MethodPost,
+				params: `{"key":false}`,
+			},
+			want: want{
+				code: http.StatusInternalServerError,
 			},
 		},
 	}
@@ -812,9 +823,7 @@ func TestMetricsHandler_StartSession(t *testing.T) {
 			req.SetBody(tt.request.params)
 
 			resp, err := req.Send()
-
 			assert.NoError(t, err, "error making HTTP request")
-
 			assert.Equal(t, tt.want.code, resp.StatusCode(), "Код ответа не совпадает с ожидаемым", req.PathParams, req.URL)
 		})
 	}

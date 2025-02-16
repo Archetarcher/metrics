@@ -25,6 +25,8 @@ type Store struct {
 
 // NewStore creates new storage, restores data from file
 func NewStore(ctx context.Context, config *config.AppConfig) (*Store, *domain.MetricsError) {
+	logger.Log.Info("starting memory connection")
+
 	storage := &Store{
 		mux:  sync.Mutex{},
 		data: make(map[string]domain.Metrics),
@@ -64,11 +66,6 @@ func RetryConnection(ctx context.Context, error *domain.MetricsError, interval i
 // CheckConnection checks connection to storage, not implemented for in memory storage
 func (s *Store) CheckConnection(ctx context.Context) *domain.MetricsError {
 	return nil
-}
-
-// Close closes connection to storage, not implemented for in memory storage
-func (s *Store) Close() {
-
 }
 
 // GetValuesIn fetches metrics by keys in slices
@@ -121,6 +118,7 @@ func (s *Store) SetValue(ctx context.Context, request *domain.Metrics) *domain.M
 
 // SetValues sets batch of metrics data by key
 func (s *Store) SetValues(ctx context.Context, request []domain.Metrics) *domain.MetricsError {
+
 	for _, v := range request {
 		s.data[getKey(v)] = v
 	}

@@ -26,9 +26,9 @@ type MetricsHandler struct {
 
 // MetricsService is an interface that describes interaction with service layer
 type MetricsService interface {
-	Updates(request []domain.Metrics, ctx context.Context) ([]domain.Metrics, *domain.MetricsError)
-	Update(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError)
-	GetValue(request *domain.Metrics, ctx context.Context) (*domain.Metrics, *domain.MetricsError)
+	Updates(ctx context.Context, request []domain.Metrics) ([]domain.Metrics, *domain.MetricsError)
+	Update(ctx context.Context, request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
+	GetValue(ctx context.Context, request *domain.Metrics) (*domain.Metrics, *domain.MetricsError)
 	GetAllValues(ctx context.Context) (string, *domain.MetricsError)
 	CheckConnection(ctx context.Context) *domain.MetricsError
 }
@@ -50,7 +50,7 @@ func (h *MetricsHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key, eErr := encryption.DecryptAsymmetric(request.Key, h.config.PrivateKeyPath)
+	key, eErr := encryption.NewAsymmetric(h.config.PrivateKeyPath).Decrypt(request.Key)
 	if eErr != nil {
 		sendResponse(enc, eErr, http.StatusUnauthorized, w)
 		return
@@ -73,7 +73,7 @@ func (h *MetricsHandler) UpdateMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.service.Update(request, r.Context())
+	_, err = h.service.Update(r.Context(), request)
 	if err != nil {
 		sendResponse(enc, err.Text, err.Code, w)
 		return
@@ -94,7 +94,7 @@ func (h *MetricsHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.service.GetValue(request, r.Context())
+	result, err := h.service.GetValue(r.Context(), request)
 	if err != nil {
 		sendResponse(enc, err.Text, err.Code, w)
 		return
@@ -126,7 +126,7 @@ func (h *MetricsHandler) UpdatesMetrics(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	_, err = h.service.Updates(request, r.Context())
+	_, err = h.service.Updates(r.Context(), request)
 	if err != nil {
 		sendResponse(enc, err.Text, err.Code, w)
 		return
@@ -149,7 +149,7 @@ func (h *MetricsHandler) UpdateMetricsJSON(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	response, err := h.service.Update(request, r.Context())
+	response, err := h.service.Update(r.Context(), request)
 	if err != nil {
 		sendResponse(enc, err.Text, err.Code, w)
 		return
@@ -172,7 +172,7 @@ func (h *MetricsHandler) GetMetricsJSON(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	response, err := h.service.GetValue(request, r.Context())
+	response, err := h.service.GetValue(r.Context(), request)
 	if err != nil {
 		sendResponse(enc, err.Text, err.Code, w)
 		return
@@ -214,7 +214,6 @@ func (h *MetricsHandler) GetPing(w http.ResponseWriter, r *http.Request) {
 }
 
 func validateGetRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
-
 	// validate params
 	var metrics domain.Metrics
 
@@ -251,15 +250,6 @@ func validateGetRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError)
 	return &metrics, nil
 }
 func validateSessionRequest(r *http.Request) (*domain.SessionRequest, *domain.MetricsError) {
-	// validate method
-	if r.Method != http.MethodPost {
-
-		return nil, &domain.MetricsError{
-			Text: "method not allowed",
-			Code: http.StatusMethodNotAllowed,
-		}
-	}
-
 	// validate params
 	var session domain.SessionRequest
 
@@ -274,15 +264,6 @@ func validateSessionRequest(r *http.Request) (*domain.SessionRequest, *domain.Me
 	return &session, nil
 }
 func validateRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
-	// validate method
-	if r.Method != http.MethodPost {
-
-		return nil, &domain.MetricsError{
-			Text: "method not allowed",
-			Code: http.StatusMethodNotAllowed,
-		}
-	}
-
 	// validate params
 	var metrics domain.Metrics
 
@@ -342,15 +323,6 @@ func validateRequest(r *http.Request) (*domain.Metrics, *domain.MetricsError) {
 	return &metrics, nil
 }
 func validateUpdatesRequest(r *http.Request) ([]domain.Metrics, *domain.MetricsError) {
-	// validate method
-	if r.Method != http.MethodPost {
-
-		return nil, &domain.MetricsError{
-			Text: "method not allowed",
-			Code: http.StatusMethodNotAllowed,
-		}
-	}
-
 	// validate params
 	body, err := io.ReadAll(r.Body)
 	if err != nil {

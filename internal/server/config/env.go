@@ -7,15 +7,18 @@ import (
 
 const (
 	envRunAddrName                = "ADDRESS"
+	envGRPCRunAddrName            = "GRPC_ADDRESS"
 	envLogLevelName               = "LOG_LEVEL"
 	envKeyName                    = "KEY"
 	envFileStoragePathName        = "FILE_STORAGE_PATH"
 	envStoreIntervalName          = "STORE_INTERVAL"
 	envRestoreName                = "RESTORE"
+	envEnableGRPCName             = "ENABLE_GRPC"
 	envDatabaseDsnName            = "DATABASE_DSN"
 	envDatabaseMigrationsPathName = "DATABASE_MIGRATIONS_PATH"
 	envPrivateKeyPathName         = "CRYPTO_KEY"
 	envConfigPathName             = "CONFIG"
+	envTrustedSubnetName          = "TRUSTED_SUBNET"
 )
 
 func (c *AppConfig) parseEnv() {
@@ -35,6 +38,10 @@ func (c *AppConfig) parseEnv() {
 
 	c.PrivateKeyPath = getEnvOrDefault(envPrivateKeyPathName, c.PrivateKeyPath, 1).(string)
 	c.ConfigPath = getEnvOrDefault(envConfigPathName, c.ConfigPath, 1).(string)
+	c.TrustedSubnet = getEnvOrDefault(envTrustedSubnetName, c.TrustedSubnet, 1).(string)
+
+	c.EnableGRPC = getEnvOrDefault(envEnableGRPCName, c.EnableGRPC, 3).(bool)
+	c.GRPCRunAddr = getEnvOrDefault(envGRPCRunAddrName, c.GRPCRunAddr, 1).(string)
 
 }
 

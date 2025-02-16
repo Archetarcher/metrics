@@ -2,8 +2,11 @@ package pgx
 
 import (
 	"context"
+	"fmt"
 	"github.com/Archetarcher/metrics.git/internal/server/config"
 	"github.com/Archetarcher/metrics.git/internal/server/domain"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sync"
@@ -89,21 +92,108 @@ var (
 )
 
 func TestNewStore(t *testing.T) {
-	t.Run("positive test", func(t *testing.T) {
-		s, err := NewStore(context.Background(), &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"})
-		assert.NotNil(t, s)
-		assert.Nil(t, err)
-	})
+	type args struct {
+		request *config.AppConfig
+	}
+
+	tests := []struct {
+		args    args
+		name    string
+		wantErr bool
+	}{
+		{
+			name:    "positive test #1",
+			args:    args{request: &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"}},
+			wantErr: false,
+		},
+		{
+			name:    "negative test #2",
+			args:    args{request: &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migration"}},
+			wantErr: true,
+		},
+		{
+			name:    "negative test #3",
+			args:    args{request: &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikums?sslmode=disable", MigrationsPath: "../../migrations"}},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewStore(context.Background(), tt.args.request)
+			assert.Equal(t, tt.wantErr, err != nil)
+
+		})
+	}
+
 }
 
 func TestRetryConnection(t *testing.T) {
-	require.Nil(t, conf.err, "failed to init store", conf.store, conf.err)
+	type args struct {
+		config   *config.AppConfig
+		err      *domain.MetricsError
+		try      int
+		interval int
+	}
 
-	t.Run("positive test", func(t *testing.T) {
-		s, err := RetryConnection(context.Background(), &domain.MetricsError{}, 3, 3, &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"})
-		assert.Nil(t, s)
-		assert.NotNil(t, err)
-	})
+	tests := []struct {
+		args    args
+		name    string
+		wantErr bool
+	}{
+		{
+			name: "positive test #1",
+			args: args{
+				config:   &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"},
+				try:      3,
+				interval: 3,
+				err: &domain.MetricsError{
+					Err: &pgconn.PgError{Code: pgerrcode.ConnectionException},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "negative test, tries count exceeded #2",
+			args: args{
+				config:   &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"},
+				try:      0,
+				interval: 3,
+				err:      &domain.MetricsError{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "negative test, not connection error #3",
+			args: args{
+				config:   &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", MigrationsPath: "../../migrations"},
+				try:      3,
+				interval: 3,
+				err:      &domain.MetricsError{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "negative test, incorrect connection string #4",
+			args: args{
+				config:   &config.AppConfig{DatabaseDsn: "postgres://postgres:postgres@localhost:5432/praktikums?sslmode=disable", MigrationsPath: "../../migrations"},
+				try:      3,
+				interval: 3,
+				err: &domain.MetricsError{
+					Err: &pgconn.PgError{Code: pgerrcode.ConnectionException},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	ctx := context.Background()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := RetryConnection(ctx, tt.args.err, tt.args.interval, tt.args.try, tt.args.config)
+			fmt.Println(err)
+			assert.Equal(t, tt.wantErr, err != nil)
+
+		})
+	}
 }
 
 func TestStore_CheckConnection(t *testing.T) {
@@ -179,24 +269,33 @@ func TestStore_GetValues(t *testing.T) {
 func TestStore_GetValuesIn(t *testing.T) {
 	require.Nil(t, conf.err, "failed to init store", conf.store, conf.err)
 
+	type args struct {
+		arr []string
+	}
+
 	tests := []struct {
 		want    *domain.Metrics
-		args    []string
+		args    args
 		name    string
 		wantErr bool
 	}{
 		{
 			name:    "positive test #1",
 			wantErr: false,
-			args:    []string{values[0].ID + values[0].MType},
+			args:    args{arr: []string{values[0].ID + values[0].MType}},
+		},
+		{
+			name:    "negative test #2",
+			wantErr: true,
+			args:    args{arr: []string{}},
 		},
 	}
+
 	ctx := context.Background()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := conf.store.GetValuesIn(ctx, tt.args)
-
+			_, err := conf.store.GetValuesIn(ctx, tt.args.arr)
 			assert.Equal(t, tt.wantErr, err != nil)
 
 		})

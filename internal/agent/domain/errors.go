@@ -1,7 +1,8 @@
 package domain
 
-// TrackingError is an error struct keeps code and message of error.
-type TrackingError struct {
+// MetricsError is an error struct keeps code and message of error.
+type MetricsError struct {
+	Err  error
 	Text string
 	Code int
 }
